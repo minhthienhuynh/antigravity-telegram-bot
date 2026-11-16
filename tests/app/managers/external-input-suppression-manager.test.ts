@@ -32,4 +32,27 @@ describe("external-input/suppression", () => {
       false,
     );
   });
+
+  it("rebindSessionId migrates suppression entries from oldId to newId and merges with existing", () => {
+    externalUserInputSuppressionManager.register("old-1", "Prompt 1");
+    externalUserInputSuppressionManager.register("new-1", "Existing prompt");
+
+    // Safe no-op when oldId === newId
+    externalUserInputSuppressionManager.rebindSessionId("old-1", "old-1");
+    expect(externalUserInputSuppressionManager.consume("old-1", "Prompt 1")).toBe(true);
+    externalUserInputSuppressionManager.register("old-1", "Prompt 1");
+
+    // Safe no-op when oldId not found
+    externalUserInputSuppressionManager.rebindSessionId("non-existent", "new-1");
+
+    // Perform real migration
+    externalUserInputSuppressionManager.rebindSessionId("old-1", "new-1");
+
+    // Can no longer consume under oldId
+    expect(externalUserInputSuppressionManager.consume("old-1", "Prompt 1")).toBe(false);
+
+    // Can consume both migrated and existing entries under newId
+    expect(externalUserInputSuppressionManager.consume("new-1", "Existing prompt")).toBe(true);
+    expect(externalUserInputSuppressionManager.consume("new-1", "Prompt 1")).toBe(true);
+  });
 });

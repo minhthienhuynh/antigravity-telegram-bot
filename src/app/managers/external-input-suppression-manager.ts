@@ -25,6 +25,23 @@ class ExternalUserInputSuppressionManager {
     this.entriesBySession.set(sessionId, sessionEntries);
   }
 
+  /**
+   * Move suppression entries to a new runtime id (placeholder -> real
+   * conversation id) so the in-flight prompt's echo suppression survives a
+   * session id rebind mid-turn.
+   */
+  rebindSessionId(oldId: string, newId: string, now: number = Date.now()): void {
+    const entries = this.entriesBySession.get(oldId);
+    if (!entries || oldId === newId) {
+      return;
+    }
+
+    this.entriesBySession.delete(oldId);
+    this.prune(now);
+    const existing = this.entriesBySession.get(newId) ?? [];
+    this.entriesBySession.set(newId, [...existing, ...entries]);
+  }
+
   consume(sessionId: string, text: string, now: number = Date.now()): boolean {
     const normalizedText = normalizeExternalUserInputText(text);
     if (!sessionId || !normalizedText) {
