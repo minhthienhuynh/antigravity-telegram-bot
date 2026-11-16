@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { logger } from "../utils/logger.js";
 
 /**
@@ -28,6 +29,10 @@ export interface AntigravityConversation {
   title: string;
   preview: string;
   lastModified: Date;
+  /** Absolute filesystem paths of the workspaces agy recorded for this conversation. */
+  workspaces: string[];
+  /** Non-null for subagent/child conversations spawned by a parent turn. */
+  parentConversationId: string | null;
 }
 
 function conversationsDir(): string {
@@ -38,6 +43,17 @@ interface SummaryRow {
   conversation_id: string;
   title: string | null;
   preview: string | null;
+}
+
+interface WorkspaceRow {
+  conversation_id: string;
+  workspace_uris: string | null;
+  parent_conversation_id: string | null;
+}
+
+export interface ConversationWorkspaceInfo {
+  workspaces: string[];
+  parentConversationId: string | null;
 }
 
 // TODO(v2): gen_metadata in the per-conversation .db is a protobuf blob without a
@@ -132,6 +148,85 @@ function loadSummaryIndex(): Map<string, SummaryRow> {
   return summaries;
 }
 
+function loadWorkspaceIndex(): Map<string, ConversationWorkspaceInfo> {
+  const index = new Map<string, ConversationWorkspaceInfo>();
+  const summaryDbPath = path.join(
+    os.homedir(),
+    ".gemini",
+    "antigravity-cli",
+    "conversation_summaries.db",
+  );
+
+  try {
+    if (!fs.existsSync(summaryDbPath)) {
+      return index;
+    }
+    const db = new Database(summaryDbPath, { readonly: true, fileMustExist: true });
+    try {
+      // No WHERE clause: workspace metadata is needed even for conversations
+      // that have no title/preview yet (just created, first turn pending).
+      const rows = db
+        .prepare(
+          "SELECT conversation_id, workspace_uris, parent_conversation_id FROM conversation_summaries",
+        )
+        .all() as WorkspaceRow[];
+      for (const row of rows) {
+        if (!row || typeof row.conversation_id !== "string") {
+          continue;
+        }
+        index.set(row.conversation_id, {
+          workspaces: parseWorkspaceUris(row.workspace_uris),
+          parentConversationId:
+            typeof row.parent_conversation_id === "string" && row.parent_conversation_id.length > 0
+              ? row.parent_conversation_id
+              : null,
+        });
+      }
+    } finally {
+      db.close();
+    }
+  } catch (error) {
+    logger.warn("[SessionStore] Cannot read conversation workspaces DB:", error);
+  }
+
+  return index;
+}
+
+/**
+ * Parse agy's `workspace_uris` JSON column (e.g. `["file:///home/ubuntu/projects"]`)
+ * into absolute filesystem paths. Entries that cannot be parsed are kept verbatim
+ * so the caller can still do an exact-string match as a last resort.
+ */
+export function parseWorkspaceUris(urisJson: string | null): string[] {
+  if (!urisJson) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(urisJson);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    const out: string[] = [];
+    for (const entry of parsed) {
+      if (typeof entry !== "string" || entry.length === 0) {
+        continue;
+      }
+      if (entry.startsWith("file://")) {
+        try {
+          out.push(fileURLToPath(entry));
+        } catch {
+          out.push(entry);
+        }
+      } else {
+        out.push(entry);
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 /**
  * List real conversations, newest first.
  */
@@ -146,13 +241,17 @@ export async function listConversations(limit?: number | null): Promise<Antigrav
 
 function buildConversationList(): AntigravityConversation[] {
   const summaries = loadSummaryIndex();
+  const workspaceIndex = loadWorkspaceIndex();
   return listConversationFiles().map((file) => {
     const lastModified = new Date(file.mtimeMs);
+    const workspaceInfo = workspaceIndex.get(file.id);
     return {
       id: file.id,
       title: conversationTitleFromSummaries(summaries, file.id),
       preview: summaries.get(file.id)?.preview?.trim() ?? "",
       lastModified,
+      workspaces: workspaceInfo?.workspaces ?? [],
+      parentConversationId: workspaceInfo?.parentConversationId ?? null,
     };
   });
 }
