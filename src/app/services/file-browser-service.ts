@@ -253,7 +253,11 @@ export function __resetBrowserRootsForTests(): void {
 }
 
 function usesWindowsPath(filePath: string): boolean {
-  return /^[A-Za-z]:[\\/]/.test(filePath) || filePath.startsWith("\\\\");
+  return (
+    process.platform === "win32" ||
+    /^[A-Za-z]:[\\/]/.test(filePath) ||
+    filePath.startsWith("\\\\")
+  );
 }
 
 function getPathApi(filePath: string): typeof path.posix {

@@ -138,7 +138,7 @@ function createSession(index: number): SessionStub {
     title: `Session ${index + 1}`,
     directory: "/repo",
     time: {
-      created: 1700000000000 + index * 1000,
+      created: 1700000000000 - index * 1000,
     },
   };
 }
@@ -251,6 +251,8 @@ describe("bot/commands/sessions", () => {
         title,
         preview: "",
         lastModified: new Date(time.created),
+        workspaces: ["/repo"],
+        parentConversationId: null,
       })),
     );
 
@@ -264,6 +266,38 @@ describe("bot/commands/sessions", () => {
     expect(keyboardRows[9]?.[0]?.callback_data).toBe("session:session-10");
     expect(keyboardRows[10]?.[0]?.callback_data).toBe("session:page:1");
     expect(keyboardRows[11]?.[0]?.callback_data).toBe("inline:cancel:session");
+  });
+
+  it("filters out conversations with disjoint workspaces for the current project", async () => {
+    mocked.sessionListMock.mockResolvedValueOnce([
+      {
+        id: "matching-session",
+        title: "Matching Project Session",
+        preview: "",
+        lastModified: new Date("2026-11-16T10:00:00Z"),
+        workspaces: ["/repo"],
+        parentConversationId: null,
+      },
+      {
+        id: "other-session",
+        title: "Other Project Session",
+        preview: "",
+        lastModified: new Date("2026-11-16T11:00:00Z"),
+        workspaces: ["/other/project"],
+        parentConversationId: null,
+      },
+    ]);
+
+    const ctx = createCommandContext();
+    await sessionsCommand(ctx as never);
+
+    expect(mocked.sessionListMock).toHaveBeenCalledTimes(1);
+
+    const keyboardRows = getKeyboardButtons(ctx);
+    expect(keyboardRows).toHaveLength(2);
+    expect(keyboardRows[0]?.[0]?.callback_data).toBe("session:matching-session");
+    expect(keyboardRows[0]?.[0]?.text).toContain("Matching Project Session");
+    expect(keyboardRows[1]?.[0]?.callback_data).toBe("inline:cancel:session");
   });
 
   it("blocks sessions command while foreground session is busy", async () => {
@@ -284,6 +318,8 @@ describe("bot/commands/sessions", () => {
         title,
         preview: "",
         lastModified: new Date(time.created),
+        workspaces: ["/repo"],
+        parentConversationId: null,
       })),
     );
 

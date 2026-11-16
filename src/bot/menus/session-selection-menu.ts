@@ -1,5 +1,10 @@
 import { InlineKeyboard } from "grammy";
-import { listConversations } from "../../antigravity/session-store.js";
+import path from "node:path";
+import { isPathWithinDirectory } from "../../app/services/file-browser-service.js";
+import {
+  listConversations,
+  type AntigravityConversation,
+} from "../../antigravity/session-store.js";
 import { getDateLocale, t } from "../../i18n/index.js";
 import { logger } from "../../utils/logger.js";
 
@@ -133,18 +138,65 @@ function formatSessionsSelectText(page: number): string {
 }
 
 /**
- * Page through real agy conversations (newest first).
- * `directory` is kept for call-site compatibility; agy lists every conversation.
+ * True when the conversation was run inside `directory` (the workspace is the
+ * directory itself or a descendant of it).
+ *
+ * NOTE: Matching uses logical paths via path.relative (consistent with
+ * `file-browser-service.ts:isPathWithinDirectory`). Filesystem symlinks are
+ * intentionally not resolved via realpathSync to avoid synchronous disk I/O
+ * and failures on unmounted or deleted paths. Configure `currentProject.worktree`
+ * consistently with the path opened in the CLI.
+ */
+export function workspaceBelongsToDirectory(workspace: string, directory: string): boolean {
+  if (!path.isAbsolute(workspace) && !path.win32.isAbsolute(workspace)) {
+    return false;
+  }
+  return isPathWithinDirectory(workspace, directory);
+}
+
+/**
+ * Filter conversations for the `/sessions` list of a project:
+ * - subagent/child conversations (parent_conversation_id set) are dropped;
+ * - conversations whose recorded workspace belongs to the directory, plus
+ *   conversations with no workspace info yet (fresh, first turn pending),
+ *   are included;
+ * - conversations recorded in other disjoint workspaces are excluded.
+ * The final list is sorted newest-first by lastModified timestamp across all
+ * candidates, so fresh sessions appear at the top of page 1.
+ */
+export function filterConversationsForDirectory(
+  conversations: AntigravityConversation[],
+  directory: string,
+): AntigravityConversation[] {
+  const topLevel = conversations.filter((conversation) => !conversation.parentConversationId);
+  const owned: AntigravityConversation[] = [];
+  const unknown: AntigravityConversation[] = [];
+  for (const conversation of topLevel) {
+    const workspaces = conversation.workspaces ?? [];
+    if (workspaces.some((workspace) => workspaceBelongsToDirectory(workspace, directory))) {
+      owned.push(conversation);
+    } else if (workspaces.length === 0) {
+      unknown.push(conversation);
+    }
+  }
+  return [...owned, ...unknown].sort(
+    (a, b) => b.lastModified.getTime() - a.lastModified.getTime(),
+  );
+}
+
+/**
+ * Page through real agy conversations (newest first), filtered for the
+ * project `directory`: workspace-matched conversations and fresh conversations
+ * without workspace info yet, sorted newest-first.
  */
 export async function loadSessionPage(
   directory: string,
   page: number,
   pageSize: number,
 ): Promise<SessionPage> {
-  void directory;
-
   const conversations = await listConversations();
-  const sessions: SessionListItem[] = conversations.map((conversation) => ({
+  const filtered = filterConversationsForDirectory(conversations, directory);
+  const sessions: SessionListItem[] = filtered.map((conversation) => ({
     id: conversation.id,
     title: conversation.title,
     directory,
