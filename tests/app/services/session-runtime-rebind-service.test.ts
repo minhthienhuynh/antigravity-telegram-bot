@@ -1,19 +1,37 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Api } from "grammy";
 
 import { attachManager } from "../../../src/app/managers/attach-manager.js";
 import { foregroundSessionState } from "../../../src/app/managers/foreground-session-state-manager.js";
 import { assistantRunState } from "../../../src/app/managers/assistant-run-state-manager.js";
+import { externalUserInputSuppressionManager } from "../../../src/app/managers/external-input-suppression-manager.js";
+import { summaryAggregator } from "../../../src/app/managers/summary-aggregation-manager.js";
+import * as typingIndicator from "../../../src/bot/typing-indicator.js";
 import {
+  getPromptResponseModeRebinder,
   rebindSessionRuntimeId,
   setPromptResponseModeRebinder,
 } from "../../../src/app/services/session-runtime-rebind-service.js";
 
 describe("rebindSessionRuntimeId", () => {
+  let initialRebinder: ((oldId: string, newId: string) => void) | null = null;
+
+  beforeAll(() => {
+    initialRebinder = getPromptResponseModeRebinder();
+  });
+
+  afterAll(() => {
+    setPromptResponseModeRebinder(initialRebinder);
+    typingIndicator.__resetTypingIndicatorsForTests();
+  });
+
   beforeEach(() => {
     attachManager.__resetForTests();
     foregroundSessionState.__resetForTests();
     assistantRunState.__resetForTests();
-    setPromptResponseModeRebinder(null as unknown as (oldId: string, newId: string) => void);
+    externalUserInputSuppressionManager.__resetForTests();
+    typingIndicator.__resetTypingIndicatorsForTests();
+    setPromptResponseModeRebinder(null);
   });
 
   it("migrates the attached busy latch to the new runtime id", () => {
@@ -60,6 +78,37 @@ describe("rebindSessionRuntimeId", () => {
 
     rebindSessionRuntimeId("new-1", "agy-session-a");
     expect(migrated).toEqual([["new-1", "agy-session-a"]]);
+  });
+
+  it("rebindSessionRuntimeId delegates to externalUserInputSuppressionManager and typingIndicator", () => {
+    const suppressionSpy = vi.spyOn(externalUserInputSuppressionManager, "rebindSessionId");
+    const typingSpy = vi.spyOn(typingIndicator, "rebindTypingIndicatorSessionId");
+    const summarySpy = vi.spyOn(summaryAggregator, "setSession");
+
+    externalUserInputSuppressionManager.register("new-1", "Hello prompt");
+    const sendChatAction = vi.fn().mockResolvedValue(true);
+    typingIndicator.startTypingIndicator({ sendChatAction } as unknown as Api, 12345, "new-1");
+
+    expect(rebindSessionRuntimeId("new-1", "agy-session-xyz")).toBe(true);
+
+    expect(suppressionSpy).toHaveBeenCalledWith("new-1", "agy-session-xyz");
+    expect(typingSpy).toHaveBeenCalledWith("new-1", "agy-session-xyz");
+    expect(summarySpy).toHaveBeenCalledWith("agy-session-xyz");
+
+    expect(externalUserInputSuppressionManager.consume("agy-session-xyz", "Hello prompt")).toBe(true);
+
+    suppressionSpy.mockRestore();
+    typingSpy.mockRestore();
+    summarySpy.mockRestore();
+  });
+
+  it("preserves and restores promptResponseModeRebinder across test lifecycle", () => {
+    const dummyRebinder = (_oldId: string, _newId: string) => {};
+    setPromptResponseModeRebinder(dummyRebinder);
+    expect(getPromptResponseModeRebinder()).toBe(dummyRebinder);
+
+    setPromptResponseModeRebinder(null);
+    expect(getPromptResponseModeRebinder()).toBeNull();
   });
 
   it("is a no-op for identical or empty ids", () => {

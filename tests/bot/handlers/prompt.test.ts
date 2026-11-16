@@ -8,6 +8,9 @@ import {
 } from "../../../src/bot/handlers/prompt.js";
 import { promptAttachment } from "../../../src/app/managers/prompt-attachment-manager.js";
 import { attachManager } from "../../../src/app/managers/attach-manager.js";
+import { foregroundSessionState } from "../../../src/app/managers/foreground-session-state-manager.js";
+import { assistantRunState } from "../../../src/app/managers/assistant-run-state-manager.js";
+import { markAttachedSessionIdle } from "../../../src/app/services/attach-service.js";
 import { createIncomingPrompt } from "../../../src/app/types/prompt.js";
 import { t } from "../../../src/i18n/index.js";
 import { logger } from "../../../src/utils/logger.js";
@@ -402,6 +405,75 @@ describe("bot/handlers/prompt", () => {
     expect(deps.bot.api.sendMessage).toHaveBeenCalledWith(
       777,
       "Failed to send request to Antigravity.",
+    );
+  });
+
+  it("processUserPrompt: onSuccess resolves promoted session ID and dispatches confirmation", async () => {
+    const ctx = createContext();
+    const deps = createDeps();
+
+    mocked.currentSession = {
+      id: "new-12345",
+      title: "New Session",
+      directory: "D:\\Projects\\Repo",
+    };
+    attachManager.attach("new-12345", "D:\\Projects\\Repo");
+
+    const handled = await processUserPrompt(ctx, "Review README", deps);
+    expect(handled).toBe(true);
+
+    // Simulate promotion to real agy session ID before background task finishes
+    mocked.currentSession = {
+      id: "agy-session-1c427347",
+      title: "Promoted Session",
+      directory: "D:\\Projects\\Repo",
+    };
+    attachManager.rebindSessionId("new-12345", "agy-session-1c427347");
+
+    const backgroundTask = getScheduledBackgroundTask();
+    backgroundTask.onSuccess?.({ error: null });
+
+    expect(deps.bot.api.sendMessage).toHaveBeenCalledWith(
+      777,
+      t("bot.prompt_dispatched"),
+    );
+  });
+
+  it("processUserPrompt: onError clears busy and run state on promoted session ID and notifies chat", async () => {
+    const ctx = createContext();
+    const deps = createDeps();
+
+    mocked.currentSession = {
+      id: "new-12345",
+      title: "New Session",
+      directory: "D:\\Projects\\Repo",
+    };
+    attachManager.attach("new-12345", "D:\\Projects\\Repo");
+
+    const handled = await processUserPrompt(ctx, "Review README", deps);
+    expect(handled).toBe(true);
+
+    // Simulate promotion to real agy session ID before error occurs
+    mocked.currentSession = {
+      id: "agy-session-1c427347",
+      title: "Promoted Session",
+      directory: "D:\\Projects\\Repo",
+    };
+    attachManager.rebindSessionId("new-12345", "agy-session-1c427347");
+
+    const backgroundTask = getScheduledBackgroundTask();
+    backgroundTask.onError?.(new Error("pipe failure"));
+
+    expect(foregroundSessionState.markIdle).toHaveBeenCalledWith("agy-session-1c427347");
+    expect(foregroundSessionState.markIdle).toHaveBeenCalledWith("new-12345");
+    expect(markAttachedSessionIdle).toHaveBeenCalledWith("agy-session-1c427347");
+    expect(markAttachedSessionIdle).toHaveBeenCalledWith("new-12345");
+    expect(assistantRunState.clearRun).toHaveBeenCalledWith("agy-session-1c427347", "agy_prompt_background_error");
+    expect(assistantRunState.clearRun).toHaveBeenCalledWith("new-12345", "agy_prompt_background_error");
+
+    expect(deps.bot.api.sendMessage).toHaveBeenCalledWith(
+      777,
+      t("bot.prompt_send_error"),
     );
   });
 

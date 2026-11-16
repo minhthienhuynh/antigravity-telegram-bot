@@ -168,7 +168,11 @@ function emitBotEvent(type: string, properties: Record<string, unknown>): void {
   }
 }
 
-function handleInit(event: AgyInitEvent): void {
+function handleInit(event: AgyInitEvent, sourceProc?: AntigravityProcess): void {
+  if (sourceProc && sourceProc !== activeProcess) {
+    logger.warn("[AgyEvents] dropping stale init event from replaced process");
+    return;
+  }
   currentSessionId = shortId("session", event.conversationId || String(Date.now()));
   // Follow the runtime: promote the /new placeholder AND realign a stale
   // stored id whenever the spawned conversation differs, so foreground
@@ -185,7 +189,12 @@ function handleInit(event: AgyInitEvent): void {
   // session.idle carries the real id, never matches the tracked placeholder,
   // and the attached busy latch sticks until a full bot restart.
   const storedIdAfter = getCurrentSession()?.id ?? null;
-  if (storedIdBefore && storedIdAfter && storedIdAfter === currentSessionId) {
+  if (
+    storedIdBefore &&
+    storedIdAfter &&
+    storedIdBefore !== storedIdAfter &&
+    storedIdAfter === currentSessionId
+  ) {
     rebindSessionRuntimeId(storedIdBefore, storedIdAfter);
   }
 
@@ -328,7 +337,10 @@ function startStallWatchdog(): void {
 }
 
 // One step_update maps to one bot event. The user_input echo is ignored.
-function handleStep(event: AgyStepEvent): void {
+function handleStep(event: AgyStepEvent, sourceProc?: AntigravityProcess): void {
+  if (sourceProc && sourceProc !== activeProcess) {
+    return;
+  }
   if (event.stepType === "user_input") {
     return;
   }
@@ -697,10 +709,10 @@ function wireProcess(proc: AntigravityProcess): void {
   lastProcess = proc;
   startStallWatchdog();
   proc.on("init", (event: AgyInitEvent) => {
-    handleInit(event);
+    handleInit(event, proc);
   });
   proc.on("step", (event: AgyStepEvent) => {
-    handleStep(event);
+    handleStep(event, proc);
   });
   proc.on("result", (event: AgyResultEvent) => {
     handleResult(event, proc);
@@ -711,10 +723,9 @@ function wireProcess(proc: AntigravityProcess): void {
     if (wasActive) {
       activeProcess = null;
     }
-    // Only emit idle when the process that died was the live one — an exit
-    // from an already-replaced process must not shut down the new turn.
-    if (wasActive && currentSessionId && eventCallback) {
-      emitBotEvent("session.idle", { sessionID: currentSessionId });
+    const effectiveSessionId = currentSessionId || getCurrentSession()?.id;
+    if (wasActive && effectiveSessionId && eventCallback) {
+      emitBotEvent("session.idle", { sessionID: effectiveSessionId });
     }
   });
   proc.on("error", (error) => {
@@ -942,10 +953,14 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
     if (getCurrentSession()?.id.startsWith("new-")) {
       const staleProc = activeProcess;
       activeProcess = null;
-      void staleProc.kill().catch(() => {});
+      currentSessionId = "";
+      staleProc.removeAllListeners();
       logger.info(
-        "[AgyEvents] placeholder session with a live process — respawning fresh so init promotes the new conversation",
+        "[AgyEvents] placeholder session with a live process — terminating stale process before respawning",
       );
+      await staleProc.kill().catch((err) => {
+        logger.warn("[AgyEvents] error terminating stale process", err);
+      });
     } else {
       const effectiveModel = activeProcess.getModelId();
       const storedNow = getStoredModel()?.modelID;

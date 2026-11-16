@@ -118,6 +118,10 @@ import {
   stopEventListening,
   __resetAgyEventsForTests,
 } from "../../src/antigravity/events.js";
+import {
+  clearSession,
+  setCurrentSession,
+} from "../../src/app/services/session-service.js";
 
 type Collected = Array<{ type: string; properties: Record<string, unknown> }>;
 
@@ -146,6 +150,7 @@ async function pumpLines(spawn: SpawnCapture, ...extra: string[]): Promise<void>
 describe("antigravity/events", () => {
   afterEach(() => {
     __resetAgyEventsForTests();
+    clearSession();
     vi.restoreAllMocks();
   });
 
@@ -710,5 +715,130 @@ describe("antigravity/events", () => {
 
     expect(second.events.length).toBe(before);
     killSpy.mockRestore();
+  });
+
+  it("sendPromptToActiveProcess: placeholder with live process awaits kill and spawns fresh process", async () => {
+    const firstSpawn = makeFakeChild();
+    const secondSpawn = makeFakeChild();
+    spawnMock
+      .mockImplementationOnce(() => firstSpawn.child)
+      .mockImplementationOnce(() => secondSpawn.child);
+
+    const killCalls: string[] = [];
+    const killSpy = vi.spyOn(process, "kill").mockImplementation((() => {
+      killCalls.push("SIGINT");
+      firstSpawn.child.exitCode = 0;
+      firstSpawn.child.emit("exit", 0, null);
+      return true;
+    }) as never);
+
+    await subscribeToEvents("/tmp/proj", collect().callback);
+    await flush(1);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+
+    setCurrentSession({
+      id: "new-1794816042820",
+      title: "New Session",
+      directory: "/tmp/proj",
+    });
+
+    await sendPromptToActiveProcess("Hello from placeholder", "/tmp/proj");
+    await flush(1);
+
+    expect(killCalls).toContain("SIGINT");
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+
+    killSpy.mockRestore();
+  });
+
+  it("handleInit drops init event from stale process", async () => {
+    const firstSpawn = makeFakeChild();
+    const secondSpawn = makeFakeChild();
+    spawnMock
+      .mockImplementationOnce(() => firstSpawn.child)
+      .mockImplementationOnce(() => secondSpawn.child);
+
+    const killSpy = vi.spyOn(process, "kill").mockImplementation((() => true) as never);
+
+    const receiver = collect();
+    await subscribeToEvents("/tmp/proj-a", collect().callback);
+    await flush(1);
+    await subscribeToEvents("/tmp/proj-b", receiver.callback);
+    await flush(1);
+
+    const staleStdout = (firstSpawn.child as unknown as { stdout: EventEmitter }).stdout;
+    const beforeCreatedEvents = receiver.events.filter((e) => e.type === "session.created").length;
+
+    staleStdout.emit(
+      "data",
+      `${JSON.stringify({ event: "init", conversation_id: "stale-conversation-123" })}\n`,
+    );
+    await flush(10);
+
+    const afterCreatedEvents = receiver.events.filter((e) => e.type === "session.created").length;
+    expect(afterCreatedEvents).toBe(beforeCreatedEvents);
+
+    killSpy.mockRestore();
+  });
+
+  it("handleStep drops step event from stale process", async () => {
+    const firstSpawn = makeFakeChild();
+    const secondSpawn = makeFakeChild();
+    spawnMock
+      .mockImplementationOnce(() => firstSpawn.child)
+      .mockImplementationOnce(() => secondSpawn.child);
+
+    const killSpy = vi.spyOn(process, "kill").mockImplementation((() => true) as never);
+
+    const receiver = collect();
+    await subscribeToEvents("/tmp/proj-a", collect().callback);
+    await flush(1);
+    await subscribeToEvents("/tmp/proj-b", receiver.callback);
+    await flush(1);
+
+    const staleStdout = (firstSpawn.child as unknown as { stdout: EventEmitter }).stdout;
+    const beforeDeltaEvents = receiver.events.filter((e) => e.type === "message.part.updated").length;
+
+    staleStdout.emit(
+      "data",
+      `${JSON.stringify({
+        event: "step_update",
+        step_update: {
+          step_index: 0,
+          state: "ACTIVE",
+          step_type: "agent_response",
+          text_delta: "stale step text",
+        },
+      })}\n`,
+    );
+    await flush(10);
+
+    const afterDeltaEvents = receiver.events.filter((e) => e.type === "message.part.updated").length;
+    expect(afterDeltaEvents).toBe(beforeDeltaEvents);
+
+    killSpy.mockRestore();
+  });
+
+  it("exit handler falls back to getCurrentSession()?.id if process dies before init", async () => {
+    const firstSpawn = makeFakeChild();
+    spawnMock.mockImplementationOnce(() => firstSpawn.child);
+
+    setCurrentSession({
+      id: "new-early-crash-session",
+      title: "Crash Placeholder",
+      directory: "/tmp/proj",
+    });
+
+    const receiver = collect();
+    await subscribeToEvents("/tmp/proj", receiver.callback);
+    await flush(1);
+
+    // Process exits with code 1 before any init was emitted
+    firstSpawn.child.emit("exit", 1, null);
+    await flush(10);
+
+    const idleEvents = receiver.events.filter((e) => e.type === "session.idle");
+    expect(idleEvents.length).toBe(1);
+    expect(idleEvents[0]?.properties.sessionID).toBe("new-early-crash-session");
   });
 });
