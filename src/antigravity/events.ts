@@ -11,6 +11,7 @@ import {
 } from "./agent-process.js";
 import { config } from "../config.js";
 import { getCurrentSession, promotePlaceholderSession, syncSessionToRuntimeId } from "../app/services/session-service.js";
+import { rebindSessionRuntimeId } from "../app/services/session-runtime-rebind-service.js";
 import { getConversationTitle } from "./session-store.js";
 import { getStoredModel } from "../app/services/model-selection-service.js";
 import { logger } from "../utils/logger.js";
@@ -172,11 +173,21 @@ function handleInit(event: AgyInitEvent): void {
   // Follow the runtime: promote the /new placeholder AND realign a stale
   // stored id whenever the spawned conversation differs, so foreground
   // event matching works and /sessions lists the live thread.
+  const storedIdBefore = getCurrentSession()?.id ?? null;
   const realTitle = event.conversationId
     ? getConversationTitle(event.conversationId)
     : undefined;
   promotePlaceholderSession(currentSessionId, realTitle);
   syncSessionToRuntimeId(currentSessionId, realTitle);
+  // Promotion/realign changed the stored id: migrate every id-keyed runtime
+  // state (attach latch, foreground busy, assistant run, echo suppression,
+  // aggregator) to the runtime id — otherwise this turn's closing
+  // session.idle carries the real id, never matches the tracked placeholder,
+  // and the attached busy latch sticks until a full bot restart.
+  const storedIdAfter = getCurrentSession()?.id ?? null;
+  if (storedIdBefore && storedIdAfter && storedIdAfter === currentSessionId) {
+    rebindSessionRuntimeId(storedIdBefore, storedIdAfter);
+  }
 
   emitBotEvent("session.created", {
     sessionID: currentSessionId,
@@ -921,20 +932,36 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
   malformedRetryAttempt = 0;
   suppressNextTurnError = false;
   if (activeProcess && activeProcess.isRunning()) {
-    const effectiveModel = activeProcess.getModelId();
-    const storedNow = getStoredModel()?.modelID;
-    if (storedNow && effectiveModel !== storedNow) {
-      // The live process keeps its spawn-time --model; surface the mismatch
-      // instead of letting the prompt log (stored model) lie about it.
-      logger.warn(
-        `[AgyEvents] live agy model mismatch (running=${effectiveModel ?? "agy-default"} stored=${storedNow}) — applies on next spawn`,
+    // A `new-<ts>` placeholder session must never hot-write into a live
+    // process spawned for a previous conversation: no init event fires in
+    // that path, so the placeholder is never promoted to the real
+    // conversation id — the turn's closing session.idle then never matches
+    // the tracked session id and the attached busy latch sticks until a full
+    // bot restart. Spawn a fresh process instead: its init event reports the
+    // new conversation id and rebinds all state from the first turn.
+    if (getCurrentSession()?.id.startsWith("new-")) {
+      const staleProc = activeProcess;
+      activeProcess = null;
+      void staleProc.kill().catch(() => {});
+      logger.info(
+        "[AgyEvents] placeholder session with a live process — respawning fresh so init promotes the new conversation",
       );
+    } else {
+      const effectiveModel = activeProcess.getModelId();
+      const storedNow = getStoredModel()?.modelID;
+      if (storedNow && effectiveModel !== storedNow) {
+        // The live process keeps its spawn-time --model; surface the mismatch
+        // instead of letting the prompt log (stored model) lie about it.
+        logger.warn(
+          `[AgyEvents] live agy model mismatch (running=${effectiveModel ?? "agy-default"} stored=${storedNow}) — applies on next spawn`,
+        );
+      }
+      logger.info(
+        "[AgyEvents] prompt written to live agy process (in-flight take or follow-up turn)",
+      );
+      await activeProcess.sendPrompt(text);
+      return;
     }
-    logger.info(
-      "[AgyEvents] prompt written to live agy process (in-flight take or follow-up turn)",
-    );
-    await activeProcess.sendPrompt(text);
-    return;
   }
 
   if (!eventCallback) {

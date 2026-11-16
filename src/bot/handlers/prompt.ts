@@ -34,6 +34,7 @@ import {
   markAttachedSessionIdle,
 } from "../../app/services/attach-service.js";
 import { externalUserInputSuppressionManager } from "../../app/managers/external-input-suppression-manager.js";
+import { setPromptResponseModeRebinder } from "../../app/services/session-runtime-rebind-service.js";
 import { promptAttachment } from "../../app/managers/prompt-attachment-manager.js";
 import { resolvePendingAttachment } from "../../app/services/prompt-attachment-service.js";
 import {
@@ -51,6 +52,17 @@ import type { IncomingPrompt } from "../../app/types/prompt.js";
 let botInstance: Bot<Context> | null = null;
 let chatIdInstance: number | null = null;
 const promptResponseModes = new Map<string, PromptResponseMode>();
+
+// Follow session-id rebinds (placeholder -> real conversation id) so the
+// response mode chosen for a turn survives the id migration at init.
+setPromptResponseModeRebinder((oldId, newId) => {
+  const mode = promptResponseModes.get(oldId);
+  if (!mode) {
+    return;
+  }
+  promptResponseModes.delete(oldId);
+  promptResponseModes.set(newId, mode);
+});
 
 export type PromptResponseMode = "text_only" | "text_and_tts";
 

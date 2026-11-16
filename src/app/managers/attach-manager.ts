@@ -86,6 +86,21 @@ class AttachManager {
     return true;
   }
 
+  /**
+   * Migrate the attached session to a new runtime id (e.g. a `new-<ts>`
+   * placeholder promoted to the real agy conversation id on init). Keeping the
+   * attached id in sync is what lets session.idle release the busy latch.
+   */
+  rebindSessionId(oldId: string, newId: string): boolean {
+    if (!this.state || this.state.sessionId !== oldId || oldId === newId) {
+      return false;
+    }
+
+    this.state.sessionId = newId;
+    logger.info(`[Attach] Rebound attached session id: ${oldId} -> ${newId}`);
+    return true;
+  }
+
   __resetForTests(): void {
     this.state = null;
   }
