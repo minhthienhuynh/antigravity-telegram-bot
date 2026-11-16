@@ -1,11 +1,12 @@
 import { InlineKeyboard } from "grammy";
+import path from "node:path";
+import { isPathWithinDirectory } from "../../app/services/file-browser-service.js";
 import {
   listConversations,
   type AntigravityConversation,
 } from "../../antigravity/session-store.js";
 import { getDateLocale, t } from "../../i18n/index.js";
 import { logger } from "../../utils/logger.js";
-import path from "node:path";
 
 export const SESSION_CALLBACK_PREFIX = "session:";
 const SESSION_PAGE_CALLBACK_PREFIX = "session:page:";
@@ -139,23 +140,29 @@ function formatSessionsSelectText(page: number): string {
 /**
  * True when the conversation was run inside `directory` (the workspace is the
  * directory itself or a descendant of it).
+ *
+ * NOTE: Matching uses logical paths via path.relative (consistent with
+ * `file-browser-service.ts:isPathWithinDirectory`). Filesystem symlinks are
+ * intentionally not resolved via realpathSync to avoid synchronous disk I/O
+ * and failures on unmounted or deleted paths. Configure `currentProject.worktree`
+ * consistently with the path opened in the CLI.
  */
 export function workspaceBelongsToDirectory(workspace: string, directory: string): boolean {
-  const normalizedWorkspace = path.resolve(workspace);
-  const normalizedDirectory = path.resolve(directory);
-  return (
-    normalizedWorkspace === normalizedDirectory ||
-    normalizedWorkspace.startsWith(`${normalizedDirectory}${path.sep}`)
-  );
+  if (!path.isAbsolute(workspace) && !path.win32.isAbsolute(workspace)) {
+    return false;
+  }
+  return isPathWithinDirectory(workspace, directory);
 }
 
 /**
  * Filter conversations for the `/sessions` list of a project:
  * - subagent/child conversations (parent_conversation_id set) are dropped;
- * - conversations whose recorded workspace belongs to the directory come first;
- * - conversations with no workspace info yet (fresh, first turn pending) are
- *   kept at the end so a brand-new conversation never disappears from the list.
- * Order stays newest-first within each group.
+ * - conversations whose recorded workspace belongs to the directory, plus
+ *   conversations with no workspace info yet (fresh, first turn pending),
+ *   are included;
+ * - conversations recorded in other disjoint workspaces are excluded.
+ * The final list is sorted newest-first by lastModified timestamp across all
+ * candidates, so fresh sessions appear at the top of page 1.
  */
 export function filterConversationsForDirectory(
   conversations: AntigravityConversation[],
@@ -172,13 +179,15 @@ export function filterConversationsForDirectory(
       unknown.push(conversation);
     }
   }
-  return [...owned, ...unknown];
+  return [...owned, ...unknown].sort(
+    (a, b) => b.lastModified.getTime() - a.lastModified.getTime(),
+  );
 }
 
 /**
  * Page through real agy conversations (newest first), filtered for the
- * project `directory`: workspace-matched conversations first, conversations
- * without workspace info yet appended at the end.
+ * project `directory`: workspace-matched conversations and fresh conversations
+ * without workspace info yet, sorted newest-first.
  */
 export async function loadSessionPage(
   directory: string,
