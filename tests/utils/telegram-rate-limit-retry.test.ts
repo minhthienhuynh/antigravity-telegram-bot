@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getTelegramRetryAfterMs,
+  isTransientTelegramNetworkError,
   isTransientTelegramServerError,
+  isUnsentTelegramNetworkError,
   withTelegramRateLimitRetry,
 } from "../../src/utils/telegram-rate-limit-retry.js";
 
@@ -32,6 +34,92 @@ describe("utils/telegram-rate-limit-retry", () => {
     const promise = withTelegramRateLimitRetry(operation, { maxRetries: 2 });
 
     await vi.advanceTimersByTimeAsync(1000);
+
+    await expect(promise).resolves.toBe("ok");
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+
+  it("detects connection-not-established errors on a wrapped fetch error", () => {
+    expect(isUnsentTelegramNetworkError({ error: { code: "ECONNREFUSED" } })).toBe(true);
+    expect(isUnsentTelegramNetworkError({ error: { code: "ENOTFOUND" } })).toBe(true);
+    expect(isUnsentTelegramNetworkError({ error: { code: "EAI_AGAIN" } })).toBe(true);
+    expect(isUnsentTelegramNetworkError({ error: { type: "request-timeout" } })).toBe(true);
+    expect(isUnsentTelegramNetworkError({ error: { code: "ECONNRESET" } })).toBe(false);
+    expect(
+      isUnsentTelegramNetworkError(
+        Object.assign(
+          new Error(
+            "Client network socket disconnected before secure TLS connection was established",
+          ),
+          { code: "ECONNRESET" },
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      isUnsentTelegramNetworkError(new Error("Network request for 'sendMessage' failed!")),
+    ).toBe(false);
+  });
+
+  it("retries connection-not-established errors and does not retry a reset after write", async () => {
+    vi.useFakeTimers();
+
+    const refused = Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" });
+    const operation = vi.fn().mockRejectedValueOnce(refused).mockResolvedValueOnce("ok");
+    const promise = withTelegramRateLimitRetry(operation, {
+      maxRetries: 2,
+      fallbackDelayMs: 500,
+    });
+    await vi.advanceTimersByTimeAsync(500);
+    await expect(promise).resolves.toBe("ok");
+    expect(operation).toHaveBeenCalledTimes(2);
+
+    const reset = Object.assign(new Error("socket hang up"), { code: "ECONNRESET" });
+    const resetOperation = vi.fn().mockRejectedValueOnce(reset);
+    await expect(withTelegramRateLimitRetry(resetOperation, { maxRetries: 2 })).rejects.toThrow(
+      "socket hang up",
+    );
+    expect(resetOperation).toHaveBeenCalledTimes(1);
+  });
+
+  it("prioritizes a system network code over status-like URL text", async () => {
+    vi.useFakeTimers();
+    const networkError = Object.assign(
+      new Error("request to https://api.telegram.org/file/bot***/files/502/x.pdf failed"),
+      { code: "ECONNREFUSED" },
+    );
+    const rateLimitLikeNetworkError = Object.assign(
+      new Error(
+        "request to https://api.telegram.org/file/bot***/files/429/retry after 99/x.pdf failed",
+      ),
+      { code: "ECONNREFUSED" },
+    );
+    expect(isTransientTelegramServerError(networkError)).toBe(false);
+    expect(getTelegramRetryAfterMs(networkError, 500)).toBe(500);
+    expect(getTelegramRetryAfterMs(rateLimitLikeNetworkError, 500)).toBe(500);
+    const operation = vi.fn().mockRejectedValueOnce(networkError).mockResolvedValueOnce("ok");
+    const promise = withTelegramRateLimitRetry(operation, {
+      maxRetries: 2,
+      fallbackDelayMs: 500,
+    });
+
+    await vi.advanceTimersByTimeAsync(500);
+
+    await expect(promise).resolves.toBe("ok");
+    expect(operation).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries broader transient network errors only when explicitly enabled", async () => {
+    vi.useFakeTimers();
+    const reset = Object.assign(new Error("socket hang up"), { code: "ECONNRESET" });
+    expect(isTransientTelegramNetworkError(reset)).toBe(true);
+    const operation = vi.fn().mockRejectedValueOnce(reset).mockResolvedValueOnce("ok");
+    const promise = withTelegramRateLimitRetry(operation, {
+      maxRetries: 2,
+      fallbackDelayMs: 500,
+      retryTransientNetworkErrors: true,
+    });
+
+    await vi.advanceTimersByTimeAsync(500);
 
     await expect(promise).resolves.toBe("ok");
     expect(operation).toHaveBeenCalledTimes(2);
