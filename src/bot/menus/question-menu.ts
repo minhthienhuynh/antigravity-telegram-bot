@@ -231,21 +231,9 @@ async function sendAllAnswersToAgent(bot: Context["api"], chatId: number): Promi
   const allAnswers: string[][] = [];
 
   for (let i = 0; i < totalQuestions; i++) {
-    const customAnswer = questionManager.getCustomAnswer(i);
-    const selectedAnswer = questionManager.getSelectedAnswer(i);
-
-    // Priority: custom answer > selected options
-    const answer = customAnswer || selectedAnswer || "";
-
-    if (answer) {
-      // Split by newlines if multiple options were selected (in multiple choice mode)
-      // Each option is formatted as "* Label: Description"
-      const answerParts = answer.split("\n").filter((part) => part.trim());
-      allAnswers.push(answerParts);
-    } else {
-      // Empty answer for unanswered questions
-      allAnswers.push([]);
-    }
+    // getAnswerItems keeps ticked options AND a ticked custom answer for
+    // multi-select questions; single-select still prefers the custom answer.
+    allAnswers.push(questionManager.getAnswerItems(i));
   }
 
   logger.info(

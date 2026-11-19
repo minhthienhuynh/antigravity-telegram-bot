@@ -1,8 +1,6 @@
 import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { busyDeps, detachDeps } from "../../app/bootstrap/singleton-deps.js";
-import { questionManager } from "../../app/managers/question-manager.js";
-import { permissionManager } from "../../app/managers/permission-manager.js";
 import type { Bot, Context } from "grammy";
 import { config } from "../../config.js";
 import type { CommandCatalogItem } from "../../app/services/command-catalog-service.js";
@@ -247,7 +245,7 @@ export async function executeCommand(
     bot: deps.bot,
     chatId: ctx.chat.id,
     session,
-    ensureEventSubscription: deps.ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
+    ensureEventSubscription: deps.ensureEventSubscription });
 
   const sessionIsBusy = await isSessionBusy(session.id, session.directory);
   if (sessionIsBusy) {

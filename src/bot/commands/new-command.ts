@@ -1,10 +1,5 @@
 import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
-import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
-import { questionManager } from "../../app/managers/question-manager.js";
-import { permissionManager } from "../../app/managers/permission-manager.js";
-import { attachManager } from "../../app/managers/attach-manager.js";
 import type { Bot } from "grammy";
 import { CommandContext, Context } from "grammy";
 import { setCurrentSession, clearSession } from "../../app/services/session-service.js";
@@ -65,7 +60,7 @@ export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandD
       bot: deps.bot,
       chatId: ctx.chat.id,
       session: sessionInfo,
-      ensureEventSubscription: deps.ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
+      ensureEventSubscription: deps.ensureEventSubscription });
 
     // Get current state for keyboard
     const currentAgent = await resolveProjectAgent(getStoredAgent());

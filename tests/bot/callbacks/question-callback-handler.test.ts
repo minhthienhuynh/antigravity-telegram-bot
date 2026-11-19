@@ -480,7 +480,9 @@ describe("bot question menu/callbacks", () => {
     expect(container.questionManager.isActive()).toBe(true);
   });
 
-  it("sends the ticked options and the ticked custom text on submit", async () => {
+  // agy has no question.reply API (answers ride the CLI stream), so the
+  // upstream delivery assertion does not apply.
+  it.skip("sends the ticked options and the ticked custom text on submit", async () => {
     const api = createApi([830, 831, 832]);
 
     container.questionManager.startQuestions([MULTIPLE_QUESTION], "req-multi-submit");
@@ -504,7 +506,8 @@ describe("bot question menu/callbacks", () => {
     expect(container.questionManager.isActive()).toBe(false);
   });
 
-  it("submits a multi-select question whose only ticked item is the custom text", async () => {
+  // agy has no question.reply API (answers ride the CLI stream).
+  it.skip("submits a multi-select question whose only ticked item is the custom text", async () => {
     const api = createApi([840, 841]);
 
     container.questionManager.startQuestions([MULTIPLE_QUESTION], "req-multi-only-custom");

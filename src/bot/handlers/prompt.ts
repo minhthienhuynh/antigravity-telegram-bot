@@ -3,8 +3,6 @@ import type { AssistantRunState } from "../../app/managers/assistant-run-state-m
 import type { ForegroundSessionState } from "../../app/managers/foreground-session-state-manager.js";
 import type { AttachManager } from "../../app/managers/attach-manager.js";
 import { busyDeps, detachDeps } from "../../app/bootstrap/singleton-deps.js";
-import { questionManager } from "../../app/managers/question-manager.js";
-import { permissionManager } from "../../app/managers/permission-manager.js";
 import { Bot, Context } from "grammy";
 import { startTypingIndicator } from "../typing-indicator.js";
 import {
@@ -224,7 +222,7 @@ export async function processUserPrompt(
     bot,
     chatId: ctx.chat!.id,
     session: currentSession,
-    ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
+    ensureEventSubscription });
 
   if (createdNewSession) {
     const currentAgent = await resolveProjectAgent(getStoredAgent());

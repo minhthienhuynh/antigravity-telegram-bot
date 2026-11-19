@@ -1,9 +1,5 @@
 import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { busyDeps, inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
-import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
-import { questionManager } from "../../app/managers/question-manager.js";
-import { permissionManager } from "../../app/managers/permission-manager.js";
-import { attachManager } from "../../app/managers/attach-manager.js";
 import type { Bot, Context } from "grammy";
 import { getStoredModel } from "../../app/services/model-selection-service.js";
 import { setCurrentSession } from "../../app/services/session-service.js";
@@ -99,7 +95,7 @@ export async function selectSessionById(
       bot: deps.bot,
       chatId: ctx.chat!.id,
       session: sessionInfo,
-      ensureEventSubscription: deps.ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
+      ensureEventSubscription: deps.ensureEventSubscription });
   } catch (err) {
     if (loadingMessageId) {
       try {

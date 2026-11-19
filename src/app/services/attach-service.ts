@@ -48,7 +48,7 @@ type AttachRestoreDeps = Pick<
   "attachManager" | "permissionManager" | "questionManager" | "summaryAggregator" | "interactionManager"
 >;
 
-export interface AttachSessionDeps extends AttachRestoreDeps {
+export interface AttachSessionDeps extends Partial<AttachRestoreDeps> {
   bot: Bot<Context>;
   chatId: number;
   session: SessionInfo;
@@ -162,10 +162,8 @@ async function restorePendingPermissions(
 
 export async function attachToSession(deps: AttachSessionDeps): Promise<AttachSessionResult> {
   const { bot, chatId, session, ensureEventSubscription, forceFullRestore = false } = deps;
-  const { attachManager, permissionManager, questionManager, summaryAggregator } = {
-    ...attachSessionDeps,
-    ...deps,
-  };
+  const managers = { ...attachSessionDeps, ...deps } as AttachRestoreDeps;
+  const { attachManager, permissionManager, questionManager, summaryAggregator } = managers;
   const alreadyAttached = attachManager.isAttachedSession(session.id, session.directory);
 
   await attachPresentation?.ensurePinnedSession({
@@ -199,10 +197,10 @@ export async function attachToSession(deps: AttachSessionDeps): Promise<AttachSe
     !questionManager.isActive() &&
     !permissionManager.isActive()
   ) {
-    restoredQuestion = await restorePendingQuestion(deps, bot, chatId, session.id, session.directory);
+    restoredQuestion = await restorePendingQuestion(managers, bot, chatId, session.id, session.directory);
 
     await restorePendingPermissions(
-      deps,
+      managers,
       bot,
       chatId,
       session.id,
