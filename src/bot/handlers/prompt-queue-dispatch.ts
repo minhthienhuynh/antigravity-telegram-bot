@@ -13,7 +13,7 @@ import {
 } from "../../app/services/prompt-inbox-service.js";
 import { isForegroundBusy } from "../../app/services/run-control-service.js";
 import { getCurrentSession } from "../../app/services/session-service.js";
-import { getPromptQueueMode } from "../../app/stores/settings-store.js";
+import { getPromptQueueEnabled, getPromptQueueMode } from "../../app/stores/settings-store.js";
 import { t } from "../../i18n/index.js";
 import { opencodeServerVersion } from "../../opencode/client.js";
 import { logger } from "../../utils/logger.js";
@@ -50,7 +50,9 @@ function isBusy(): boolean {
 }
 
 function isPromptQueueEnabled(): boolean {
-  return getPromptQueueMode() !== "off";
+  // agy (v1) uses the released on/off flag; the steer mode only applies to
+  // the dormant OpenCode V2 backend.
+  return getPromptQueueEnabled() || getPromptQueueMode() === "steer";
 }
 
 /** On OpenCode V2 busy-time prompts wait in the session inbox, not in the bot. */
