@@ -126,6 +126,7 @@ export const en = {
     "⏳ Agent is already running a task. Wait for completion or use /abort to interrupt current run.",
   "bot.session_reset_project_mismatch":
     "⚠️ Active session does not match the selected project, so it was reset. Use /sessions to pick one or /new to create a new session.",
+<<<<<<< HEAD
   "bot.prompt_send_error": "Failed to send request to Antigravity.",
   "bot.session_error": "🔴 Antigravity returned an error: {message}",
   "bot.retrying":
@@ -133,6 +134,14 @@ export const en = {
   "bot.retry_recovered": "✅ Antigravity is back — continuing.",
   "bot.retry_exhausted":
     "❌ Antigravity stayed unavailable — retries exhausted. Resend your message when the service recovers.",
+=======
+  "bot.prompt_send_error": "Failed to send request to OpenCode.",
+  "bot.session_error": "🔴 OpenCode returned an error: {message}",
+  "bot.assistant_reply_undelivered":
+    "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
+  "bot.stale_messages_skipped":
+    "⚠️ Some messages were skipped while Telegram was unreachable. Please send them again.",
+>>>>>>> bef86bb
   "bot.session_retry":
     "🔁 {message}\n\nProvider keeps returning the same error on repeated retries. Use /abort to abort.",
   "bot.external_user_input": "External user input",

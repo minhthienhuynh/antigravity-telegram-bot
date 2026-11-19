@@ -1,7 +1,13 @@
 {
+<<<<<<< HEAD
   "name": "antigravity-telegram-bot",
   "version": "0.25.2",
   "description": "Telegram bot client for the Google Antigravity CLI (agy) via stream-json.",
+=======
+  "name": "@grinev/opencode-telegram-bot",
+  "version": "0.25.3",
+  "description": "Telegram bot client for OpenCode to run and monitor coding tasks from chat.",
+>>>>>>> bef86bb
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
@@ -79,12 +85,12 @@
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.9.6",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }

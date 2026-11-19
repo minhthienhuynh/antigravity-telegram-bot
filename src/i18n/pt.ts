@@ -129,11 +129,20 @@ export const pt: I18nDictionary = {
     "⏳ O agente já está executando uma tarefa. Aguarde a conclusão ou use /abort para interromper a execução atual.",
   "bot.session_reset_project_mismatch":
     "⚠️ A sessão ativa não corresponde ao projeto selecionado, então ela foi redefinida. Use /sessions para escolher uma ou /new para criar uma nova sessão.",
+<<<<<<< HEAD
   "bot.prompt_send_error": "Não foi possível enviar a solicitação ao Antigravity.",
   "bot.session_error": "🔴 O Antigravity retornou um erro: {message}",
   "bot.retrying": "⚠️ Serviço Antigravity indisponível (503) — tentando novamente automaticamente… tentativa {attempt}/{max}, próxima tentativa em ~{seconds}s.",
   "bot.retry_recovered": "✅ O Antigravity voltou — continuando.",
   "bot.retry_exhausted": "❌ O Antigravity continuou indisponível — tentativas esgotadas. Reenvie sua mensagem quando o serviço se recuperar.",
+=======
+  "bot.prompt_send_error": "Não foi possível enviar a solicitação ao OpenCode.",
+  "bot.session_error": "🔴 O OpenCode retornou um erro: {message}",
+  "bot.assistant_reply_undelivered":
+    "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
+  "bot.stale_messages_skipped":
+    "⚠️ Some messages were skipped while Telegram was unreachable. Please send them again.",
+>>>>>>> bef86bb
   "bot.session_retry":
     "🔁 {message}\n\nO provedor continua retornando o mesmo erro nas novas tentativas. Use /abort para abortar.",
   "bot.external_user_input": "Entrada externa do usuário",

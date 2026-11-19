@@ -1,7 +1,15 @@
 import { execFile } from "node:child_process";
 import { logger } from "../../utils/logger.js";
+<<<<<<< HEAD
 import { config } from "../../config.js";
 import type { ParsedTaskSchedule } from "../types/scheduled-task.js";
+=======
+import {
+  cleanupScheduledTaskSessionIgnores,
+  registerScheduledTaskSessionIgnore,
+} from "./scheduled-task-session-ignore-service.js";
+import type { ParsedTaskSchedule, ScheduledTaskModel } from "../types/scheduled-task.js";
+>>>>>>> bef86bb
 
 /**
  * Schedule parser (agy version).
@@ -30,6 +38,7 @@ function agyPrint(prompt: string, directory: string): Promise<string> {
 export async function parseTaskSchedule(
   scheduleText: string,
   directory: string,
+  model?: ScheduledTaskModel,
 ): Promise<ParsedTaskSchedule> {
   logger.info(`[ScheduledTaskScheduleParser] Parsing schedule via agy one-shot: ${scheduleText}`);
 
@@ -44,9 +53,84 @@ export async function parseTaskSchedule(
   const cleaned = stdout.trim().replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
   let parsed: Record<string, unknown>;
   try {
+<<<<<<< HEAD
     parsed = JSON.parse(cleaned) as Record<string, unknown>;
   } catch {
     throw new Error("Schedule parsing returned invalid JSON from Antigravity");
+=======
+    logger.debug(
+      `[ScheduledTaskScheduleParser] Parsing schedule: directory=${trimmedDirectory}, textLength=${trimmedScheduleText.length}`,
+    );
+    await cleanupScheduledTaskSessionIgnores();
+
+    const { data: session, error: createError } = await opencodeClient.session.create({
+      directory: trimmedDirectory,
+      title: SCHEDULE_PARSE_SESSION_TITLE,
+    });
+
+    if (createError || !session) {
+      throw createError || new Error("Failed to create temporary schedule parser session");
+    }
+
+    sessionId = session.id;
+    await registerScheduledTaskSessionIgnore(session.id);
+    logger.debug(`[ScheduledTaskScheduleParser] Created temporary session: sessionId=${session.id}`);
+
+    const promptOptions: {
+      sessionID: string;
+      directory: string;
+      system: string;
+      parts: Array<{ type: "text"; text: string }>;
+      model?: { providerID: string; modelID: string };
+      variant?: string;
+    } = {
+      sessionID: session.id,
+      directory: session.directory,
+      system:
+        "You are a schedule parser. Your only job is to convert user schedule text into strict JSON output.",
+      parts: [{ type: "text", text: buildSchedulePrompt(trimmedScheduleText, timezone) }],
+    };
+
+    if (model?.providerID && model.modelID) {
+      promptOptions.model = {
+        providerID: model.providerID,
+        modelID: model.modelID,
+      };
+    }
+
+    if (model?.variant) {
+      promptOptions.variant = model.variant;
+    }
+
+    const { data: response, error: promptError } = await opencodeClient.session.prompt(
+      promptOptions,
+    );
+
+    if (promptError || !response) {
+      throw promptError || new Error("Failed to parse schedule");
+    }
+
+    const responseText = collectResponseText(response.parts);
+    logger.debug(
+      `[ScheduledTaskScheduleParser] Received parser response: sessionId=${session.id}, textLength=${responseText.length}`,
+    );
+    if (!responseText) {
+      throw new Error("Schedule parser returned an empty response");
+    }
+
+    return parseSchedulePayload(responseText);
+  } finally {
+    if (sessionId) {
+      try {
+        await opencodeClient.session.delete({ sessionID: sessionId });
+      } catch (error) {
+        logger.warn(
+          `[ScheduledTaskScheduleParser] Failed to delete temporary session: sessionId=${sessionId}`,
+          error,
+        );
+      }
+    }
+>>>>>>> bef86bb
   }
 
   const kind = parsed.kind;

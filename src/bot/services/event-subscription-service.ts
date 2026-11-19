@@ -92,6 +92,8 @@ import {
 } from "../messages/thinking-rendering.js";
 import { deliverExternalUserInputNotification } from "../messages/external-user-input-notification.js";
 import { dispatchNextQueuedPrompt } from "../handlers/prompt-queue-dispatch.js";
+import { telegramOutageNoticeService } from "../../app/services/telegram-outage-notice-service.js";
+import { flushTelegramOutageNotices } from "../telegram-outage-notices.js";
 import {
   backgroundSessionTracker,
   type BackgroundSessionNotification,
@@ -779,14 +781,22 @@ class EventSubscriptionService implements BotEventSubscriptionService {
           });
         } catch (err) {
           clearPromptResponseMode(sessionId);
+          this.clearAssistantResponseStream(sessionId, messageId, "assistant_finalize_failed");
           this.clearThinkingStream(sessionId, messageId, "assistant_finalize_failed");
+          this.toolCallStreamer.clearSession(sessionId, "assistant_finalize_failed");
           this.compactProgressStreamer.clearSession(sessionId, "assistant_finalize_failed");
+          this.clearToolElapsedState(sessionId, "assistant_finalize_failed");
           assistantRunState.clearRun(sessionId, "assistant_finalize_failed");
           logger.error("Failed to send message to Telegram:", err);
           logger.error(`[Bot] Dropped the assistant response for session ${sessionId}`);
+<<<<<<< HEAD
           summaryAggregator.clear();
           this.stopTypingIndicator(sessionId);
+=======
+>>>>>>> bef86bb
           foregroundSessionState.markIdle(sessionId);
+          telegramOutageNoticeService.markAssistantReplyUndelivered();
+          await flushTelegramOutageNotices({ api: botApi, chatId });
         } finally {
           await scheduledTaskRuntime.flushDeferredDeliveries();
         }
