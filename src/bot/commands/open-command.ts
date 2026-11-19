@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getBrowserRoots } from "../../app/services/file-browser-service.js";
@@ -15,7 +16,7 @@ export type OpenCommandDeps = Pick<
 
 export async function openCommand(
   ctx: CommandContext<Context>,
-  deps: OpenCommandDeps,
+  deps: OpenCommandDeps = containerDeps,
 ): Promise<void> {
   try {
     if (isForegroundBusy(deps)) {

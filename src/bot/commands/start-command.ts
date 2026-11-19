@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { createMainKeyboard } from "../keyboards/main-reply-keyboard.js";
@@ -13,7 +14,7 @@ import { detachAttachedSession } from "../../app/services/attach-service.js";
 export type StartCommandDeps = AbortCommandDeps &
   Pick<AppContainer, "keyboardManager" | "pinnedMessageManager" | "resetAggregator">;
 
-export async function startCommand(ctx: Context, deps: StartCommandDeps): Promise<void> {
+export async function startCommand(ctx: Context, deps: StartCommandDeps = containerDeps): Promise<void> {
   if (ctx.chat) {
     if (!deps.pinnedMessageManager.isInitialized()) {
       deps.pinnedMessageManager.initialize(ctx.api, ctx.chat.id);

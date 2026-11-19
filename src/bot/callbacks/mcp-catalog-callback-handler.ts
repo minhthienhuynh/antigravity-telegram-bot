@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type { McpCatalogServerItem } from "../../app/services/mcp-catalog-service.js";
@@ -108,7 +109,7 @@ function clearMcpsInteraction(deps: McpsCallbackDeps, reason: string): void {
   }
 }
 
-export async function handleMcpsCallback(ctx: Context, deps: McpsCallbackDeps): Promise<boolean> {
+export async function handleMcpsCallback(ctx: Context, deps: McpsCallbackDeps = containerDeps): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(MCPS_CALLBACK_PREFIX)) {
     return false;

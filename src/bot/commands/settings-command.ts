@@ -1,10 +1,11 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import { buildSettingsMenuView } from "../menus/settings-menu.js";
 import { replyWithInlineMenu, type InlineMenuDeps } from "../menus/inline-menu.js";
 
 export async function settingsCommand(
   ctx: CommandContext<Context>,
-  deps: InlineMenuDeps,
+  deps: InlineMenuDeps = containerDeps,
 ): Promise<void> {
   const { text, keyboard } = buildSettingsMenuView();
 

@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { busyDeps, inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
 import { questionManager } from "../../app/managers/question-manager.js";
@@ -163,7 +164,7 @@ function shouldBlockBackgroundSessionOpen(): boolean {
 
 export async function handleBackgroundSessionOpen(
   ctx: Context,
-  deps: SessionSelectDeps,
+  deps: SessionSelectDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data) {
@@ -202,7 +203,7 @@ export async function handleBackgroundSessionOpen(
   return true;
 }
 
-export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps): Promise<boolean> {
+export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps = containerDeps): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
   if (!callbackQuery?.data || !callbackQuery.data.startsWith(SESSION_CALLBACK_PREFIX)) {
     return false;

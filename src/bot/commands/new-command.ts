@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
 import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
@@ -32,7 +33,7 @@ export interface NewCommandDeps {
  * The conversation id is cleared so the next prompt spawns agy without
  * `--conversation`, and agy creates a brand-new conversation .db.
  */
-export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandDeps) {
+export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandDeps = containerDeps) {
   try {
     if (isForegroundBusy(busyDeps)) {
       await replyBusyBlocked(ctx);

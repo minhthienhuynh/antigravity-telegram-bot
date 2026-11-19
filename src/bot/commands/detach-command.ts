@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
@@ -20,7 +21,7 @@ export type DetachCommandDeps = Pick<
 
 export async function detachCommand(
   ctx: CommandContext<Context>,
-  deps: DetachCommandDeps,
+  deps: DetachCommandDeps = containerDeps,
 ): Promise<void> {
   try {
     const currentProject = getCurrentProject();

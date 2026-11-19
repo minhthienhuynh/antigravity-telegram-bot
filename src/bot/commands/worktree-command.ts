@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getGitWorktreeContext } from "../../app/services/worktree-service.js";
@@ -27,7 +28,7 @@ export type WorktreeCommandDeps = Pick<
 
 export async function worktreeCommand(
   ctx: CommandContext<Context>,
-  deps: WorktreeCommandDeps,
+  deps: WorktreeCommandDeps = containerDeps,
 ) {
   try {
     if (isForegroundBusy(deps)) {

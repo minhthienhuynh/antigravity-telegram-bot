@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getCurrentSession } from "../../app/services/session-service.js";
@@ -9,7 +10,7 @@ export type RenameCommandDeps = Pick<AppContainer, "interactionManager" | "renam
 
 export async function renameCommand(
   ctx: CommandContext<Context>,
-  deps: RenameCommandDeps,
+  deps: RenameCommandDeps = containerDeps,
 ): Promise<void> {
   try {
     const currentSession = getCurrentSession();

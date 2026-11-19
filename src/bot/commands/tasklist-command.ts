@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { t } from "../../i18n/index.js";
@@ -23,7 +24,7 @@ export type TaskListCommandDeps = Pick<AppContainer, "interactionManager">;
 
 export async function taskListCommand(
   ctx: CommandContext<Context>,
-  deps: TaskListCommandDeps,
+  deps: TaskListCommandDeps = containerDeps,
 ): Promise<void> {
   try {
     const tasks = sortTasks(listScheduledTasks());

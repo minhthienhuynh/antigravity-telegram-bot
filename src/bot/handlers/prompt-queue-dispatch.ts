@@ -289,7 +289,7 @@ export async function dispatchNextQueuedPrompt(): Promise<void> {
     const notification = buildExternalUserInputNotification(item.displayText);
     if (notification && ctx.chat) {
       try {
-        const keyboard = deps.keyboardManager.getKeyboard();
+        const keyboard = deps.keyboardManager?.getKeyboard();
         await sendBotText({
           api: ctx.api,
           chatId: ctx.chat.id,
@@ -323,7 +323,7 @@ export async function dispatchNextQueuedPrompt(): Promise<void> {
 }
 
 async function replyWithKeyboard(ctx: Context, text: string): Promise<void> {
-  const keyboard = promptDeps?.keyboardManager.getKeyboard();
+  const keyboard = promptDeps?.keyboardManager?.getKeyboard();
   await ctx.reply(text, keyboard ? { reply_markup: keyboard } : {}).catch((err) => {
     logger.error("[PromptQueue] Failed to send queue reply:", err);
   });

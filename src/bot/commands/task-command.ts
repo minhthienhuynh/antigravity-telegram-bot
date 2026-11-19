@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { randomUUID } from "node:crypto";
 import { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
@@ -295,7 +296,7 @@ function buildScheduledTask(
 
 export async function taskCommand(
   ctx: CommandContext<Context>,
-  deps: TaskCommandDeps,
+  deps: TaskCommandDeps = containerDeps,
 ): Promise<void> {
   const currentProject = getCurrentProject();
   if (!currentProject) {
@@ -332,7 +333,7 @@ export async function taskCommand(
   deps.taskCreationManager.setScheduleRequestMessageId(message.message_id);
 }
 
-export async function handleTaskTextInput(ctx: Context, deps: TaskCommandDeps): Promise<boolean> {
+export async function handleTaskTextInput(ctx: Context, deps: TaskCommandDeps = containerDeps): Promise<boolean> {
   const text = ctx.message?.text;
   if (text === undefined || text.startsWith("/")) {
     return false;

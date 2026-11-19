@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getProjects } from "../../app/services/project-service.js";
@@ -16,7 +17,7 @@ export type ProjectsCommandDeps = Pick<
 
 export async function projectsCommand(
   ctx: CommandContext<Context>,
-  deps: ProjectsCommandDeps,
+  deps: ProjectsCommandDeps = containerDeps,
 ) {
   try {
     if (isForegroundBusy(deps)) {

@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getProjectRoot, isWithinProjectRoot } from "../../app/services/file-browser-service.js";
@@ -15,7 +16,7 @@ export type LsCommandDeps = Pick<
 
 export async function lsCommand(
   ctx: CommandContext<Context>,
-  deps: LsCommandDeps,
+  deps: LsCommandDeps = containerDeps,
 ): Promise<void> {
   if (isForegroundBusy(deps)) {
     await replyBusyBlocked(ctx);

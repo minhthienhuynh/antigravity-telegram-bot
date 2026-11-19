@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
@@ -175,7 +176,7 @@ export async function executeSkill(
 
 export async function handleSkillsCallback(
   ctx: Context,
-  deps: SkillsCallbackDeps,
+  deps: SkillsCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(SKILLS_CALLBACK_PREFIX)) {

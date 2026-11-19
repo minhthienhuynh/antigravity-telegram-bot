@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { busyDeps, detachDeps } from "../../app/bootstrap/singleton-deps.js";
 import { questionManager } from "../../app/managers/question-manager.js";
@@ -303,7 +304,7 @@ export async function executeCommand(
 
 export async function handleCommandsCallback(
   ctx: Context,
-  deps: ExecuteCommandDeps,
+  deps: ExecuteCommandDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(COMMANDS_CALLBACK_PREFIX)) {
