@@ -1,3 +1,7 @@
+import { attachManager } from "../../app/managers/attach-manager.js";
+import { foregroundSessionState } from "../../app/managers/foreground-session-state-manager.js";
+import { assistantRunState } from "../../app/managers/assistant-run-state-manager.js";
+import { keyboardManager } from "../keyboards/keyboard-manager.js";
 import { busyDeps, containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import {
@@ -47,7 +51,13 @@ export function initializePromptQueueDispatch(deps: ProcessPromptDeps): void {
 }
 
 function isBusy(): boolean {
-  return isForegroundBusy(promptDeps ?? busyDeps);
+  if (!promptDeps) {
+    return isForegroundBusy(busyDeps);
+  }
+  return isForegroundBusy({
+    attachManager: promptDeps.attachManager ?? attachManager,
+    foregroundSessionState: promptDeps.foregroundSessionState ?? foregroundSessionState,
+  });
 }
 
 function isPromptQueueEnabled(): boolean {
@@ -165,7 +175,7 @@ async function sendPromptToInbox(
     if (!promptQueue.releaseReservation(reservationId)) {
       return;
     }
-    if (!deps.assistantRunState.hasRun(admitted.sessionId)) {
+    if (!(deps.assistantRunState ?? assistantRunState).hasRun(admitted.sessionId)) {
       const session = getCurrentSession();
       if (session?.id === admitted.sessionId) {
         await startInboxPromptRun(session, deps, input.responseMode);
@@ -293,7 +303,7 @@ export async function dispatchNextQueuedPrompt(): Promise<void> {
     const notification = buildExternalUserInputNotification(item.displayText);
     if (notification && ctx.chat) {
       try {
-        const keyboard = deps.keyboardManager?.getKeyboard();
+        const keyboard = (deps.keyboardManager ?? keyboardManager)?.getKeyboard();
         await sendBotText({
           api: ctx.api,
           chatId: ctx.chat.id,
@@ -327,7 +337,7 @@ export async function dispatchNextQueuedPrompt(): Promise<void> {
 }
 
 async function replyWithKeyboard(ctx: Context, text: string): Promise<void> {
-  const keyboard = (promptDeps ?? containerDeps).keyboardManager?.getKeyboard();
+  const keyboard = ((promptDeps ?? containerDeps).keyboardManager ?? keyboardManager).getKeyboard();
   await ctx.reply(text, keyboard ? { reply_markup: keyboard } : {}).catch((err) => {
     logger.error("[PromptQueue] Failed to send queue reply:", err);
   });

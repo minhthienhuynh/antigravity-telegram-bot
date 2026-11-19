@@ -1,3 +1,4 @@
+import { interactionManager } from "../../app/managers/interaction-manager.js";
 import type { Context } from "grammy";
 import { t } from "../../i18n/index.js";
 import {
@@ -21,7 +22,7 @@ export async function handleCommandTextArguments(
     return false;
   }
 
-  const metadata = parseCommandsMetadata(deps.interactionManager.getSnapshot());
+  const metadata = parseCommandsMetadata((deps.interactionManager ?? interactionManager).getSnapshot());
   if (!metadata || metadata.stage !== "confirm") {
     return false;
   }
@@ -56,7 +57,7 @@ export async function handleSkillTextArguments(
     return false;
   }
 
-  const metadata = parseSkillsMetadata(deps.interactionManager.getSnapshot());
+  const metadata = parseSkillsMetadata((deps.interactionManager ?? interactionManager).getSnapshot());
   if (!metadata || metadata.stage !== "confirm") {
     return false;
   }

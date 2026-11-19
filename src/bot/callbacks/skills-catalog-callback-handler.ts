@@ -1,3 +1,4 @@
+import { interactionManager } from "../../app/managers/interaction-manager.js";
 import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
@@ -140,12 +141,13 @@ export function parseSkillsMetadata(state: InteractionState | null): SkillsMetad
 export type SkillsCallbackDeps = ProcessPromptDeps & Pick<AppContainer, "interactionManager">;
 
 export function clearSkillsInteraction(
-  deps: Pick<AppContainer, "interactionManager">,
+  deps: { interactionManager?: AppContainer["interactionManager"] },
   reason: string,
 ): void {
-  const metadata = parseSkillsMetadata(deps.interactionManager.getSnapshot());
+  const manager = deps.interactionManager ?? interactionManager;
+  const metadata = parseSkillsMetadata(manager.getSnapshot());
   if (metadata) {
-    deps.interactionManager.clear(reason);
+    manager.clear(reason);
   }
 }
 

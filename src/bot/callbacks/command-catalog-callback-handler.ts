@@ -72,11 +72,7 @@ export interface ExecuteCommandParams {
 }
 
 export interface ExecuteCommandDeps {
-  interactionManager: import("../../app/managers/interaction-manager.js").InteractionManager;
-  attachManager: import("../../app/managers/attach-manager.js").AttachManager;
-  foregroundSessionState: import("../../app/managers/foreground-session-state-manager.js").ForegroundSessionState;
-  assistantRunState: import("../../app/managers/assistant-run-state-manager.js").AssistantRunState;
-  keyboardManager: import("../keyboards/keyboard-manager.js").KeyboardManager;
+  interactionManager?: import("../../app/managers/interaction-manager.js").InteractionManager;
   bot: Bot<Context>;
   ensureEventSubscription: (directory: string) => Promise<void>;
 }
@@ -175,7 +171,7 @@ export function parseCommandsMetadata(state: InteractionState | null): CommandsM
 }
 
 export function clearCommandsInteraction(
-  depsOrReason: Pick<AppContainer, "interactionManager"> | string,
+  depsOrReason: { interactionManager?: AppContainer["interactionManager"] } | string,
   maybeReason?: string,
 ): void {
   const reason = typeof depsOrReason === "string" ? depsOrReason : (maybeReason ?? "commands_interaction_clear");

@@ -118,10 +118,10 @@ async function resetMismatchedSessionContext(): Promise<void> {
 export interface ProcessPromptDeps {
   bot: Bot<Context>;
   ensureEventSubscription: (directory: string) => Promise<void>;
-  attachManager: AttachManager;
-  foregroundSessionState: ForegroundSessionState;
-  assistantRunState: AssistantRunState;
-  keyboardManager: KeyboardManager;
+  attachManager?: AttachManager;
+  foregroundSessionState?: ForegroundSessionState;
+  assistantRunState?: AssistantRunState;
+  keyboardManager?: KeyboardManager;
   downloadFile?: (
     api: Context["api"],
     fileId: string,

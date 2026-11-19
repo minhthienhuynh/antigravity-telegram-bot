@@ -162,7 +162,7 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
     await next();
   });
 
-  const voicePromptDeps = { ...appContainer, bot, ensureEventSubscription: deps.ensureEventSubscription };
+  const voicePromptDeps = { bot, ensureEventSubscription: deps.ensureEventSubscription };
 
   bot.on("message:voice", async (ctx) => {
     logger.debug(`[Bot] Received voice message, chatId=${ctx.chat.id}`);
@@ -179,7 +179,6 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
   bot.on(
     "message",
     createMediaGroupAttachmentMiddleware({
-      ...appContainer,
       bot,
       ensureEventSubscription: deps.ensureEventSubscription,
     }),
@@ -188,13 +187,13 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
   bot.on("message:photo", async (ctx) => {
     logger.debug(`[Bot] Received photo message, chatId=${ctx.chat.id}`);
     deps.setTelegramContext?.(bot, ctx.chat.id);
-    await handlePhotoMessage(ctx, { ...appContainer, bot, ensureEventSubscription: deps.ensureEventSubscription });
+    await handlePhotoMessage(ctx, { bot, ensureEventSubscription: deps.ensureEventSubscription });
   });
 
   bot.on("message:document", async (ctx) => {
     logger.debug(`[Bot] Received document message, chatId=${ctx.chat.id}`);
     deps.setTelegramContext?.(bot, ctx.chat.id);
-    await handleDocumentMessage(ctx, { ...appContainer, bot, ensureEventSubscription: deps.ensureEventSubscription });
+    await handleDocumentMessage(ctx, { bot, ensureEventSubscription: deps.ensureEventSubscription });
   });
 
   bot.on("message:text", async (ctx) => {
@@ -225,7 +224,7 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
       return;
     }
 
-    const promptDeps = { ...appContainer, bot, ensureEventSubscription: deps.ensureEventSubscription };
+    const promptDeps = { bot, ensureEventSubscription: deps.ensureEventSubscription };
     const handledCatalogTextArgs = await handleCatalogTextArguments(ctx, promptDeps);
     if (handledCatalogTextArgs) {
       return;
