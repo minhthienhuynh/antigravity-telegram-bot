@@ -120,4 +120,62 @@ describe("app/services/scheduled-task-schedule-parser-service", () => {
       "invalid JSON",
     );
   });
+
+  it("passes the provided model to the agy parser run", async () => {
+    mocked.execFileMock.mockImplementation(
+      (
+        _bin: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (err: Error | null, stdout: string) => void,
+      ) => {
+        cb(
+          null,
+          JSON.stringify({
+            kind: "once",
+            runAt: "2026-03-16T12:00:00.000Z",
+            timezone: "UTC",
+            summary: "Tomorrow at 12:00",
+            nextRunAt: "2026-03-16T12:00:00.000Z",
+          }),
+        );
+      },
+    );
+
+    await parseTaskSchedule("tomorrow at 12:00", "/workspace/repo", {
+      providerID: "antigravity",
+      modelID: "gemini-3.8-flash-high",
+      variant: null,
+    });
+
+    const args = mocked.execFileMock.mock.calls[0]?.[1] as string[];
+    expect(args).toContain("--model=gemini-3.8-flash-high");
+  });
+
+  it("omits the model flag when none is provided", async () => {
+    mocked.execFileMock.mockImplementation(
+      (
+        _bin: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (err: Error | null, stdout: string) => void,
+      ) => {
+        cb(
+          null,
+          JSON.stringify({
+            kind: "cron",
+            cron: "*/5 * * * *",
+            timezone: "UTC",
+            summary: "Every 5 minutes",
+            nextRunAt: "2026-03-15T10:05:00.000Z",
+          }),
+        );
+      },
+    );
+
+    await parseTaskSchedule("every 5 minutes", "/workspace/repo");
+
+    const args = mocked.execFileMock.mock.calls[0]?.[1] as string[];
+    expect(args.some((a) => a.startsWith("--model="))).toBe(false);
+  });
 });
