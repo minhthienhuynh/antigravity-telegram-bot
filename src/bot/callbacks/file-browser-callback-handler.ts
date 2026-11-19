@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { InlineKeyboard, type Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import {
@@ -95,7 +96,7 @@ export function rememberLsDirectory(userId: number | undefined, directory: strin
 
 export async function handleOpenCallback(
   ctx: Context,
-  deps: OpenCallbackDeps,
+  deps: OpenCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(OPEN_CALLBACK_PREFIX)) {
@@ -176,7 +177,7 @@ async function navigateOpenTo(ctx: Context, dirPath: string, page: number = 0): 
 async function selectDirectory(
   ctx: Context,
   directory: string,
-  deps: OpenCallbackDeps,
+  deps: OpenCallbackDeps = containerDeps,
 ): Promise<void> {
   const displayPath = pathToDisplayPath(directory);
 

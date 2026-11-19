@@ -1,3 +1,4 @@
+import { busyReconcileDeps } from "../bootstrap/singleton-deps.js";
 import type { AppContainer } from "../bootstrap/app-container.js";
 import type { ForegroundBusySession } from "../managers/foreground-session-state-manager.js";
 import { logger } from "../../utils/logger.js";
@@ -46,7 +47,7 @@ function getReconciliationTargets(
 
 export async function reconcileBusyStateNow(
   directory: string,
-  deps: BusyReconciliationDeps,
+  deps: BusyReconciliationDeps = busyReconcileDeps,
   _now: number = Date.now(),
 ): Promise<void> {
   if (!directory) {
@@ -73,9 +74,12 @@ export async function reconcileBusyStateNow(
 
 export async function reconcileBusyState(
   directory: string,
-  deps: BusyReconciliationDeps,
-  now: number = Date.now(),
+  depsOrNow?: BusyReconciliationDeps | number,
+  maybeNow?: number,
 ): Promise<void> {
+  const deps: BusyReconciliationDeps =
+    typeof depsOrNow === "number" ? busyReconcileDeps : (depsOrNow ?? busyReconcileDeps);
+  const now = typeof depsOrNow === "number" ? depsOrNow : (maybeNow ?? Date.now());
   if (!directory || inFlightDirectories.has(directory)) {
     return;
   }

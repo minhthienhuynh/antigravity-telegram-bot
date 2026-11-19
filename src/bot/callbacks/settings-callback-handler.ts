@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { isTtsConfigured } from "../../app/services/tts-service.js";
@@ -87,7 +88,7 @@ export type SettingsCallbackDeps = Pick<AppContainer, "interactionManager" | "pi
 
 export async function handleSettingsCallback(
   ctx: Context,
-  deps: SettingsCallbackDeps,
+  deps: SettingsCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const callbackData = ctx.callbackQuery?.data;
 

@@ -29,3 +29,8 @@ export async function getModelContextLimit(
   contextLimitCache.set(cacheKey, DEFAULT_CONTEXT_LIMIT);
   return DEFAULT_CONTEXT_LIMIT;
 }
+
+/** Test hook: drops the memoised limits. */
+export function __resetModelContextLimitCacheForTests(): void {
+  contextLimitCache.clear();
+}

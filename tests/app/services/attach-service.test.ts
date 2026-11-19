@@ -61,6 +61,8 @@ vi.mock("../../../src/opencode/client.js", () => ({
     },
     session: {
       status: mocked.sessionStatusMock,
+      get: vi.fn().mockResolvedValue({ data: null, error: null }),
+      messages: vi.fn().mockResolvedValue({ data: [], error: null }),
     },
     question: {
       list: mocked.questionListMock,

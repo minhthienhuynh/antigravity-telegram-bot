@@ -1,3 +1,4 @@
+import { attachSessionDeps } from "../bootstrap/singleton-deps.js";
 import { busyDeps, detachDeps } from "../bootstrap/singleton-deps.js";
 import type { Bot, Context } from "grammy";
 import { opencodeClient } from "../../opencode/client.js";
@@ -89,9 +90,9 @@ async function restorePendingQuestion(
   sessionId: string,
   directory: string,
 ): Promise<boolean> {
-  const { data, error } = await opencodeClient.question.list({
+  const { data, error } = (await opencodeClient.question.list({
     directory,
-  });
+  }) ?? {});
 
   if (error || !data) {
     if (isExpectedOpencodeUnavailableError(error)) {
@@ -121,9 +122,9 @@ async function restorePendingPermissions(
   questionActive: boolean,
   isAlreadyTracked: (request: PermissionRequest) => boolean = () => false,
 ): Promise<number> {
-  const { data, error } = await opencodeClient.permission.list({
+  const { data, error } = (await opencodeClient.permission.list({
     directory,
-  });
+  }) ?? {});
 
   if (error || !data) {
     if (isExpectedOpencodeUnavailableError(error)) {
@@ -161,7 +162,10 @@ async function restorePendingPermissions(
 
 export async function attachToSession(deps: AttachSessionDeps): Promise<AttachSessionResult> {
   const { bot, chatId, session, ensureEventSubscription, forceFullRestore = false } = deps;
-  const { attachManager, permissionManager, questionManager, summaryAggregator } = deps;
+  const { attachManager, permissionManager, questionManager, summaryAggregator } = {
+    ...attachSessionDeps,
+    ...deps,
+  };
   const alreadyAttached = attachManager.isAttachedSession(session.id, session.directory);
 
   await attachPresentation?.ensurePinnedSession({
@@ -186,7 +190,7 @@ export async function attachToSession(deps: AttachSessionDeps): Promise<AttachSe
   // the attached state busy/idle as turn events arrive.
   attachManager.markIdle(session.id);
 
-  await syncPinnedAttachState(deps);
+  await syncPinnedAttachState({ attachManager });
 
   let restoredQuestion = false;
 
@@ -254,10 +258,10 @@ async function dropSavedSessionIfMissing(
   session: SessionInfo,
   deps: Pick<AppContainer, "pinnedMessageManager">,
 ): Promise<boolean> {
-  const { error } = await opencodeClient.session.get({
+  const { error } = (await opencodeClient.session.get({
     sessionID: session.id,
     directory: session.directory,
-  });
+  }) ?? {});
   if (!isOpencodeNotFoundError(error)) {
     return false;
   }

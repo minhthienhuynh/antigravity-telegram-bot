@@ -20,8 +20,11 @@ vi.mock("../../../src/app/services/session-service.js", () => ({
 }));
 
 vi.mock("../../../src/app/managers/interaction-manager.js", () => ({
-  clearAllInteractionState: mocked.clearAllInteractionStateMock,
   interactionManager: { getSnapshot: vi.fn(() => null), clear: vi.fn() },
+}));
+
+vi.mock("../../../src/app/managers/interaction-reset.js", () => ({
+  clearAllInteractionState: mocked.clearAllInteractionStateMock,
 }));
 
 vi.mock("../../../src/app/managers/prompt-queue-manager.js", () => ({

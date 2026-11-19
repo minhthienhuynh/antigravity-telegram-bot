@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { loadMcpCatalog } from "../../app/services/mcp-catalog-service.js";
@@ -10,7 +11,7 @@ export type McpsCommandDeps = Pick<AppContainer, "interactionManager">;
 
 export async function mcpsCommand(
   ctx: CommandContext<Context>,
-  deps: McpsCommandDeps,
+  deps: McpsCommandDeps = containerDeps,
 ): Promise<void> {
   try {
     const currentProject = getCurrentProject();

@@ -32,9 +32,16 @@ export type AbortCommandDeps = Pick<
 
 export async function abortCurrentOperation(
   ctx: Context,
-  _deps?: AbortCommandDeps,
-  options: AbortCurrentOperationOptions = {},
+  depsOrOptions?: AbortCommandDeps | AbortCurrentOperationOptions,
+  maybeOptions?: AbortCurrentOperationOptions,
 ): Promise<void> {
+  // Callers either pass (ctx, options) from the agy era or (ctx, deps, options)
+  // from the upstream container wiring.
+  const options: AbortCurrentOperationOptions =
+    maybeOptions ??
+    (depsOrOptions && "notifyUser" in depsOrOptions
+      ? (depsOrOptions as AbortCurrentOperationOptions)
+      : {});
   const notifyUser = options.notifyUser ?? true;
 
   try {

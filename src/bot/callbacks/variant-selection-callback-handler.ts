@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getStoredAgent, resolveProjectAgent } from "../../app/services/agent-selection-service.js";
@@ -23,7 +24,7 @@ export type VariantSelectDeps = Pick<
   "interactionManager" | "keyboardManager" | "pinnedMessageManager"
 >;
 
-export async function handleVariantSelect(ctx: Context, deps: VariantSelectDeps): Promise<boolean> {
+export async function handleVariantSelect(ctx: Context, deps: VariantSelectDeps = containerDeps): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
 
   if (!callbackQuery?.data || !callbackQuery.data.startsWith("variant:")) {

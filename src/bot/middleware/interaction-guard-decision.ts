@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type {
@@ -160,7 +161,7 @@ function isAllowedTaskCallback(ctx: Context, state: InteractionState): boolean {
 
 export function resolveInteractionGuardDecision(
   ctx: Context,
-  deps: InteractionGuardDecisionDeps,
+  deps: InteractionGuardDecisionDeps = containerDeps,
   localCommandRegistry?: LocalCommandRegistry,
 ): GuardDecision {
   const { attachManager, foregroundSessionState, interactionManager } = deps;

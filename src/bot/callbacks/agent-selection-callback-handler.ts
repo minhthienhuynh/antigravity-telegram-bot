@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import {
@@ -23,7 +24,7 @@ export type AgentSelectDeps = Pick<
   "interactionManager" | "keyboardManager" | "pinnedMessageManager"
 >;
 
-export async function handleAgentSelect(ctx: Context, deps: AgentSelectDeps): Promise<boolean> {
+export async function handleAgentSelect(ctx: Context, deps: AgentSelectDeps = containerDeps): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
 
   if (!callbackQuery?.data || !callbackQuery.data.startsWith("agent:")) {

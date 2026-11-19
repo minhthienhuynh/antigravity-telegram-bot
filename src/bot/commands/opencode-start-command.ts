@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
@@ -82,7 +83,7 @@ export type OpencodeStartCommandDeps = Pick<AppContainer, "opencodeReadyLifecycl
 
 export async function opencodeStartCommand(
   ctx: CommandContext<Context>,
-  deps: OpencodeStartCommandDeps,
+  deps: OpencodeStartCommandDeps = containerDeps,
 ) {
   try {
     if (isContainerRuntime()) {

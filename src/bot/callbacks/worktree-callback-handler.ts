@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getProjectByWorktree } from "../../app/services/project-service.js";
@@ -50,7 +51,7 @@ async function loadCurrentWorktreeContext() {
 
 export async function handleWorktreeCallback(
   ctx: Context,
-  deps: WorktreeCallbackDeps,
+  deps: WorktreeCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
   if (!callbackQuery?.data || !callbackQuery.data.startsWith(WORKTREE_CALLBACK_PREFIX)) {

@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import {
@@ -28,7 +29,7 @@ function getCallbackMessageId(ctx: Context): number | null {
 
 export async function handleQuestionCallback(
   ctx: Context,
-  deps: QuestionCallbackDeps,
+  deps: QuestionCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data) return false;
@@ -223,7 +224,7 @@ async function handleToggleCustomAnswer(
   await ctx.answerCallbackQuery();
 }
 
-async function handleCancelPoll(ctx: Context, deps: QuestionCallbackDeps): Promise<void> {
+async function handleCancelPoll(ctx: Context, deps: QuestionCallbackDeps = containerDeps): Promise<void> {
   deps.questionManager.cancel();
 
   await cancelPrompt(ctx, "question.cancelled");
@@ -231,7 +232,7 @@ async function handleCancelPoll(ctx: Context, deps: QuestionCallbackDeps): Promi
 
 export async function handleQuestionTextAnswer(
   ctx: Context,
-  deps: QuestionCallbackDeps,
+  deps: QuestionCallbackDeps = containerDeps,
 ): Promise<void> {
   const text = ctx.message?.text;
   if (!text) return;

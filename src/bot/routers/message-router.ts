@@ -166,13 +166,13 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
 
   bot.on("message:voice", async (ctx) => {
     logger.debug(`[Bot] Received voice message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handleVoiceMessage(ctx, voicePromptDeps);
   });
 
   bot.on("message:audio", async (ctx) => {
     logger.debug(`[Bot] Received audio message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handleVoiceMessage(ctx, voicePromptDeps);
   });
 
@@ -187,13 +187,13 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
 
   bot.on("message:photo", async (ctx) => {
     logger.debug(`[Bot] Received photo message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handlePhotoMessage(ctx, { ...appContainer, bot, ensureEventSubscription: deps.ensureEventSubscription });
   });
 
   bot.on("message:document", async (ctx) => {
     logger.debug(`[Bot] Received document message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handleDocumentMessage(ctx, { ...appContainer, bot, ensureEventSubscription: deps.ensureEventSubscription });
   });
 
@@ -204,7 +204,7 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
     }
     const { text } = input;
 
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
 
     if (text.startsWith("/")) {
       return;

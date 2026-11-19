@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { promptAttachment } from "../../app/managers/prompt-attachment-manager.js";
@@ -10,7 +11,7 @@ export type PromptAttachmentCancelDeps = Pick<AppContainer, "interactionManager"
 
 export async function handlePromptAttachmentCancel(
   ctx: Context,
-  deps: PromptAttachmentCancelDeps,
+  deps: PromptAttachmentCancelDeps = containerDeps,
 ): Promise<boolean> {
   if (ctx.callbackQuery?.data !== ATTACHMENT_CANCEL_CALLBACK) {
     return false;

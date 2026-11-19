@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getProjects } from "../../app/services/project-service.js";
@@ -30,7 +31,7 @@ export type ProjectSelectDeps = Pick<AppContainer, "ensureEventSubscription"> &
   ProjectSwitchDeps &
   ProjectSwitchPresentationDeps;
 
-export async function handleProjectSelect(ctx: Context, deps: ProjectSelectDeps): Promise<boolean> {
+export async function handleProjectSelect(ctx: Context, deps: ProjectSelectDeps = containerDeps): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
   if (!callbackQuery?.data) {
     return false;

@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
@@ -60,7 +61,7 @@ async function releaseLocalStateAfterServerStop(deps: OpencodeStopCommandDeps): 
  */
 export async function opencodeStopCommand(
   ctx: CommandContext<Context>,
-  deps: OpencodeStopCommandDeps,
+  deps: OpencodeStopCommandDeps = containerDeps,
 ) {
   try {
     if (isContainerRuntime()) {

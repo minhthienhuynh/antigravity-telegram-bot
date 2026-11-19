@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type { ProjectSwitchPresentation } from "../../app/services/project-switch-service.js";
@@ -9,7 +10,7 @@ export type ProjectSwitchPresentationDeps = Pick<
 >;
 
 export function createProjectSwitchPresentation(
-  deps: ProjectSwitchPresentationDeps,
+  deps: ProjectSwitchPresentationDeps = containerDeps,
 ): ProjectSwitchPresentation {
   const { keyboardManager, pinnedMessageManager } = deps;
 

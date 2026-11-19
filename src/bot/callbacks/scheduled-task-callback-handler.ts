@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getDateLocale, t } from "../../i18n/index.js";
@@ -203,7 +204,7 @@ function formatTaskDetails(task: ScheduledTask): string {
   });
 }
 
-export async function handleTaskCallback(ctx: Context, deps: TaskCallbackDeps): Promise<boolean> {
+export async function handleTaskCallback(ctx: Context, deps: TaskCallbackDeps = containerDeps): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (data !== TASK_RETRY_SCHEDULE_CALLBACK && data !== TASK_CANCEL_CALLBACK) {
     return false;
@@ -268,7 +269,7 @@ export async function handleTaskCallback(ctx: Context, deps: TaskCallbackDeps): 
 
 export async function handleTaskListCallback(
   ctx: Context,
-  deps: TaskCallbackDeps,
+  deps: TaskCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(TASKLIST_CALLBACK_PREFIX)) {

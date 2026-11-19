@@ -1,3 +1,4 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
@@ -11,7 +12,7 @@ export type CommandsCommandDeps = Pick<AppContainer, "interactionManager">;
 
 export async function commandsCommand(
   ctx: CommandContext<Context>,
-  deps: CommandsCommandDeps,
+  deps: CommandsCommandDeps = containerDeps,
 ): Promise<void> {
   try {
     const currentProject = getCurrentProject();
