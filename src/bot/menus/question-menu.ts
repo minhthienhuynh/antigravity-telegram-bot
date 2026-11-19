@@ -420,6 +420,14 @@ function buildQuestionKeyboard(
     keyboard.text(buttonText, callbackData).row();
   });
 
+  const customAnswer = questionManager.getCustomAnswer(questionIndex);
+  if (question.multiple && customAnswer) {
+    const icon = questionManager.isCustomAnswerSelected(questionIndex) ? "✅ " : "";
+    const label = `✏️ ${customAnswer.replace(/\s*\n\s*/g, " ")}`;
+    keyboard.text(formatButtonText(label, icon), `question:toggle_custom:${questionIndex}`).row();
+    logger.debug(`[QuestionHandler] Added custom answer row`);
+  }
+
   if (question.multiple) {
     keyboard.text(t("question.button.submit"), `question:submit:${questionIndex}`).row();
     logger.debug(`[QuestionHandler] Added submit button`);
