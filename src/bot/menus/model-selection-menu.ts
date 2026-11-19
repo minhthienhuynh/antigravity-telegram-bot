@@ -1,3 +1,4 @@
+import { inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { InlineKeyboard, type Context } from "grammy";
 import {
   fetchCurrentModel,
@@ -146,7 +147,7 @@ export async function showModelSelectionMenu(ctx: Context): Promise<void> {
           recent: [],
         },
       },
-    });
+    }, inlineMenuDeps);
   } catch (err) {
     logger.error("[ModelHandler] Error showing model menu:", err);
     await ctx.reply(t("model.menu.error"));

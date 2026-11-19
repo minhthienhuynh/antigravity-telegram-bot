@@ -267,6 +267,7 @@ export class ToolCallStreamer {
     sessionId: string,
     prefix: string,
     streamKey: ToolStreamKey = DEFAULT_STREAM_KEY,
+    _holdBoundary?: boolean,
   ): void {
     const normalizedPrefix = prefix.trim();
     if (!sessionId || !normalizedPrefix) {

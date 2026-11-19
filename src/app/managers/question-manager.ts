@@ -10,6 +10,11 @@ export class QuestionManager {
     return this.interactionManager.getPayload("question");
   }
 
+  /** Snapshot of the active poll (upstream interaction payload). */
+  getState(): QuestionState | null {
+    return this.state;
+  }
+
   /**
    * Opens the question slot, replacing a poll already on screen. Refuses while
    * permission prompts hold the slot: the poll has to wait for them.

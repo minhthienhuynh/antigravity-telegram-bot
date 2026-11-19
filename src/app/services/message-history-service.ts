@@ -44,3 +44,21 @@ export async function loadLatestAssistantResponse(
 }
 
 export { formatConversationPreview };
+
+/** Upstream context-details metrics shape. agy delivers usage via events, so
+ * there is no assistant-message history to read here; null hides the section. */
+export interface AssistantMessageMetrics {
+  input: number;
+  output: number;
+  reasoning: number;
+  cacheRead: number;
+  cacheWrite: number;
+  cost: number;
+}
+
+export async function loadLatestAssistantMetrics(
+  _sessionId: string,
+  _directory: string,
+): Promise<AssistantMessageMetrics | null> {
+  return null;
+}

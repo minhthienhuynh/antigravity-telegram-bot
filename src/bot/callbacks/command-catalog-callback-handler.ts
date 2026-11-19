@@ -1,4 +1,5 @@
-import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
+import { busyDeps, detachDeps } from "../../app/bootstrap/singleton-deps.js";
 import { questionManager } from "../../app/managers/question-manager.js";
 import { permissionManager } from "../../app/managers/permission-manager.js";
 import type { Bot, Context } from "grammy";
@@ -70,6 +71,11 @@ export interface ExecuteCommandParams {
 }
 
 export interface ExecuteCommandDeps {
+  interactionManager: import("../../app/managers/interaction-manager.js").InteractionManager;
+  attachManager: import("../../app/managers/attach-manager.js").AttachManager;
+  foregroundSessionState: import("../../app/managers/foreground-session-state-manager.js").ForegroundSessionState;
+  assistantRunState: import("../../app/managers/assistant-run-state-manager.js").AssistantRunState;
+  keyboardManager: import("../keyboards/keyboard-manager.js").KeyboardManager;
   bot: Bot<Context>;
   ensureEventSubscription: (directory: string) => Promise<void>;
 }
@@ -167,7 +173,11 @@ export function parseCommandsMetadata(state: InteractionState | null): CommandsM
   return null;
 }
 
-export function clearCommandsInteraction(reason: string): void {
+export function clearCommandsInteraction(
+  depsOrReason: Pick<AppContainer, "interactionManager"> | string,
+  maybeReason?: string,
+): void {
+  const reason = typeof depsOrReason === "string" ? depsOrReason : (maybeReason ?? "commands_interaction_clear");
   const metadata = parseCommandsMetadata(interactionManager.getSnapshot());
   if (metadata) {
     interactionManager.clear(reason);
@@ -189,7 +199,7 @@ async function ensureSessionForProject(
     logger.warn(
       `[Commands] Session/project mismatch detected. sessionDirectory=${currentSession.directory}, projectDirectory=${projectDirectory}. Resetting session context.`,
     );
-    detachAttachedSession("session_mismatch_reset");
+    detachAttachedSession("session_mismatch_reset", detachDeps);
     clearSession();
     summaryAggregator.clear();
     foregroundSessionState.clearAll("session_mismatch_reset");
@@ -252,7 +262,7 @@ export async function executeCommand(
   const storedModel = getStoredModel();
 
   foregroundSessionState.markBusy(session.id, session.directory);
-  await markAttachedSessionBusy(session.id);
+  await markAttachedSessionBusy(session.id, busyDeps);
   assistantRunState.startRun(session.id, {
     startedAt: Date.now(),
     configuredAgent: currentAgent,
@@ -276,7 +286,7 @@ export async function executeCommand(
     },
     onError: (error) => {
       foregroundSessionState.markIdle(session.id);
-      void markAttachedSessionIdle(session.id);
+      void markAttachedSessionIdle(session.id, busyDeps);
       assistantRunState.clearRun(session.id, "session_command_background_error");
       logger.error("[Commands] session.command background task failed", {
         sessionId: session.id,

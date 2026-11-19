@@ -1,3 +1,4 @@
+import { foregroundSessionState } from "../managers/foreground-session-state-manager.js";
 import type { Bot, Context } from "grammy";
 import { config } from "../../config.js";
 import { t } from "../../i18n/index.js";
@@ -466,3 +467,6 @@ export class ScheduledTaskRuntime {
     }
   }
 }
+
+/** Process-wide singleton shared with the app container. */
+export const scheduledTaskRuntime = new ScheduledTaskRuntime(foregroundSessionState);

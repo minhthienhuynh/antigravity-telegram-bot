@@ -112,12 +112,7 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
       "model",
       {
         name: "model",
-        handlers: [
-          (ctx) => handleModelSearchCallback(ctx, container),
-          (ctx) => handleModelSearchResults(ctx, container),
-          (ctx) => handleModelProvidersCallback(ctx, container),
-          (ctx) => handleModelSelect(ctx, container),
-        ],
+        handlers: [(ctx) => handleModelSelect(ctx)],
         errorScope: "interaction",
       },
     ],
@@ -133,7 +128,7 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
       "permission",
       {
         name: "permission",
-        handlers: [(ctx) => handlePermissionCallback(ctx, container)],
+        handlers: [(ctx) => handlePermissionCallback(ctx)],
         errorScope: "permission",
       },
     ],

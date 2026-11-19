@@ -1,3 +1,4 @@
+import { appContainer } from "../../app/bootstrap/app-container.js";
 import type { Bot, Context, NextFunction } from "grammy";
 import { config } from "../../config.js";
 import { settingsCommand } from "../commands/settings-command.js";
@@ -6,6 +7,7 @@ import { worktreeCommand } from "../commands/worktree-command.js";
 import { openCommand } from "../commands/open-command.js";
 import { lsCommand } from "../commands/ls-command.js";
 import { sessionsCommand } from "../commands/sessions-command.js";
+import { recentCommand } from "../commands/recent-command.js";
 import { messagesCommand } from "../commands/messages-command.js";
 import { newCommand } from "../commands/new-command.js";
 import { compactCommand } from "../commands/compact-command.js";
@@ -88,20 +90,21 @@ export function registerCommandRouter(bot: Bot<Context>, deps: CommandRouterDeps
     await next();
   });
 
-  bot.command("start", startCommand);
+  bot.command("start", (ctx) => startCommand(ctx, appContainer));
   bot.command("help", helpCommand);
   bot.command("status", statusCommand);
   bot.command("usage", usageCommand);
-  bot.command("settings", settingsCommand);
-  bot.command("projects", projectsCommand);
-  bot.command("worktree", worktreeCommand);
-  bot.command("open", openCommand);
-  bot.command("ls", lsCommand);
-  bot.command("sessions", sessionsCommand);
-  bot.command("messages", messagesCommand);
+  bot.command("settings", (ctx) => settingsCommand(ctx, appContainer));
+  bot.command("projects", (ctx) => projectsCommand(ctx, appContainer));
+  bot.command("worktree", (ctx) => worktreeCommand(ctx, appContainer));
+  bot.command("open", (ctx) => openCommand(ctx, appContainer));
+  bot.command("ls", (ctx) => lsCommand(ctx, appContainer));
+  bot.command("sessions", (ctx) => sessionsCommand(ctx, appContainer));
+  bot.command("recent", (ctx) => recentCommand(ctx, appContainer));
+  bot.command("messages", (ctx) => messagesCommand(ctx, appContainer));
   bot.command("new", (ctx) => newCommand(ctx, { bot, ensureEventSubscription: deps.ensureEventSubscription }));
   bot.command("compact", compactCommand);
-  bot.command("abort", abortCommand);
+  bot.command("abort", (ctx) => abortCommand(ctx, appContainer));
   bot.command("restart", restartCommand);
   bot.command("switch", switchCommand);
   bot.command("accounts", accountsCommand);
@@ -109,13 +112,13 @@ export function registerCommandRouter(bot: Bot<Context>, deps: CommandRouterDeps
   bot.command("addaccount", addAccountCommand);
   bot.command("quotaall", quotaAllCommand);
   bot.command("code", handleSwitchCode);
-  bot.command("detach", detachCommand);
-  bot.command("task", taskCommand);
-  bot.command("tasklist", taskListCommand);
-  bot.command("rename", renameCommand);
-  bot.command("commands", commandsCommand);
-  bot.command("skills", skillsCommand);
-  bot.command("mcps", mcpsCommand);
+  bot.command("detach", (ctx) => detachCommand(ctx, appContainer));
+  bot.command("task", (ctx) => taskCommand(ctx, appContainer));
+  bot.command("tasklist", (ctx) => taskListCommand(ctx, appContainer));
+  bot.command("rename", (ctx) => renameCommand(ctx, appContainer));
+  bot.command("commands", (ctx) => commandsCommand(ctx, appContainer));
+  bot.command("skills", (ctx) => skillsCommand(ctx, appContainer));
+  bot.command("mcps", (ctx) => mcpsCommand(ctx, appContainer));
   for (const definition of registry.definitions()) {
     bot.command(definition.command, async (ctx) => {
       const result = await registry.execute(definition.command);

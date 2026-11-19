@@ -363,4 +363,12 @@ export class CompactProgressStreamer {
     }
     return cancelled;
   }
+  updateWaitingForQuestion(sessionId: string): void {
+    this.updateActivity(sessionId, t("progress.compact.waiting_question"));
+  }
+
+  updateWaitingForPermission(sessionId: string): void {
+    this.updateActivity(sessionId, t("progress.compact.waiting_permission"));
+  }
+
 }

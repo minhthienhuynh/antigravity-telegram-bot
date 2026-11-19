@@ -1,3 +1,4 @@
+import type { PermissionRequest } from "../../app/types/permission.js";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type { AttachPresentationDeps } from "../../app/services/attach-service.js";
 import { showPermissionRequest, type PermissionMenuDeps } from "../menus/permission-menu.js";
@@ -50,6 +51,6 @@ export function createAttachPresentation(
     },
     showCurrentQuestion: (api, chatId) => showCurrentQuestion(api, chatId, deps),
     showPermissionRequest: (api, chatId, request) =>
-      showPermissionRequest(api, chatId, request, deps),
+      showPermissionRequest(api, chatId, request as PermissionRequest, deps),
   };
 }

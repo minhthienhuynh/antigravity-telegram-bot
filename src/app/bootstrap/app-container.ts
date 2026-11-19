@@ -1,5 +1,4 @@
 import type { Bot, Context } from "grammy";
-import { createEventSubscriptionService } from "../../bot/services/event-subscription-service.js";
 import { KeyboardManager } from "../../bot/keyboards/keyboard-manager.js";
 import { PinnedMessageManager } from "../../bot/pinned/pinned-message-manager.js";
 import { OpencodeAutoRestartService } from "../../opencode/auto-restart.js";
@@ -8,6 +7,8 @@ import {
   type OpencodeReadyHandler,
 } from "../../opencode/ready-lifecycle.js";
 import { logger } from "../../utils/logger.js";
+import { eventSubscriptionService } from "../../bot/services/event-subscription-service.js";
+import { scheduledTaskRuntime } from "../services/scheduled-task-runtime-service.js";
 import { assistantRunState } from "../managers/assistant-run-state-manager.js";
 import { attachManager } from "../managers/attach-manager.js";
 import { backgroundSessionTracker } from "../managers/background-session-manager.js";
@@ -114,7 +115,7 @@ export function createAppContainer(): AppContainer {
     pinnedMessageManager,
     questionManager,
     renameManager,
-    scheduledTaskRuntime: new ScheduledTaskRuntime(foregroundSessionState),
+    scheduledTaskRuntime,
     summaryAggregator,
     taskCreationManager,
 
@@ -149,7 +150,9 @@ export function createAppContainer(): AppContainer {
     },
   };
 
-  const eventSubscriptionService = createEventSubscriptionService(container);
 
   return container;
 }
+
+/** Process-wide container (single-user bot: one container per process). */
+export const appContainer = createAppContainer();

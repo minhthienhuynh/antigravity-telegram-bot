@@ -1,4 +1,4 @@
-import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
+import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
 import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
 import { questionManager } from "../../app/managers/question-manager.js";
@@ -34,7 +34,7 @@ export interface NewCommandDeps {
  */
 export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandDeps) {
   try {
-    if (isForegroundBusy()) {
+    if (isForegroundBusy(busyDeps)) {
       await replyBusyBlocked(ctx);
       return;
     }

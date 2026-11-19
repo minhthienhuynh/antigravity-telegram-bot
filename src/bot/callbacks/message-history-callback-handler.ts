@@ -1,3 +1,4 @@
+import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Bot, Context } from "grammy";
 import { config } from "../../config.js";
 import type { InteractionState } from "../../app/types/interaction.js";
@@ -186,7 +187,7 @@ export async function handleMessagesCallback(
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(busyDeps)) {
     await replyBusyBlocked(ctx);
     return true;
   }

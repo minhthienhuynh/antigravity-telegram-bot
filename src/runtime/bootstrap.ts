@@ -13,7 +13,6 @@ import {
   t,
   type Locale,
 } from "../i18n/index.js";
-import type { OpencodeServerVersion } from "../config.js";
 
 interface EnvValidationResult {
   isValid: boolean;
@@ -457,7 +456,7 @@ async function runWizardAndPersist(runtimePaths: RuntimePaths): Promise<void> {
     readEnvFileIfExists(runtimePaths.envFilePath),
     loadEnvExampleContent(),
   ]);
-  const wizardValues = await collectWizardValues(existingContent);
+  const wizardValues = await collectWizardValues();
 
   const envValues: WizardEnvValues = {
     BOT_LOCALE: wizardValues.locale,

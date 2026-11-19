@@ -1,3 +1,5 @@
+import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { CommandContext, Context } from "grammy";
 import { getCurrentSession } from "../../app/services/session-service.js";
 import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
@@ -19,12 +21,18 @@ interface AbortCurrentOperationOptions {
 async function releaseAbortBusyState(sessionId: string, reason: string): Promise<void> {
   foregroundSessionState.markIdle(sessionId);
   assistantRunState.clearRun(sessionId, reason);
-  await markAttachedSessionIdle(sessionId);
+  await markAttachedSessionIdle(sessionId, busyDeps);
   clearPromptResponseMode(sessionId);
 }
 
+export type AbortCommandDeps = Pick<
+  AppContainer,
+  "assistantRunState" | "attachManager" | "foregroundSessionState" | "resetInteractions"
+>;
+
 export async function abortCurrentOperation(
   ctx: Context,
+  _deps?: AbortCommandDeps,
   options: AbortCurrentOperationOptions = {},
 ): Promise<void> {
   const notifyUser = options.notifyUser ?? true;
@@ -61,6 +69,6 @@ export async function abortCurrentOperation(
   }
 }
 
-export async function abortCommand(ctx: CommandContext<Context>): Promise<void> {
+export async function abortCommand(ctx: CommandContext<Context>, _deps?: AbortCommandDeps): Promise<void> {
   await abortCurrentOperation(ctx);
 }

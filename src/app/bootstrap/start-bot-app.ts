@@ -205,7 +205,7 @@ export async function startBotApp(): Promise<void> {
     directoryPath: runtimePaths.localCommandsDirPath,
     builtInCommands: BUILT_IN_COMMAND_NAMES,
   });
-  const bot = createBot(container, localCommandRegistry);
+  const bot = createBot(localCommandRegistry);
   await scheduledTaskRuntime.initialize(
     bot,
     createScheduledTaskDeliverySender(bot.api, config.telegram.allowedUserId),
@@ -286,7 +286,7 @@ export async function startBotApp(): Promise<void> {
       drop_pending_updates: true,
       onStart: (botInfo) => {
         logger.info(`Bot @${botInfo.username} started!`);
-        restoreFollowedSessionOnPollingStart(bot, container);
+        restoreFollowedSessionOnPollingStart(bot);
       },
     });
   } catch (error) {

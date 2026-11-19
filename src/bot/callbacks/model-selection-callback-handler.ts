@@ -1,3 +1,4 @@
+import { inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { type Context } from "grammy";
 import {
   fetchCurrentModel,
@@ -48,7 +49,7 @@ export async function handleModelSelect(ctx: Context): Promise<boolean> {
     return false;
   }
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "model");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "model", inlineMenuDeps);
   if (!isActiveMenu) {
     return true;
   }
@@ -61,7 +62,7 @@ export async function handleModelSelect(ctx: Context): Promise<boolean> {
 
     if (!modelInfo) {
       logger.error(`[ModelHandler] Invalid callback data format: ${callbackQuery.data}`);
-      clearActiveInlineMenu("model_select_invalid_callback");
+      clearActiveInlineMenu("model_select_invalid_callback", inlineMenuDeps);
       await ctx.answerCallbackQuery({ text: t("model.change_error_callback") }).catch(() => {});
       return true;
     }
@@ -69,7 +70,7 @@ export async function handleModelSelect(ctx: Context): Promise<boolean> {
     await applyModelSelectionAndNotify(ctx, modelInfo);
     return true;
   } catch (err) {
-    clearActiveInlineMenu("model_select_error");
+    clearActiveInlineMenu("model_select_error", inlineMenuDeps);
     logger.error("[ModelHandler] Error handling model select:", err);
     await failure(ctx, "model.change_error_callback");
     return true;
@@ -114,7 +115,7 @@ async function applyModelSelectionAndNotify(
 
   // The selection is final: destroy the inline menu by editing the menu
   // message without reply_markup (fork's auto-destroy pattern).
-  clearActiveInlineMenu("model_selected");
+  clearActiveInlineMenu("model_selected", inlineMenuDeps);
   await ctx.answerCallbackQuery().catch(() => {});
 
   if (ctx.chat) {

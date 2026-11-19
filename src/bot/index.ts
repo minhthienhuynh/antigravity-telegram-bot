@@ -1,3 +1,5 @@
+import { appContainer } from "../app/bootstrap/app-container.js";
+import { attachPresentationFactoryDeps } from "../app/bootstrap/singleton-deps.js";
 import { pinnedMessageManager } from "./pinned/pinned-message-manager.js";
 import { interactionManager } from "../app/managers/interaction-manager.js";
 import { summaryAggregator } from "../app/managers/summary-aggregation-manager.js";
@@ -108,11 +110,12 @@ function createBotSync(localCommandRegistry = LocalCommandRegistry.empty()): Bot
   const botOptions = createTelegramBotOptions(config.telegram);
   const bot = new Bot(config.telegram.token, botOptions);
 
-  configureAttachPresentation(createAttachPresentation());
+  configureAttachPresentation(createAttachPresentation(attachPresentationFactoryDeps));
 
   eventSubscriptionService.setTelegramContext(bot, config.telegram.allowedUserId);
 
   initializePromptQueueDispatch({
+    ...appContainer,
     bot,
     ensureEventSubscription: eventSubscriptionService.ensureEventSubscription,
   });
@@ -221,7 +224,7 @@ function createBotSync(localCommandRegistry = LocalCommandRegistry.empty()): Bot
   bot.use(staleUpdateMiddleware);
   bot.on("message:rich_message", normalizeRichMessage);
   bot.use((ctx, next) => ensureCommandsInitialized(ctx, next, localCommandRegistry));
-  bot.use((ctx, next) => interactionGuardMiddleware(ctx, next, localCommandRegistry));
+  bot.use((ctx, next) => interactionGuardMiddleware(ctx, next, { ...appContainer, localCommandRegistry }));
 
   registerCommandRouter(bot, {
     ensureEventSubscription: eventSubscriptionService.ensureEventSubscription,
@@ -229,11 +232,7 @@ function createBotSync(localCommandRegistry = LocalCommandRegistry.empty()): Bot
     localCommandRegistry,
   });
   registerAccountMenuHandlers(bot);
-  registerCallbackRouter(bot, {
-    ensureEventSubscription: eventSubscriptionService.ensureEventSubscription,
-    setTelegramContext: (contextBot, chatId) =>
-      eventSubscriptionService.setTelegramContext(contextBot, chatId),
-  });
+  registerCallbackRouter(bot, { container: appContainer });
   registerMessageRouter(bot, {
     ensureEventSubscription: eventSubscriptionService.ensureEventSubscription,
     setTelegramContext: (contextBot, chatId) =>

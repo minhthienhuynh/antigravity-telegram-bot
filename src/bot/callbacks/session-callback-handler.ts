@@ -1,4 +1,4 @@
-import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
+import { busyDeps, inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
 import { questionManager } from "../../app/managers/question-manager.js";
 import { permissionManager } from "../../app/managers/permission-manager.js";
@@ -175,7 +175,7 @@ export async function handleBackgroundSessionOpen(
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(busyDeps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
@@ -208,7 +208,7 @@ export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps)
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(busyDeps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
@@ -216,7 +216,7 @@ export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps)
   const page = parseSessionPageCallback(callbackQuery.data);
   const sessionId = parseSessionIdCallback(callbackQuery.data);
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "session");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "session", inlineMenuDeps);
   if (!isActiveMenu) {
     return true;
   }

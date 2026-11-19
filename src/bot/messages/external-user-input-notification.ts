@@ -8,6 +8,7 @@ import { sendBotText } from "./telegram-text.js";
 type SendMessageApi = Pick<Api<RawApi>, "sendMessage">;
 
 interface DeliverExternalUserInputParams {
+  currentSessionId?: string | undefined;
   api: SendMessageApi;
   chatId: number;
   isForegroundSession: boolean;
