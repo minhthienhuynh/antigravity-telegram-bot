@@ -1,3 +1,4 @@
+import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import {
   MAX_QUEUED_PROMPTS,
@@ -46,7 +47,7 @@ export function initializePromptQueueDispatch(deps: ProcessPromptDeps): void {
 }
 
 function isBusy(): boolean {
-  return promptDeps !== null && isForegroundBusy(promptDeps);
+  return isForegroundBusy(promptDeps ?? busyDeps);
 }
 
 function isPromptQueueEnabled(): boolean {
