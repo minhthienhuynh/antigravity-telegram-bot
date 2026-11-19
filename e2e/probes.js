@@ -92,7 +92,7 @@ const discoverSelectors = () => {
  *   retrying           -> provider error, bot is retrying
  *   busy_guard         -> we sent input too early; guard rejected it
  *   blocked_guard      -> guard expects a different input kind
- *   idle               -> no progress message in view
+ *   idle               -> no progress message after our last message yet
  */
 const probeState = () => {
   // Telegram Web replaces emoji with <img class="emoji" alt="✅">, so innerText
@@ -107,7 +107,12 @@ const probeState = () => {
     return (clone.textContent || "").trim();
   };
 
-  const bubbles = [...document.querySelectorAll(".bubble[data-mid]")].slice(-10);
+  // Only the bot's messages after our last message belong to the current run:
+  // a finished marker further up is the previous run's and would end the wait
+  // before this run even starts.
+  const all = [...document.querySelectorAll(".bubble[data-mid]")];
+  const lastOut = all.map((b) => b.classList.contains("is-out")).lastIndexOf(true);
+  const bubbles = all.slice(lastOut + 1).slice(-10);
   const texts = bubbles.map((b) => readText(b.querySelector(".message") || b));
   const joined = texts.join("\n---\n");
   const last = texts[texts.length - 1] || "";
@@ -185,8 +190,10 @@ const readChat = () => {
  * so resolve that id in the message list and read the full text there.
  *
  * If the pinned message has scrolled out of the virtualised list, `found` is
- * false while `mid` is set. Click the bar to jump to it:
- *   browser_click({ target: ".pinned-message" })
+ * false while `mid` is set. Do NOT click the bar to reach it: the chat holds
+ * several pinned messages, and after the jump the bar switches to an older one,
+ * so the next read chases a different message. For the model and the project
+ * send `/status`; the full dashboard is the newest bubble right after `/new`.
  */
 const readPinned = () => {
   const readText = (el) => {

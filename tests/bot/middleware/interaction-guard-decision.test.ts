@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "grammy";
 import { resolveInteractionGuardDecision } from "../../../src/bot/middleware/interaction-guard-decision.js";
-import { interactionManager } from "../../../src/app/managers/interaction-manager.js";
-import { foregroundSessionState } from "../../../src/app/managers/foreground-session-state-manager.js";
+import { startInteractionForTest } from "../../helpers/interaction.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
+
+let deps: AppContainer;
 
 function createContext({
   text,
@@ -45,26 +48,29 @@ function createContext({
   } as Context;
 }
 
+beforeEach(() => {
+  deps = createTestAppContainer();
+});
+
 describe("interaction guard", () => {
   beforeEach(() => {
-    interactionManager.clear("test_setup");
-    foregroundSessionState.__resetForTests();
+    deps.interactionManager.clear("test_setup");
   });
 
   it("allows input when there is no active interaction", () => {
-    const decision = resolveInteractionGuardDecision(createContext({ text: "hello" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "hello" }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.state).toBeNull();
   });
 
   it("blocks text when callback input is expected", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "inline",
       expectedInput: "callback",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "hello" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "hello" }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expected_callback");
@@ -100,13 +106,13 @@ describe("interaction guard", () => {
   });
 
   it("allows callback when callback input is expected", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "inline",
       expectedInput: "callback",
     });
 
     const decision = resolveInteractionGuardDecision(
-      createContext({ callbackData: "model:foo:bar" }),
+      createContext({ callbackData: "model:foo:bar" }), deps,
     );
 
     expect(decision.allow).toBe(true);
@@ -114,39 +120,39 @@ describe("interaction guard", () => {
   });
 
   it("allows command from allowed commands list", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "inline",
       expectedInput: "callback",
       allowedCommands: ["/status"],
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "/status" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "/status" }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.command).toBe("/status");
   });
 
   it("always allows /start even when command list is restricted", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "inline",
       expectedInput: "callback",
       allowedCommands: ["/status"],
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "/start" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "/start" }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.command).toBe("/start");
   });
 
   it("blocks command that is not allowed", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "inline",
       expectedInput: "callback",
       allowedCommands: ["/status"],
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "/help" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "/help" }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("command_not_allowed");
@@ -157,7 +163,7 @@ describe("interaction guard", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
 
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "permission",
       expectedInput: "callback",
       expiresInMs: 1000,
@@ -165,22 +171,22 @@ describe("interaction guard", () => {
 
     vi.advanceTimersByTime(1001);
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "hello" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "hello" }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expired");
-    expect(interactionManager.isActive()).toBe(false);
+    expect(deps.interactionManager.isActive()).toBe(false);
   });
 
   it("allows mixed input for non-command events", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "question",
       expectedInput: "mixed",
     });
 
-    const decisionText = resolveInteractionGuardDecision(createContext({ text: "custom answer" }));
+    const decisionText = resolveInteractionGuardDecision(createContext({ text: "custom answer" }), deps);
     const decisionCallback = resolveInteractionGuardDecision(
-      createContext({ callbackData: "question:select:0:1" }),
+      createContext({ callbackData: "question:select:0:1" }), deps,
     );
 
     expect(decisionText.allow).toBe(true);
@@ -188,7 +194,7 @@ describe("interaction guard", () => {
   });
 
   it("allows voice input when there is no active interaction", () => {
-    const decision = resolveInteractionGuardDecision(createContext({ voice: true }));
+    const decision = resolveInteractionGuardDecision(createContext({ voice: true }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.state).toBeNull();
@@ -196,12 +202,12 @@ describe("interaction guard", () => {
   });
 
   it("blocks voice input when text input is expected", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "rename",
       expectedInput: "text",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ voice: true }));
+    const decision = resolveInteractionGuardDecision(createContext({ voice: true }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expected_text");
@@ -209,12 +215,12 @@ describe("interaction guard", () => {
   });
 
   it("blocks audio input when mixed input is expected", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "question",
       expectedInput: "mixed",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ audio: true }));
+    const decision = resolveInteractionGuardDecision(createContext({ audio: true }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expected_text");
@@ -222,12 +228,12 @@ describe("interaction guard", () => {
   });
 
   it("blocks text while permission interaction is active", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "permission",
       expectedInput: "callback",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "some text" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "some text" }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expected_callback");
@@ -235,12 +241,12 @@ describe("interaction guard", () => {
   });
 
   it("allows default status command while permission interaction is active", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "permission",
       expectedInput: "callback",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "/status" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "/status" }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.command).toBe("/status");
@@ -248,13 +254,13 @@ describe("interaction guard", () => {
   });
 
   it("blocks disallowed command while question mixed interaction is active", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "question",
       expectedInput: "mixed",
       allowedCommands: ["/status"],
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "/new" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "/new" }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("command_not_allowed");
@@ -262,13 +268,13 @@ describe("interaction guard", () => {
   });
 
   it("allows rename cancel callback when rename expects text", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "rename",
       expectedInput: "text",
     });
 
     const decision = resolveInteractionGuardDecision(
-      createContext({ callbackData: "rename:cancel" }),
+      createContext({ callbackData: "rename:cancel" }), deps,
     );
 
     expect(decision.allow).toBe(true);
@@ -277,13 +283,13 @@ describe("interaction guard", () => {
   });
 
   it("blocks non-rename callback while rename expects text", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "rename",
       expectedInput: "text",
     });
 
     const decision = resolveInteractionGuardDecision(
-      createContext({ callbackData: "project:abc" }),
+      createContext({ callbackData: "project:abc" }), deps,
     );
 
     expect(decision.allow).toBe(false);
@@ -292,12 +298,12 @@ describe("interaction guard", () => {
   });
 
   it("blocks photo input when text input is expected (rename)", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "rename",
       expectedInput: "text",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ photo: true }));
+    const decision = resolveInteractionGuardDecision(createContext({ photo: true }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expected_text");
@@ -306,12 +312,12 @@ describe("interaction guard", () => {
   });
 
   it("blocks photo input when mixed input is expected (question)", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "question",
       expectedInput: "mixed",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ photo: true }));
+    const decision = resolveInteractionGuardDecision(createContext({ photo: true }), deps);
 
     expect(decision.allow).toBe(false);
     expect(decision.reason).toBe("expected_text");
@@ -320,7 +326,7 @@ describe("interaction guard", () => {
   });
 
   it("allows photo input when there is no active interaction", () => {
-    const decision = resolveInteractionGuardDecision(createContext({ photo: true }));
+    const decision = resolveInteractionGuardDecision(createContext({ photo: true }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.state).toBeNull();
@@ -328,34 +334,34 @@ describe("interaction guard", () => {
   });
 
   it("allows abort, detach, status, help, and opencode_stop while busy without interaction", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
-    expect(resolveInteractionGuardDecision(createContext({ text: "/abort" })).allow).toBe(true);
-    expect(resolveInteractionGuardDecision(createContext({ text: "/detach" })).allow).toBe(true);
-    expect(resolveInteractionGuardDecision(createContext({ text: "/status" })).allow).toBe(true);
-    expect(resolveInteractionGuardDecision(createContext({ text: "/help" })).allow).toBe(true);
-    expect(resolveInteractionGuardDecision(createContext({ text: "/opencode_stop" })).allow).toBe(
+    expect(resolveInteractionGuardDecision(createContext({ text: "/abort" }), deps).allow).toBe(true);
+    expect(resolveInteractionGuardDecision(createContext({ text: "/detach" }), deps).allow).toBe(true);
+    expect(resolveInteractionGuardDecision(createContext({ text: "/status" }), deps).allow).toBe(true);
+    expect(resolveInteractionGuardDecision(createContext({ text: "/help" }), deps).allow).toBe(true);
+    expect(resolveInteractionGuardDecision(createContext({ text: "/opencode_stop" }), deps).allow).toBe(
       true,
     );
 
-    const startDecision = resolveInteractionGuardDecision(createContext({ text: "/opencode_start" }));
+    const startDecision = resolveInteractionGuardDecision(createContext({ text: "/opencode_start" }), deps);
     expect(startDecision.allow).toBe(false);
     expect(startDecision.reason).toBe("command_not_allowed");
     expect(startDecision.busy).toBe(true);
 
-    const blockedDecision = resolveInteractionGuardDecision(createContext({ text: "/new" }));
+    const blockedDecision = resolveInteractionGuardDecision(createContext({ text: "/new" }), deps);
     expect(blockedDecision.allow).toBe(false);
     expect(blockedDecision.reason).toBe("command_not_allowed");
     expect(blockedDecision.busy).toBe(true);
   });
 
   it("allows opencode_stop during an active interaction without busy", () => {
-    interactionManager.start({
+    startInteractionForTest(deps.interactionManager, {
       kind: "inline",
       expectedInput: "callback",
     });
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "/opencode_stop" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "/opencode_stop" }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.command).toBe("/opencode_stop");
@@ -363,12 +369,12 @@ describe("interaction guard", () => {
   });
 
   it("blocks start, plain text, and media while busy without interaction", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
-    const startDecision = resolveInteractionGuardDecision(createContext({ text: "/start" }));
-    const textDecision = resolveInteractionGuardDecision(createContext({ text: "hello" }));
-    const voiceDecision = resolveInteractionGuardDecision(createContext({ voice: true }));
-    const photoDecision = resolveInteractionGuardDecision(createContext({ photo: true }));
+    const startDecision = resolveInteractionGuardDecision(createContext({ text: "/start" }), deps);
+    const textDecision = resolveInteractionGuardDecision(createContext({ text: "hello" }), deps);
+    const voiceDecision = resolveInteractionGuardDecision(createContext({ voice: true }), deps);
+    const photoDecision = resolveInteractionGuardDecision(createContext({ photo: true }), deps);
 
     expect(startDecision.allow).toBe(false);
     expect(startDecision.reason).toBe("command_not_allowed");
@@ -381,28 +387,28 @@ describe("interaction guard", () => {
   });
 
   it("allows queued prompt button presses while busy", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
-    const decision = resolveInteractionGuardDecision(createContext({ text: "❌ 2. fix the bug" }));
+    const decision = resolveInteractionGuardDecision(createContext({ text: "❌ 2. fix the bug" }), deps);
 
     expect(decision.allow).toBe(true);
     expect(decision.busy).toBe(true);
   });
 
   it("allows valid question answers while busy", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
-    interactionManager.start({
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    startInteractionForTest(deps.interactionManager, {
       kind: "question",
       expectedInput: "mixed",
     });
 
     const callbackDecision = resolveInteractionGuardDecision(
-      createContext({ callbackData: "question:select:0:1" }),
+      createContext({ callbackData: "question:select:0:1" }), deps,
     );
-    const textDecision = resolveInteractionGuardDecision(createContext({ text: "custom answer" }));
-    const commandDecision = resolveInteractionGuardDecision(createContext({ text: "/status" }));
-    const detachDecision = resolveInteractionGuardDecision(createContext({ text: "/detach" }));
-    const blockedCommand = resolveInteractionGuardDecision(createContext({ text: "/new" }));
+    const textDecision = resolveInteractionGuardDecision(createContext({ text: "custom answer" }), deps);
+    const commandDecision = resolveInteractionGuardDecision(createContext({ text: "/status" }), deps);
+    const detachDecision = resolveInteractionGuardDecision(createContext({ text: "/detach" }), deps);
+    const blockedCommand = resolveInteractionGuardDecision(createContext({ text: "/new" }), deps);
 
     expect(callbackDecision.allow).toBe(true);
     expect(callbackDecision.busy).toBe(true);
@@ -415,16 +421,16 @@ describe("interaction guard", () => {
   });
 
   it("allows valid permission callback while busy and blocks other inputs", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
-    interactionManager.start({
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    startInteractionForTest(deps.interactionManager, {
       kind: "permission",
       expectedInput: "callback",
     });
 
     const callbackDecision = resolveInteractionGuardDecision(
-      createContext({ callbackData: "permission:allow:123" }),
+      createContext({ callbackData: "permission:allow:123" }), deps,
     );
-    const textDecision = resolveInteractionGuardDecision(createContext({ text: "hello" }));
+    const textDecision = resolveInteractionGuardDecision(createContext({ text: "hello" }), deps);
 
     expect(callbackDecision.allow).toBe(true);
     expect(callbackDecision.busy).toBe(true);
@@ -434,14 +440,14 @@ describe("interaction guard", () => {
   });
 
   it("does not allow rename callback to bypass busy state", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
-    interactionManager.start({
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    startInteractionForTest(deps.interactionManager, {
       kind: "rename",
       expectedInput: "text",
     });
 
     const decision = resolveInteractionGuardDecision(
-      createContext({ callbackData: "rename:cancel" }),
+      createContext({ callbackData: "rename:cancel" }), deps,
     );
 
     expect(decision.allow).toBe(false);

@@ -1,5 +1,11 @@
 export const en = {
-  "cmd.description.usage": "Show remaining Google account quota (costs nothing).",
+  "cmd.description.recent": "Recent sessions across projects",
+  "recent.heading": "Recent sessions across projects (run /recent to refresh):",
+  "recent.empty": "📭 No sessions found across projects.",
+  "recent.running": "running",
+  "recent.idle": "idle",
+  "recent.question": "awaiting an answer",
+  "recent.permission": "awaiting permission",
   "cmd.description.status": "Server and session status",
   "cmd.description.new": "Create a new session",
   "cmd.description.stop": "Stop current action",
@@ -17,43 +23,14 @@ export const en = {
   "cmd.description.opencode_start": "Start Antigravity server",
   "cmd.description.opencode_stop": "Stop Antigravity server",
   "cmd.description.ls": "List directory contents",
-  "cmd.restart.ack":
-    "🔄 Restarting the bot with pending changes... wait ~5 seconds.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No account switch in progress. Use /switch first.",
-  "switch.code_needed":
-    "Missing code: use /code <code> with the code Google gave you.",
-  "switch.already_pending":
-    "A /switch is already in progress. Paste the code with /code <code> or wait.",
-  "switch.working":
-    "🔄 Preparing account switch (backing up current token + cleanup)... waiting for the URL.",
-  "switch.no_url_yet":
-    "⏳ agy is still loading; run /switch again shortly or wait for the URL message.",
-  "switch.url_intro":
-    "🌐 Open this link in your (phone) browser with the DESTINATION account:",
-  "switch.paste_code_hint":
-    "🔑 Then paste the code here with: /code <code>",
-  "switch.submitting":
-    "⏳ Submitting the code to agy…",
-  "switch.done":
-    "✅ Account switched! New token stored. Run /usage to see the new account's quota.",
-  "switch.failed":
-    "❌ Switch failed:",
   "cmd.description.help": "Help",
-
   "callback.unknown_command": "Unknown command",
   "callback.processing_error": "Processing error",
-
   "error.load_agents": "❌ Failed to load agents list",
   "error.load_models": "❌ Failed to load models list",
   "error.load_variants": "❌ Failed to load variants list",
   "error.context_button": "❌ Failed to process context button",
   "error.generic": "🔴 Something went wrong.",
-
   "interaction.blocked.expired": "⚠️ This interaction has expired. Please start it again.",
   "interaction.blocked.expected_callback":
     "⚠️ Please use the inline buttons for this step or tap Cancel.",
@@ -63,36 +40,26 @@ export const en = {
     "⚠️ This command is not available in the current step.",
   "interaction.blocked.finish_current":
     "⚠️ Finish the current interaction first (answer or cancel), then open another menu.",
-
   "inline.blocked.expected_choice": "⚠️ Choose an option using the inline buttons or tap Cancel.",
   "inline.blocked.command_not_allowed":
     "⚠️ This command is not available while inline menu is active.",
-
   "question.blocked.expected_answer":
     "⚠️ Answer the current question using buttons, Custom answer, or Cancel.",
   "question.blocked.command_not_allowed":
     "⚠️ This command is not available until current question flow is completed.",
-
   "inline.button.cancel": "❌ Cancel",
   "inline.button.close": "❌ Close",
   "inline.inactive_callback": "This menu is inactive",
-
   "common.cancelled": "Cancelled",
   "common.unknown": "unknown",
   "common.unknown_error": "unknown error",
-
   "start.welcome":
     "👋 Welcome to Antigravity Telegram Bot!\n\nUse commands:\n/projects — select project\n/sessions — session list\n/new — new session\n/commands — custom commands\n/skills — skills catalog\n/task — scheduled task\n/tasklist — scheduled tasks\n/status — status\n/help — help\n\nUse the bottom buttons to select the agent, model, and variant.",
   "help.keyboard_hint":
     "💡 Use the bottom keyboard buttons for the agent, model, variant, and context actions.",
   "help.text":
     "📖 **Help**\n\n/status - Check server status\n/sessions - Session list\n/new - Create new session\n/help - Help",
-
   "bot.thinking": "💭 Thinking...",
-  "bot.prompt_received": "📨 Received — handing off to the agent…",
-  "bot.prompt_dispatched": "⚙️ Dispatched to the agent pipe — working on it.",
-  "bot.prompt_slow_start": "⏳ Still waiting for the agent to pick it up (cold start can take a while)…",
-  "bot.queue_hot_taken": "⚡ Your message went straight into the running turn (hot takeover) — no queue, no restart.",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ Working",
   "progress.compact.finished_header": "✅ Finished Work",
@@ -109,30 +76,12 @@ export const en = {
   "bot.create_session_error":
     "🔴 Failed to create session. Try /new or check server status with /status.",
   "bot.session_created": "✅ Session created: {title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Your message was taken in-flight into the running turn; you'll see its answer in the same conversation, nothing interrupted.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrupted the previous task. Your message goes first; the other one stays in its conversation — resume with /sessions.",
-  "cmd.description.compact": "Compact the conversation context",
-  "compact.busy": "⏳ The agent is busy — try again when the current task finishes.",
-  "compact.no_session": "There is no active conversation to compact yet.",
-  "compact.started": "🧹 Compacting: asked the agent for a handoff summary…",
-  "compact.auto_started": "🧹 The conversation reached {tokens}k tokens — compacting automatically…",
-  "compact.done": "✅ Compacted — continuing in a fresh conversation with the context handed over.",
-  "compact.failed": "⚠️ Compaction failed — check the logs; you can retry with /compact.",
-  "compact.damaged_hint": "🛠 This error usually means the conversation state got damaged. I can compact it and continue in a new conversation.",
-  "compact.button": "🧹 Compact & continue",
   "bot.session_busy":
     "⏳ Agent is already running a task. Wait for completion or use /abort to interrupt current run.",
   "bot.session_reset_project_mismatch":
     "⚠️ Active session does not match the selected project, so it was reset. Use /sessions to pick one or /new to create a new session.",
   "bot.prompt_send_error": "Failed to send request to Antigravity.",
   "bot.session_error": "🔴 Antigravity returned an error: {message}",
-  "bot.retrying":
-    "⚠️ Antigravity service unavailable (503) — retrying automatically… attempt {attempt}/{max}, next try in ~{seconds}s.",
-  "bot.retry_recovered": "✅ Antigravity is back — continuing.",
-  "bot.retry_exhausted":
-    "❌ Antigravity stayed unavailable — retries exhausted. Resend your message when the service recovers.",
   "bot.assistant_reply_undelivered":
     "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
   "bot.stale_messages_skipped":
@@ -166,7 +115,6 @@ export const en = {
   "bot.model_no_pdf": "⚠️ Current model doesn't support PDF input. Sending text only.",
   "bot.document_extraction_error": "🔴 Failed to extract document text.",
   "bot.text_file_too_large": "⚠️ Text file is too large (max {maxSizeKb}KB)",
-
   "status.header_running": "🟢 Antigravity Server is running",
   "status.health.healthy": "Healthy",
   "status.health.unhealthy": "Unhealthy",
@@ -192,16 +140,13 @@ export const en = {
   "status.session_not_selected": "Current session: not selected",
   "status.session_hint": "Use /sessions to select one or /new to create one",
   "status.header_unavailable": "🔴 Antigravity Server is unavailable",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "Check that the Antigravity CLI (agy) is installed and authenticated.",
-
   "tts.off": "🔇 Audio replies disabled.",
   "tts.all": "🔊 Audio replies enabled for all messages.",
   "tts.auto": "🎤 Audio replies enabled for voice/audio messages only.",
   "tts.not_configured":
     "⚠️ Audio replies are unavailable. Set `TTS_API_URL` and `TTS_API_KEY` first.",
   "tts.failed": "⚠️ Failed to generate audio reply.",
-
   "settings.menu.title": "⚙️ Bot settings\nTap a setting to toggle its value:",
   "settings.compact_output.label": "Compact output mode",
   "settings.delete_progress_on_finish.label": "Delete progress on finish",
@@ -216,8 +161,9 @@ export const en = {
   "settings.prompt_queue.label": "Message queue",
   "settings.value.on": "On",
   "settings.value.off": "Off",
+  "settings.prompt_queue.queue": "Queue",
+  "settings.prompt_queue.steer": "Steer",
   "settings.saved": "✅ Setting saved.",
-
   "projects.empty":
     "📭 No projects found.\n\nOpen a directory in Antigravity and create at least one session, then it will appear here.",
   "projects.select": "Select a project:",
@@ -231,7 +177,6 @@ export const en = {
   "projects.selected":
     "✅ Project selected: {project}\n\n📋 Session was reset. Use /sessions or /new for this project.",
   "projects.select_error": "🔴 Failed to select project.",
-
   "sessions.project_not_selected":
     "🏗 Project is not selected.\n\nFirst select a project with /projects.",
   "sessions.empty": "📭 No sessions found.\n\nCreate a new session with /new.",
@@ -248,10 +193,8 @@ export const en = {
   "sessions.selected": "✅ Session selected: {title}",
   "sessions.select_error": "🔴 Failed to select session.",
   "sessions.preview.empty": "No recent messages.",
-  "sessions.preview.title": "Recent messages:",
-  "sessions.preview.you": "You:",
-  "sessions.preview.agent": "Agent:",
-
+  "sessions.last_input.title": "Last user input:",
+  "sessions.last_input.attachment": "attachment",
   "messages.project_not_selected":
     "🏗 Project is not selected.\n\nFirst select a project with /projects.",
   "messages.session_not_selected":
@@ -275,7 +218,6 @@ export const en = {
   "messages.revert_error": "❌ Failed to revert message. Please try again.",
   "messages.fork_success": "🔀 Fork created from message:\n\n{text}",
   "messages.fork_error": "❌ Failed to create fork. Please try again.",
-
   "attach.project_not_selected":
     "🏗 Project is not selected.\n\nFirst select a project with /projects.",
   "attach.session_not_selected":
@@ -290,20 +232,17 @@ export const en = {
   "attach.restored_permissions": "Recovered pending permission requests: {count}.",
   "attach.disconnect_hint": "To disconnect, switch to another session or project.",
   "attach.error": "🔴 Failed to attach to the current session.",
-
   "detach.project_not_selected":
     "🏗 Project is not selected.\n\nFirst select a project with /projects.",
   "detach.no_active_session": "ℹ️ Bot is already detached from any session.",
   "detach.success":
     "✅ Detached from session: {title}\n\nThe Antigravity session was not stopped. If it is still running, it will continue separately. To check it later, select it again via /sessions.",
   "detach.error": "🔴 Failed to detach from the current session.",
-
   "new.project_not_selected":
     "🏗 Project is not selected.\n\nFirst select a project with /projects.",
   "new.created": "✅ New session created: {title}",
   "new.create_error":
     "🔴 Antigravity Server is unavailable or an error occurred while creating session.",
-
   "stop.no_active_session":
     "🛑 Agent was not started\n\nCreate a session with /new or select one via /sessions.",
   "stop.in_progress":
@@ -318,7 +257,6 @@ export const en = {
     "⚠️ Abort request timeout.\n\nEvent stream is already disabled, retry /abort in a few seconds.",
   "stop.warn_local_only": "⚠️ Event stream stopped locally, but server-side abort failed.",
   "stop.error": "🔴 Failed to stop action.\n\nEvent stream is stopped, try /abort again.",
-
   "opencode_start.already_running_managed":
     "⚠️ Antigravity Server is already running\n\nPID: {pid}\nUptime: {seconds} seconds",
   "opencode_start.already_running_external":
@@ -346,14 +284,12 @@ export const en = {
   "opencode_stop.success": "✅ Antigravity Server stopped successfully",
   "opencode_stop.error":
     "🔴 An error occurred while stopping server.\n\nCheck application logs for details.",
-
   "agent.changed_message": "✅ Agent changed to: {name}",
   "agent.change_error_callback": "Failed to change agent",
   "agent.menu.current": "Current agent: {name}\n\nSelect agent:",
   "agent.menu.select": "Select agent:",
   "agent.menu.empty": "⚠️ No available agents",
   "agent.menu.error": "🔴 Failed to get agents list",
-
   "model.changed_message": "✅ Model changed to: {name}",
   "model.change_error_callback": "Failed to change model",
   "model.menu.empty": "⚠️ No available models",
@@ -383,7 +319,6 @@ export const en = {
   "model.provider_models.title": "{provider} — select model:",
   "model.provider_models.empty": "⚠️ No models available for {provider}",
   "model.provider_models.page_indicator": "Page {current}/{total}",
-
   "variant.model_not_selected_callback": "Error: model is not selected",
   "variant.changed_message": "✅ Variant changed to: {name}",
   "variant.change_error_callback": "Failed to change variant",
@@ -391,16 +326,25 @@ export const en = {
   "variant.menu.empty": "⚠️ No available variants",
   "variant.menu.current": "Current variant: {name}\n\nSelect variant:",
   "variant.menu.error": "🔴 Failed to get variants list",
-
   "context.button.confirm": "✅ Yes, compact context",
+  "context.button.details_compact": "📦 Compact context",
+  "context.button.close": "❌ Close",
+  "context.details.title": "📊 Context details",
+  "context.details.window": "Window: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Token breakdown of the latest assistant message:",
+  "context.details.input": "Input: {count}",
+  "context.details.output": "Output: {count}",
+  "context.details.reasoning": "Reasoning: {count}",
+  "context.details.cache_read": "Cache read: {count}",
+  "context.details.cache_write": "Cache write: {count}",
+  "context.details.cost": "Cost: {cost}",
   "context.no_active_session": "⚠️ No active session. Create a session with /new",
   "context.confirm_text":
-    '📊 Context compaction for session "{title}"\n\nThis will reduce context usage by removing old messages from history. Current task will not be interrupted.\n\nContinue?',
+    '📊 Context compaction for session "{title}"\n\nThis will reduce context usage by removing old messages from history.\n\nContinue?',
   "context.callback_compacting": "Compacting context...",
   "context.progress": "⏳ Compacting context...",
   "context.error": "❌ Context compaction failed",
   "context.success": "✅ Context compacted successfully",
-
   "permission.inactive_callback": "Permission request is inactive",
   "permission.processing_error_callback": "Processing error",
   "permission.no_active_request_callback": "Error: no active request",
@@ -429,7 +373,6 @@ export const en = {
   "permission.name.task": "Task",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "External Directory",
-
   "question.inactive_callback": "Poll is inactive",
   "question.processing_error_callback": "Processing error",
   "question.select_one_required_callback": "Select at least one option",
@@ -449,7 +392,6 @@ export const en = {
   "question.summary.title": "✅ Poll completed!\n\n",
   "question.summary.question": "Question {index}:\n{question}\n\n",
   "question.summary.answer": "Answer:\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} {name} Agent",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -461,9 +403,9 @@ export const en = {
   "queue.media_limit": "⚠️ Queued media is limited to {maxSizeMb} MiB. Wait for an item to send, then try again.",
   "queue.removed": "🗑 Message removed from the queue.",
   "queue.not_found": "This message is no longer in the queue.",
+  "queue.steer_added": "📥 Added to the current task ({count}/{max}).",
   "queue.disabled_hint": "The message queue can be enabled in /settings.",
   "keyboard.updated": "⌨️ Keyboard updated",
-
   "pinned.default_session_title": "new session",
   "pinned.unknown": "Unknown",
   "pinned.line.project": "Project: {project}",
@@ -489,13 +431,11 @@ export const en = {
   "pinned.files.title": "Files ({count}):",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... and {count} more",
-
   "tool.todo.overflow": "*({count} more tasks)*",
   "tool.file_header.write":
     "Write File/Path: {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "Edit File/Path: {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token": "Enter Telegram bot token (get it from @BotFather).\n> ",
   "runtime.wizard.ask_language":
     "Select interface language.\nEnter the language number from the list or locale code.\nPress Enter to keep default language: {defaultLocale}\n{options}\n> ",
@@ -514,6 +454,15 @@ export const en = {
     "Enter Antigravity server username (optional).\nPress Enter to use default: {defaultUsername}\n> ",
   "runtime.wizard.ask_server_password":
     "Enter Antigravity server password (optional).\nPress Enter to keep it empty.\n> ",
+  "runtime.wizard.ask_server_version":
+    "Select OpenCode server version:\n1 - OpenCode V1 (1.x, npm package opencode-ai)\n2 - OpenCode V2 (2.x, npm package @opencode/cli)\nPress Enter to use default: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid": "Enter 1 or 2, or press Enter for default.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Enter OpenCode V2 server password (required).\nShow it with: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "The password is required for OpenCode V2. Please try again.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Enter OpenCode server password.\nPress Enter to keep the saved password.\n> ",
   "runtime.wizard.api_url_invalid": "Enter a valid URL (http/https) or press Enter for default.\n",
   "runtime.wizard.start": "Antigravity Telegram Bot setup.\n",
   "runtime.wizard.saved": "Configuration saved:\n- {envPath}\n",
@@ -523,7 +472,6 @@ export const en = {
     "Interactive wizard requires a TTY terminal. Run `opencode-telegram config` in an interactive shell.",
   "runtime.container.command_unavailable":
     "⚠️ This command is not available in the Docker image.",
-
   "rename.no_session": "⚠️ No active session. Create or select a session first.",
   "rename.prompt": "📝 Enter new title for session:\n\nCurrent: {title}",
   "rename.empty_title": "⚠️ Title cannot be empty.",
@@ -537,7 +485,6 @@ export const en = {
   "rename.blocked.command_not_allowed":
     "⚠️ This command is not available while rename is waiting for a new name.",
   "rename.button.cancel": "❌ Cancel",
-
   "task.prompt.schedule":
     "⏰ Send the task schedule in natural language.\n\nExamples:\n- every 5 minutes\n- every day at 17:00\n- tomorrow at 12:00",
   "task.schedule_empty": "⚠️ Schedule cannot be empty.",
@@ -572,7 +519,6 @@ export const en = {
     "Scheduled task requested an interactive question and cannot continue unattended.",
   "task.run.error.interactive_permission":
     "Scheduled task requested interactive permission and cannot continue unattended.",
-
   "tasklist.empty": "📭 No scheduled tasks yet.",
   "tasklist.select": "Select a scheduled task:",
   "tasklist.details":
@@ -583,7 +529,6 @@ export const en = {
   "tasklist.deleted_callback": "Deleted",
   "tasklist.inactive_callback": "This scheduled task menu is inactive",
   "tasklist.load_error": "🔴 Failed to load scheduled tasks.",
-
   "commands.select": "Choose an Antigravity command:",
   "commands.empty": "📭 No Antigravity commands are available for this project.",
   "commands.fetch_error": "🔴 Failed to load Antigravity commands.",
@@ -610,7 +555,6 @@ export const en = {
   "commands.download.size": "Size",
   "commands.download.modified": "Modified",
   "commands.download.error": "Failed to download file.",
-
   "skills.select": "Choose an Antigravity skill:",
   "skills.empty": "📭 No Antigravity skills are available for this project.",
   "skills.fetch_error": "🔴 Failed to load Antigravity skills.",
@@ -628,7 +572,6 @@ export const en = {
   "skills.button.next_page": "Next ➡️",
   "skills.page_empty_callback": "No skills on this page",
   "skills.page_load_error_callback": "Cannot load this page. Please try again.",
-
   "mcps.select": "MCP servers:",
   "mcps.empty": "📭 No MCP servers configured.",
   "mcps.fetch_error": "🔴 Failed to load MCP servers.",
@@ -647,23 +590,19 @@ export const en = {
   "mcps.button.disable": "🔴 Disable",
   "mcps.button.back": "⬅️ Back",
   "mcps.auth_required": "This server requires authorization and cannot be enabled from the bot.",
-
   "cmd.description.rename": "Rename current session",
-
   "legacy.models.fetch_error": "🔴 Failed to get models list. Check server status with /status.",
   "legacy.models.empty": "📋 No available models. Configure providers in Antigravity.",
   "legacy.models.header": "📋 Available models:\n\n",
   "legacy.models.no_provider_models": "  ⚠️ No available models\n",
   "legacy.models.env_hint": "💡 To use model in .env:\n",
   "legacy.models.error": "🔴 An error occurred while loading models list.",
-
   "stt.recognizing": "🎤 Recognizing audio...",
   "stt.recognized": "🎤 Recognized:",
   "stt.not_configured":
     "🎤 Voice recognition is not configured.\n\nSet STT_API_URL and STT_API_KEY in .env to enable it.",
   "stt.error": "🔴 Failed to recognize audio: {error}",
   "stt.empty_result": "🎤 No speech detected in the audio message.",
-
   "cmd.description.open": "Add a project by browsing directories",
   "worktree.branch_detached": "detached HEAD",
   "worktree.select_with_current": "Select a worktree:",
@@ -709,7 +648,59 @@ export const en = {
   "local_command.empty_output": "The command produced no output.",
   "local_command.failed": "Command failed with exit code {exitCode}: {stderr}",
   "local_command.timeout": "The command timed out.",
-} as const;
+  "cmd.description.usage": "Show remaining Google account quota (costs nothing).",
+  "cmd.restart.ack":
+    "🔄 Restarting the bot with pending changes... wait ~5 seconds.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No account switch in progress. Use /switch first.",
+  "switch.code_needed":
+    "Missing code: use /code <code> with the code Google gave you.",
+  "switch.already_pending":
+    "A /switch is already in progress. Paste the code with /code <code> or wait.",
+  "switch.working":
+    "🔄 Preparing account switch (backing up current token + cleanup)... waiting for the URL.",
+  "switch.no_url_yet":
+    "⏳ agy is still loading; run /switch again shortly or wait for the URL message.",
+  "switch.url_intro":
+    "🌐 Open this link in your (phone) browser with the DESTINATION account:",
+  "switch.paste_code_hint":
+    "🔑 Then paste the code here with: /code <code>",
+  "switch.submitting":
+    "⏳ Submitting the code to agy…",
+  "switch.done":
+    "✅ Account switched! New token stored. Run /usage to see the new account's quota.",
+  "switch.failed":
+    "❌ Switch failed:",
+  "bot.prompt_received": "📨 Received — handing off to the agent…",
+  "bot.prompt_dispatched": "⚙️ Dispatched to the agent pipe — working on it.",
+  "bot.prompt_slow_start": "⏳ Still waiting for the agent to pick it up (cold start can take a while)…",
+  "bot.queue_hot_taken": "⚡ Your message went straight into the running turn (hot takeover) — no queue, no restart.",
+  "bot.prompt_taken_in_flight":
+    "⚡ Your message was taken in-flight into the running turn; you'll see its answer in the same conversation, nothing interrupted.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrupted the previous task. Your message goes first; the other one stays in its conversation — resume with /sessions.",
+  "cmd.description.compact": "Compact the conversation context",
+  "compact.busy": "⏳ The agent is busy — try again when the current task finishes.",
+  "compact.no_session": "There is no active conversation to compact yet.",
+  "compact.started": "🧹 Compacting: asked the agent for a handoff summary…",
+  "compact.auto_started": "🧹 The conversation reached {tokens}k tokens — compacting automatically…",
+  "compact.done": "✅ Compacted — continuing in a fresh conversation with the context handed over.",
+  "compact.failed": "⚠️ Compaction failed — check the logs; you can retry with /compact.",
+  "compact.damaged_hint": "🛠 This error usually means the conversation state got damaged. I can compact it and continue in a new conversation.",
+  "compact.button": "🧹 Compact & continue",
+  "bot.retrying":
+    "⚠️ Antigravity service unavailable (503) — retrying automatically… attempt {attempt}/{max}, next try in ~{seconds}s.",
+  "bot.retry_recovered": "✅ Antigravity is back — continuing.",
+  "bot.retry_exhausted":
+    "❌ Antigravity stayed unavailable — retries exhausted. Resend your message when the service recovers.",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "Recent messages:",
+  "sessions.preview.you": "You:",
+  "sessions.preview.agent": "Agent:",} as const;
 
 export type I18nKey = keyof typeof en;
 export type I18nDictionary = Record<I18nKey, string>;

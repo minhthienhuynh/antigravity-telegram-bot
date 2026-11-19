@@ -6,7 +6,7 @@ export interface AttachedSessionState {
   busy: boolean;
 }
 
-class AttachManager {
+export class AttachManager {
   private state: AttachedSessionState | null = null;
 
   attach(sessionId: string, directory: string): void {
@@ -85,10 +85,7 @@ class AttachManager {
     logger.info(`[Attach] Marked attached session idle: session=${sessionId}`);
     return true;
   }
-
-  __resetForTests(): void {
-    this.state = null;
-  }
 }
 
+/** Process-wide singleton shared with the app container (single-user bot). */
 export const attachManager = new AttachManager();

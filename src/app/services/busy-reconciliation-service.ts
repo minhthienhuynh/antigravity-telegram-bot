@@ -1,8 +1,13 @@
-import { foregroundSessionState, type ForegroundBusySession } from "../managers/foreground-session-state-manager.js";
-import { attachManager } from "../managers/attach-manager.js";
+import type { AppContainer } from "../bootstrap/app-container.js";
+import type { ForegroundBusySession } from "../managers/foreground-session-state-manager.js";
 import { logger } from "../../utils/logger.js";
 
 const RECONCILE_MIN_INTERVAL_MS = 10_000;
+
+export type BusyReconciliationDeps = Pick<
+  AppContainer,
+  "attachManager" | "foregroundSessionState" | "scheduledTaskRuntime"
+>;
 
 const inFlightDirectories = new Set<string>();
 const lastReconcileAtByDirectory = new Map<string, number>();
@@ -22,27 +27,34 @@ export function setPromptResponseModeClearerForReconciliation(
   // Kept for test/call-site compatibility; the agy reconciler is a no-op.
 }
 
-function getReconciliationTargets(directory: string): {
+function getReconciliationTargets(
+  directory: string,
+  deps: BusyReconciliationDeps,
+): {
   foregroundBusySessions: ForegroundBusySession[];
-  attachedSessionForDirectory: ReturnType<typeof attachManager.getSnapshot>;
+  attachedSessionForDirectory: ReturnType<BusyReconciliationDeps["attachManager"]["getSnapshot"]>;
 } {
-  const foregroundBusySessions = foregroundSessionState
+  const foregroundBusySessions = deps.foregroundSessionState
     .getBusySessions()
     .filter((session) => session.directory === directory);
-  const attachedSession = attachManager.getSnapshot();
+  const attachedSession = deps.attachManager.getSnapshot();
   const attachedSessionForDirectory =
     attachedSession?.directory === directory ? attachedSession : null;
 
   return { foregroundBusySessions, attachedSessionForDirectory };
 }
 
-export async function reconcileBusyStateNow(directory: string): Promise<void> {
+export async function reconcileBusyStateNow(
+  directory: string,
+  deps: BusyReconciliationDeps,
+  _now: number = Date.now(),
+): Promise<void> {
   if (!directory) {
     return;
   }
 
   const { foregroundBusySessions, attachedSessionForDirectory } =
-    getReconciliationTargets(directory);
+    getReconciliationTargets(directory, deps);
 
   if (foregroundBusySessions.length === 0 && !attachedSessionForDirectory) {
     return;
@@ -59,16 +71,17 @@ export async function reconcileBusyStateNow(directory: string): Promise<void> {
   logger.debug(`[BusyReconciliation] Foreground busy states kept as-is for ${directory}`);
 }
 
-/**
- * Rate-limited wrapper kept so the event-subscription-service call sites stay intact.
- */
-export async function reconcileBusyState(directory: string, now: number = Date.now()): Promise<void> {
+export async function reconcileBusyState(
+  directory: string,
+  deps: BusyReconciliationDeps,
+  now: number = Date.now(),
+): Promise<void> {
   if (!directory || inFlightDirectories.has(directory)) {
     return;
   }
 
   const { foregroundBusySessions, attachedSessionForDirectory } =
-    getReconciliationTargets(directory);
+    getReconciliationTargets(directory, deps);
   if (foregroundBusySessions.length === 0 && !attachedSessionForDirectory) {
     return;
   }
@@ -82,7 +95,7 @@ export async function reconcileBusyState(directory: string, now: number = Date.n
   inFlightDirectories.add(directory);
 
   try {
-    await reconcileBusyStateNow(directory);
+    await reconcileBusyStateNow(directory, deps, now);
   } catch (error) {
     logger.warn("[BusyReconciliation] Failed to reconcile busy state", error);
   } finally {

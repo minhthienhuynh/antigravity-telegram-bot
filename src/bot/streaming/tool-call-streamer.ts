@@ -30,6 +30,7 @@ export interface StreamProgress {
 }
 
 interface StreamState {
+  held?: boolean;
   key: ToolStreamKey;
   sessionId: string;
   entries: StreamEntry[];
@@ -186,6 +187,8 @@ function buildParts(entries: StreamEntry[], progress: StreamProgress | null = nu
 }
 
 export class ToolCallStreamer {
+  private readonly heldSessions = new Set<string>();
+  private readonly documentBoundaries = new Map<string, { count: number; done: Promise<void>; release: () => void }>();
   private readonly throttleMs: StreamThrottleMs;
   private readonly sendText: ToolCallStreamerOptions["sendText"];
   private readonly editText: ToolCallStreamerOptions["editText"];
@@ -629,4 +632,38 @@ export class ToolCallStreamer {
       state.lastSentParts.pop();
     }
   }
+  /** A document divides new tool messages from older, still-editable calls. */
+  beginDocumentBoundary(sessionId: string): void {
+    const boundary = this.documentBoundaries.get(sessionId);
+    if (boundary) {
+      boundary.count++;
+    } else {
+      let release = () => {};
+      const done = new Promise<void>((resolve) => { release = resolve; });
+      this.documentBoundaries.set(sessionId, { count: 1, done, release });
+    }
+    this.heldSessions.add(sessionId);
+    for (const [id, state] of this.states) {
+      if (state.sessionId === sessionId) {
+        this.states.delete(id);
+      }
+    }
+  }
+
+  endDocumentBoundary(sessionId: string): void {
+    const boundary = this.documentBoundaries.get(sessionId);
+    if (!boundary || --boundary.count > 0) {
+      return;
+    }
+    this.documentBoundaries.delete(sessionId);
+    this.heldSessions.delete(sessionId);
+    for (const state of this.getStatesForSession(sessionId)) {
+      if (state.held) {
+        state.held = false;
+        this.ensureTimer(state);
+      }
+    }
+    boundary.release();
+  }
+
 }

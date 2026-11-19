@@ -1,3 +1,5 @@
+import { questionManager } from "../../app/managers/question-manager.js";
+import { permissionManager } from "../../app/managers/permission-manager.js";
 import { Bot, Context } from "grammy";
 import { startTypingIndicator } from "../typing-indicator.js";
 import {
@@ -18,7 +20,7 @@ import {
   stopEventListening,
 } from "../../antigravity/events.js";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
-import { clearAllInteractionState } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { safeBackgroundTask } from "../../utils/safe-background-task.js";
 import { materializeFileParts } from "../utils/agy-media.js";
 import { formatErrorDetails } from "../../utils/error-format.js";
@@ -213,8 +215,7 @@ export async function processUserPrompt(
     bot,
     chatId: ctx.chat!.id,
     session: currentSession,
-    ensureEventSubscription,
-  });
+    ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
 
   if (createdNewSession) {
     const currentAgent = await resolveProjectAgent(getStoredAgent());
@@ -471,4 +472,29 @@ async function prepareTelegramPhotos(
     await ctx.reply(isAlbum ? t("bot.media_group_download_error") : t("bot.photo_download_error"));
     return null;
   }
+}
+
+// --- OpenCode V2 inbox (dormant on the agy backend) ---
+// The agy CLI has no server-side inbox; these keep the upstream V2 call sites
+// compiling. usesOpencodeInbox() is false with the default v1 config, so they
+// are never reached in practice.
+
+/** Opens a run for a prompt picked up from an OpenCode V2 inbox — not applicable to agy. */
+export async function startInboxPromptRun(
+  session: { id: string; directory: string },
+  _deps: unknown,
+  _responseMode: PromptResponseMode | undefined,
+): Promise<void> {
+  logger.warn(`[Bot] Inbox run requested for ${session.id}, but the agy backend has no inbox; ignoring`);
+}
+
+/** Sends a prompt into an OpenCode V2 session inbox — not applicable to agy; returns null. */
+export async function admitPromptToInbox(
+  _ctx: Context,
+  _input: IncomingPrompt,
+  _deps: unknown,
+  _delivery: "steer" | "queue",
+): Promise<{ sessionId: string; inboxId: string } | null> {
+  logger.warn("[Bot] Inbox admission requested, but the agy backend has no inbox; not sent");
+  return null;
 }

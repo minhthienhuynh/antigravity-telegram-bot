@@ -7,10 +7,18 @@ import type { Event } from "@opencode-ai/sdk/v2";
 import { setRuntimeMode } from "../../../src/runtime/mode.js";
 import { resetSingletonState } from "../../helpers/reset-singleton-state.js";
 import { defined } from "../../helpers/defined.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   subscribeToEvents: vi.fn(),
   stopEventListening: vi.fn(),
+  sendTtsResponseForSession: vi.fn(),
+}));
+
+vi.mock("../../../src/bot/handlers/tts-response-handler.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../src/bot/handlers/tts-response-handler.js")>()),
+  sendTtsResponseForSession: mocked.sendTtsResponseForSession,
 }));
 
 vi.mock("../../../src/antigravity/events.js", () => ({
@@ -61,19 +69,23 @@ function emitAssistantMessage(
   } as unknown as Event);
 }
 
-function emitWriteTool(summaryAggregator: { processEvent(event: Event): void }): void {
+function emitWriteTool(
+  summaryAggregator: { processEvent(event: Event): void },
+  status: "running" | "completed" = "completed",
+  callId = "call-write",
+): void {
   summaryAggregator.processEvent({
     type: "message.part.updated",
     properties: {
       part: {
-        id: "part-1",
+        id: `part-${callId}`,
         sessionID: "session-1",
         messageID: "message-1",
         type: "tool",
-        callID: "call-write",
+        callID: callId,
         tool: "write",
         state: {
-          status: "completed",
+          status,
           input: {
             filePath: "src/file.ts",
             content: "const value = 1;\n",
@@ -107,14 +119,15 @@ function emitThinkingPart(
 function emitAssistantTextPart(
   summaryAggregator: { processEvent(event: Event): void },
   text: string,
+  messageId = "message-1",
 ): void {
   summaryAggregator.processEvent({
     type: "message.part.updated",
     properties: {
       part: {
-        id: "text-1",
+        id: `text-${messageId}`,
         sessionID: "session-1",
-        messageID: "message-1",
+        messageID: messageId,
         type: "text",
         text,
       },
@@ -122,12 +135,15 @@ function emitAssistantTextPart(
   } as unknown as Event);
 }
 
-function emitAssistantCompleted(summaryAggregator: { processEvent(event: Event): void }): void {
+function emitAssistantCompleted(
+  summaryAggregator: { processEvent(event: Event): void },
+  messageId = "message-1",
+): void {
   summaryAggregator.processEvent({
     type: "message.updated",
     properties: {
       info: {
-        id: "message-1",
+        id: messageId,
         sessionID: "session-1",
         role: "assistant",
         agent: "test-agent",
@@ -150,12 +166,13 @@ function emitPermissionAsked(
   summaryAggregator: { processEvent(event: Event): void },
   requestID: string,
   patterns: string[] = ["D:/shared/*"],
+  sessionID = "session-1",
 ): void {
   summaryAggregator.processEvent({
     type: "permission.asked",
     properties: {
       id: requestID,
-      sessionID: "session-1",
+      sessionID,
       permission: "external_directory",
       patterns,
       metadata: {},
@@ -278,6 +295,23 @@ function emitTaskTool(
   } as unknown as Event);
 }
 
+function emitTodoTool(summaryAggregator: { processEvent(event: Event): void }): void {
+  summaryAggregator.processEvent({
+    type: "message.part.updated",
+    properties: {
+      part: {
+        id: "part-call-todo",
+        sessionID: "session-1",
+        messageID: "message-1",
+        type: "tool",
+        callID: "call-todo",
+        tool: "todowrite",
+        state: { status: "running", input: {}, metadata: {} },
+      },
+    },
+  } as unknown as Event);
+}
+
 function emitSubagentStart(
   summaryAggregator: { processEvent(event: Event): void },
   suffix = "1",
@@ -388,9 +422,30 @@ function emitPermissionReplied(
   } as unknown as Event);
 }
 
+function emitQuestionAsked(
+  summaryAggregator: { processEvent(event: Event): void },
+  requestID: string,
+): void {
+  summaryAggregator.processEvent({
+    type: "question.asked",
+    properties: {
+      id: requestID,
+      sessionID: "session-1",
+      questions: [
+        {
+          header: "Pick",
+          question: `Which option for ${requestID}?`,
+          options: [{ label: "A", description: "first" }],
+        },
+      ],
+    },
+  } as unknown as Event);
+}
+
 describe("bot/services/event-subscription-service", () => {
   let tempHome: string;
   let activeService: { cleanup(reason: string): void } | null = null;
+  let activeContainer: AppContainer;
 
   beforeEach(async () => {
     vi.stubEnv("TELEGRAM_BOT_TOKEN", "test-telegram-token");
@@ -404,6 +459,8 @@ describe("bot/services/event-subscription-service", () => {
     mocked.subscribeToEvents.mockReset();
     mocked.stopEventListening.mockReset();
     mocked.subscribeToEvents.mockResolvedValue(undefined);
+    mocked.sendTtsResponseForSession.mockReset();
+    mocked.sendTtsResponseForSession.mockResolvedValue(false);
 
     const settingsStore = await import("../../../src/app/stores/settings-store.js");
     settingsStore.__resetSettingsForTests();
@@ -440,16 +497,12 @@ describe("bot/services/event-subscription-service", () => {
   }> {
     const [
       { createEventSubscriptionService },
-      { summaryAggregator },
       sessionService,
       settingsStore,
-      { assistantRunState },
     ] = await Promise.all([
         import("../../../src/bot/services/event-subscription-service.js"),
-        import("../../../src/app/managers/summary-aggregation-manager.js"),
         import("../../../src/app/services/session-service.js"),
         import("../../../src/app/stores/settings-store.js"),
-        import("../../../src/app/managers/assistant-run-state-manager.js"),
       ]);
 
     sessionService.setCurrentSession({
@@ -464,7 +517,9 @@ describe("bot/services/event-subscription-service", () => {
     settingsStore.setShowAssistantRunFooter(options.showAssistantRunFooter ?? true);
 
     const { bot, api } = createFakeBot();
-    const service = createEventSubscriptionService();
+    activeContainer = createTestAppContainer();
+    const { summaryAggregator, assistantRunState } = activeContainer;
+    const service = createEventSubscriptionService(activeContainer);
     activeService = service;
     service.clearRuntimeState("test_setup");
     if (options.startAssistantRun) {
@@ -537,6 +592,159 @@ describe("bot/services/event-subscription-service", () => {
   });
 
   describe("elapsed time for long tool calls", () => {
+    it("shows a full-mode running line before the timer starts", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      useTrackerFakeTimers();
+
+      emitBashTool(summaryAggregator, "running", { command: "sleep 60" });
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(collectSentTexts(api)).toEqual(expect.arrayContaining([expect.stringContaining("⏳ 💻 bash sleep 60")]));
+      expect(collectSentTexts(api).some((text) => text.includes("🕒"))).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(25_000);
+      expect(collectSentTexts(api).some((text) => text.includes("⏳") && text.includes("🕒 20s"))).toBe(true);
+    });
+
+    it("replaces parallel lines in start order even when they finish in reverse order", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      useTrackerFakeTimers();
+
+      emitBashTool(summaryAggregator, "running", { command: "sleep 60" });
+      emitReadTool(summaryAggregator, "running", { callId: "call-read", filePath: "README.md" });
+      await vi.advanceTimersByTimeAsync(3000);
+      emitReadTool(summaryAggregator, "completed", { callId: "call-read", filePath: "README.md" });
+      await flushPendingDispatch();
+
+      const intermediate = collectSentTexts(api).pop() ?? "";
+      expect(intermediate.indexOf("sleep 60")).toBeLessThan(intermediate.indexOf("README.md"));
+      expect(intermediate).toContain("⏳ 💻 bash");
+      expect(intermediate).toContain("📖 read");
+
+      emitBashTool(summaryAggregator, "completed", { command: "sleep 60" });
+      await flushPendingDispatch();
+      const final = collectSentTexts(api).pop() ?? "";
+      expect(final.indexOf("sleep 60")).toBeLessThan(final.indexOf("README.md"));
+      expect(final).not.toContain("⏳");
+      expect(api.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it("starts a todo stream after an earlier ordinary tool stream", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      useTrackerFakeTimers();
+
+      emitBashTool(summaryAggregator, "running", { command: "sleep 60" });
+      emitTodoTool(summaryAggregator);
+      await vi.advanceTimersByTimeAsync(5000);
+
+      expect(String(api.sendMessage.mock.calls[0]?.[1])).toContain("sleep 60");
+      expect(String(api.sendMessage.mock.calls[1]?.[1])).toContain("todowrite");
+    });
+
+    it("flushes a running tool line above its permission prompt", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      useTrackerFakeTimers();
+
+      emitBashTool(summaryAggregator, "running", { command: "sleep 60" });
+      emitPermissionAsked(summaryAggregator, "perm-1");
+      await vi.advanceTimersByTimeAsync(5000);
+      await vi.waitFor(() => expect(api.sendMessage).toHaveBeenCalledTimes(2));
+
+      expect(String(api.sendMessage.mock.calls[0]?.[1])).toContain("⏳ 💻 bash sleep 60");
+      expect(String(api.sendMessage.mock.calls[1]?.[1])).toContain("D:/shared/*");
+    });
+
+    it("removes an attached tool line without losing a parallel running sibling", async () => {
+      const { api, summaryAggregator } = await setupService(true);
+      useTrackerFakeTimers();
+
+      emitWriteTool(summaryAggregator, "running");
+      emitBashTool(summaryAggregator, "running", { command: "sleep 60" });
+      await vi.advanceTimersByTimeAsync(3000);
+      emitWriteTool(summaryAggregator, "completed");
+      await flushPendingDispatch();
+
+      await vi.waitFor(() => expect(api.sendDocument).toHaveBeenCalledTimes(1));
+      const afterDocument = collectSentTexts(api).pop() ?? "";
+      expect(afterDocument).toContain("sleep 60");
+      expect(afterDocument).not.toContain("write");
+      await vi.advanceTimersByTimeAsync(25_000);
+      expect(collectSentTexts(api).pop()).toMatch(/sleep 60 · 🕒 \d+s/);
+    });
+
+    it("deletes an attachment-only running message when the document arrives", async () => {
+      const { api, summaryAggregator } = await setupService(true);
+      useTrackerFakeTimers();
+
+      emitWriteTool(summaryAggregator, "running");
+      await vi.advanceTimersByTimeAsync(3000);
+      emitWriteTool(summaryAggregator, "completed");
+      await flushPendingDispatch();
+
+      expect(api.deleteMessage).toHaveBeenCalledTimes(1);
+      await vi.waitFor(() => expect(api.sendDocument).toHaveBeenCalledTimes(1));
+    });
+
+    it("holds calls started during document delivery below the document while editing older siblings", async () => {
+      const { api, summaryAggregator } = await setupService(true);
+      useTrackerFakeTimers();
+      let deliverDocument: (() => void) | undefined;
+      api.sendDocument.mockImplementation(
+        () => new Promise((resolve) => {
+          deliverDocument = () => resolve({ message_id: 101 });
+        }),
+      );
+
+      emitBashTool(summaryAggregator, "running", { command: "sleep 60" });
+      emitWriteTool(summaryAggregator, "running");
+      await vi.advanceTimersByTimeAsync(4000);
+      emitWriteTool(summaryAggregator, "completed");
+      await vi.waitFor(() => expect(api.sendDocument).toHaveBeenCalledTimes(1));
+
+      emitReadTool(summaryAggregator, "running", { callId: "call-later", filePath: "LATER.md" });
+      await vi.advanceTimersByTimeAsync(22_000);
+      expect(api.sendMessage).toHaveBeenCalledTimes(1);
+      expect(collectSentTexts(api).pop()).toContain("sleep 60 · 🕒");
+
+      expect(deliverDocument).toBeTypeOf("function");
+      deliverDocument?.();
+      const runtime = activeService as unknown as { runtime: { toolMessageBatcher: { flushSession(sessionId: string, reason: string): Promise<void> } } };
+      await runtime.runtime.toolMessageBatcher.flushSession("session-1", "test_document_complete");
+      await new Promise((resolve) => setImmediate(resolve));
+      await vi.advanceTimersByTimeAsync(12_000);
+      await vi.waitFor(() => expect(api.sendMessage).toHaveBeenCalledTimes(2));
+      expect(String(api.sendMessage.mock.calls[1]?.[1])).toContain("LATER.md");
+    });
+
+    it("holds later tool lines until both parallel attachment uploads finish", async () => {
+      const { api, summaryAggregator } = await setupService(true);
+      useTrackerFakeTimers();
+      const releases: Array<() => void> = [];
+      api.sendDocument.mockImplementation(() => new Promise((resolve) => {
+        releases.push(() => resolve({ message_id: 101 }));
+      }));
+
+      emitWriteTool(summaryAggregator, "running", "write-one");
+      emitWriteTool(summaryAggregator, "running", "write-two");
+      await vi.advanceTimersByTimeAsync(3000);
+      emitWriteTool(summaryAggregator, "completed", "write-one");
+      emitWriteTool(summaryAggregator, "completed", "write-two");
+      await vi.waitFor(() => expect(api.sendDocument).toHaveBeenCalledTimes(1));
+      emitReadTool(summaryAggregator, "running", { callId: "call-later", filePath: "LATER.md" });
+
+      releases[0]?.();
+      await vi.waitFor(() => expect(api.sendDocument).toHaveBeenCalledTimes(2));
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(collectSentTexts(api).some((text) => text.includes("LATER.md"))).toBe(false);
+
+      releases[1]?.();
+      const runtime = activeService as unknown as { runtime: { toolMessageBatcher: { flushSession(sessionId: string, reason: string): Promise<void> } } };
+      await runtime.runtime.toolMessageBatcher.flushSession("session-1", "test_documents_complete");
+      await new Promise((resolve) => setImmediate(resolve));
+      await vi.advanceTimersByTimeAsync(12_000);
+      await vi.waitFor(() => expect(collectSentTexts(api).some((text) => text.includes("LATER.md"))).toBe(true));
+    });
+
     it("shows a live line once the call passes the threshold", async () => {
       const { api, summaryAggregator } = await setupService(false);
 
@@ -569,7 +777,7 @@ describe("bot/services/event-subscription-service", () => {
 
       useTrackerFakeTimers();
       emitBashTool(summaryAggregator, "running");
-      await vi.advanceTimersByTimeAsync(2000);
+      await vi.advanceTimersByTimeAsync(200);
       emitBashTool(summaryAggregator, "completed");
       await flushPendingDispatch();
 
@@ -1048,6 +1256,163 @@ describe("bot/services/event-subscription-service", () => {
       releaseFirstEdit?.();
     });
 
+    it("closes the card when a reply is delivered and opens a new one for the next stretch", async () => {
+      const { api, summaryAggregator } = await setupService(false, { startAssistantRun: true });
+      const settingsStore = await import("../../../src/app/stores/settings-store.js");
+      settingsStore.setCompactOutputMode(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      useTrackerFakeTimers();
+      emitThinkingPart(summaryAggregator, "planning");
+      await flushPendingDispatch();
+      emitBashTool(summaryAggregator, "completed", { callId: "call-1" });
+      await flushPendingDispatch();
+      emitAssistantTextPart(summaryAggregator, "First reply");
+      emitAssistantCompleted(summaryAggregator, "message-1");
+      await flushPendingDispatch();
+
+      const finishedEdits = api.editMessageText.mock.calls.filter((call) =>
+        String(call[2]).includes("✅ Finished Work"),
+      );
+      expect(finishedEdits).toHaveLength(1);
+      expect(String(finishedEdits[0]?.[2])).toContain("tool calls: 1");
+
+      emitThinkingPart(summaryAggregator, "again", "message-2");
+      await flushPendingDispatch();
+      emitBashTool(summaryAggregator, "completed", { callId: "call-2" });
+      await flushPendingDispatch();
+      emitAssistantMessage(summaryAggregator, "message-2");
+      emitAssistantTextPart(summaryAggregator, "Second reply", "message-2");
+      emitAssistantCompleted(summaryAggregator, "message-2");
+      await flushPendingDispatch();
+
+      const workingSends = api.sendMessage.mock.calls.filter((call) =>
+        String(call[1]).includes("⏳ Working"),
+      );
+      expect(workingSends.length).toBeGreaterThanOrEqual(2);
+      const laterFinished = api.editMessageText.mock.calls.filter((call) =>
+        String(call[2]).includes("✅ Finished Work"),
+      );
+      expect(laterFinished).toHaveLength(2);
+      expect(String(laterFinished[1]?.[2])).toContain("tool calls: 1");
+      expect(String(laterFinished[1]?.[2])).not.toContain("tool calls: 2");
+
+      emitSessionIdle(summaryAggregator);
+      await flushPendingDispatch();
+
+      const footerSends = api.sendMessage.mock.calls.filter((call) =>
+        String(call[1]).includes("test-provider/test-model"),
+      );
+      expect(footerSends).toHaveLength(1);
+      expect(laterFinished).toHaveLength(2);
+    });
+
+    it("does not edit the open card with activity that arrives before the reply close runs", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      const settingsStore = await import("../../../src/app/stores/settings-store.js");
+      settingsStore.setCompactOutputMode(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      useTrackerFakeTimers();
+      emitThinkingPart(summaryAggregator, "planning");
+      await flushPendingDispatch();
+      const progressMessageId = api.sendMessage.mock.calls.find((call) =>
+        String(call[1]).includes("⏳ Working"),
+      )?.[0];
+
+      emitAssistantTextPart(summaryAggregator, "First reply");
+      emitAssistantCompleted(summaryAggregator);
+      emitBashTool(summaryAggregator, "running", {
+        callId: "call-next",
+        command: "echo next-stretch",
+      });
+      await flushPendingDispatch();
+
+      expect(
+        api.editMessageText.mock.calls.some((call) => String(call[2]).includes("echo next-stretch")),
+      ).toBe(false);
+      expect(
+        api.sendMessage.mock.calls.some((call) => String(call[1]).includes("echo next-stretch")),
+      ).toBe(true);
+      expect(
+        api.editMessageText.mock.calls.some((call) => String(call[2]).includes("✅ Finished Work")),
+      ).toBe(true);
+      expect(progressMessageId).toBeDefined();
+    });
+
+    it("does not send a second copy of a reply after compact delivery", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      const settingsStore = await import("../../../src/app/stores/settings-store.js");
+      settingsStore.setCompactOutputMode(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      useTrackerFakeTimers();
+      emitThinkingPart(summaryAggregator, "planning");
+      await flushPendingDispatch();
+      emitAssistantTextPart(summaryAggregator, "A long answer about tea");
+      emitAssistantCompleted(summaryAggregator);
+      emitAssistantTextPart(summaryAggregator, "A long answer about tea with a late tail");
+      await flushPendingDispatch();
+
+      const replySends = api.sendMessage.mock.calls.filter((call) =>
+        String(call[1]).includes("long answer about tea"),
+      );
+      expect(replySends).toHaveLength(1);
+    });
+
+    it("removes the mid-run card when delete on finish is on", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      const settingsStore = await import("../../../src/app/stores/settings-store.js");
+      settingsStore.setCompactOutputMode(true);
+      settingsStore.setDeleteCompactProgressOnFinish(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      useTrackerFakeTimers();
+      emitThinkingPart(summaryAggregator, "planning");
+      await flushPendingDispatch();
+      emitAssistantTextPart(summaryAggregator, "Done");
+      emitAssistantCompleted(summaryAggregator);
+      await flushPendingDispatch();
+
+      expect(api.deleteMessage).toHaveBeenCalled();
+      expect(
+        api.editMessageText.mock.calls.some((call) => String(call[2]).includes("✅ Finished Work")),
+      ).toBe(false);
+
+      emitThinkingPart(summaryAggregator, "again", "message-2");
+      await flushPendingDispatch();
+      const workingSends = api.sendMessage.mock.calls.filter((call) =>
+        String(call[1]).includes("⏳ Working"),
+      );
+      expect(workingSends.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("leaves the card live when the question prompt fails to send", async () => {
+      const { api, summaryAggregator } = await setupService(false);
+      const settingsStore = await import("../../../src/app/stores/settings-store.js");
+      settingsStore.setCompactOutputMode(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      useTrackerFakeTimers();
+      emitThinkingPart(summaryAggregator, "planning");
+      await flushPendingDispatch();
+
+      api.sendMessage.mockImplementation(async (chatId: number, text: string) => {
+        if (String(text).includes("Which option")) {
+          throw new Error("send failed");
+        }
+        return { message_id: 700 + chatId };
+      });
+
+      emitQuestionAsked(summaryAggregator, "q-fail");
+      await flushPendingDispatch();
+
+      expect(
+        api.editMessageText.mock.calls.some((call) => String(call[2]).includes("✅ Finished Work")),
+      ).toBe(false);
+      expect(api.deleteMessage).not.toHaveBeenCalled();
+    });
+
     it("edits the progress message to the finished summary on idle when delete on finish is off", async () => {
       const { api, summaryAggregator } = await setupService(false);
       const settingsStore = await import("../../../src/app/stores/settings-store.js");
@@ -1174,12 +1539,260 @@ describe("bot/services/event-subscription-service", () => {
     expect(api.sendMessageDraft).not.toHaveBeenCalled();
   });
 
+  describe("draft text before a question or permission prompt", () => {
+    function sentMessageTexts(api: FakeBotApi): string[] {
+      return api.sendMessage.mock.calls.map((call) => String(call[1]));
+    }
+
+    function indexOfSent(api: FakeBotApi, fragment: string): number {
+      return sentMessageTexts(api).findIndex((text) => text.includes(fragment));
+    }
+
+    function countSent(api: FakeBotApi, text: string): number {
+      return sentMessageTexts(api).filter((sentText) => sentText === text).length;
+    }
+
+    async function streamDraft(
+      api: FakeBotApi,
+      summaryAggregator: { processEvent(event: Event): void },
+      text: string,
+    ): Promise<void> {
+      emitAssistantTextPart(summaryAggregator, text);
+      await vi.waitFor(
+        () => {
+          expect(api.sendMessageDraft).toHaveBeenCalled();
+        },
+        { timeout: 3000 },
+      );
+    }
+
+    it("sends the drafted text as a silent message above the question and not again at completion", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      await streamDraft(api, summaryAggregator, "Analysis");
+      emitQuestionAsked(summaryAggregator, "q1");
+
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+      const textIndex = indexOfSent(api, "Analysis");
+      expect(textIndex).toBeGreaterThanOrEqual(0);
+      expect(textIndex).toBeLessThan(indexOfSent(api, "Which option for q1?"));
+      expect(defined(api.sendMessage.mock.calls[textIndex])[2]?.disable_notification).toBe(true);
+
+      emitAssistantCompleted(summaryAggregator);
+      await vi.waitFor(() => {
+        expect(mocked.sendTtsResponseForSession).toHaveBeenCalledTimes(1);
+      });
+      expect(countSent(api, "Analysis")).toBe(1);
+      expect(defined(mocked.sendTtsResponseForSession.mock.calls[0])[0].text).toBe("Analysis");
+    });
+
+    it("sends the drafted text above a permission request", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      await streamDraft(api, summaryAggregator, "Analysis");
+      emitPermissionAsked(summaryAggregator, "perm-1");
+
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "D:/shared/*")).toBeGreaterThanOrEqual(0);
+      });
+      expect(indexOfSent(api, "Analysis")).toBeGreaterThanOrEqual(0);
+      expect(indexOfSent(api, "Analysis")).toBeLessThan(indexOfSent(api, "D:/shared/*"));
+
+      emitAssistantCompleted(summaryAggregator);
+      await vi.waitFor(() => {
+        expect(mocked.sendTtsResponseForSession).toHaveBeenCalledTimes(1);
+      });
+      expect(countSent(api, "Analysis")).toBe(1);
+    });
+
+    it("does not send the text again when it is updated while the early send is in flight", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      // No preview went out yet, so the early send renders the text afresh.
+      emitAssistantTextPart(summaryAggregator, "Analysis");
+      let releaseEarlySend: () => void = () => {};
+      api.sendMessage.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseEarlySend = () => resolve({ message_id: 100 });
+          }),
+      );
+      emitPermissionAsked(summaryAggregator, "perm-1");
+      await vi.waitFor(() => {
+        expect(countSent(api, "Analysis")).toBe(1);
+      });
+
+      // A trailing-whitespace update adds nothing worth sending on its own.
+      const draftSendsBefore = api.sendMessageDraft.mock.calls.length;
+      emitAssistantTextPart(summaryAggregator, "Analysis\n");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      releaseEarlySend();
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "D:/shared/*")).toBeGreaterThanOrEqual(0);
+      });
+      expect(api.sendMessageDraft.mock.calls.length).toBe(draftSendsBefore);
+
+      emitAssistantCompleted(summaryAggregator);
+      await vi.waitFor(() => {
+        expect(mocked.sendTtsResponseForSession).toHaveBeenCalledTimes(1);
+      });
+      expect(sentMessageTexts(api).filter((text) => text.includes("Analysis"))).toHaveLength(1);
+    });
+
+    it("sends the text even when no draft preview went out before the prompt", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      emitAssistantTextPart(summaryAggregator, "Analysis");
+      emitQuestionAsked(summaryAggregator, "q1");
+
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+      expect(indexOfSent(api, "Analysis")).toBeGreaterThanOrEqual(0);
+      expect(indexOfSent(api, "Analysis")).toBeLessThan(indexOfSent(api, "Which option for q1?"));
+    });
+
+    it("sends only the text written after the prompt when the message completes", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      await streamDraft(api, summaryAggregator, "Analysis");
+      emitQuestionAsked(summaryAggregator, "q1");
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+
+      emitAssistantTextPart(summaryAggregator, "Analysis\n\nMore after the answer");
+      emitAssistantCompleted(summaryAggregator);
+
+      await vi.waitFor(() => {
+        expect(mocked.sendTtsResponseForSession).toHaveBeenCalledTimes(1);
+      });
+      const texts = sentMessageTexts(api);
+      expect(texts.filter((text) => text.includes("Analysis"))).toEqual(["Analysis"]);
+      expect(texts.some((text) => text.includes("More after the answer"))).toBe(true);
+      expect(defined(mocked.sendTtsResponseForSession.mock.calls[0])[0].text).toBe(
+        "Analysis\n\nMore after the answer",
+      );
+    });
+
+    it("sends nothing extra when no text preceded the prompt", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      emitQuestionAsked(summaryAggregator, "q1");
+
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+      expect(api.sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it("still shows the prompt and sends the text once at completion when the early send fails", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+      let telegramDown = true;
+      api.sendMessage.mockImplementation(async (_chatId: number, text: string) => {
+        if (telegramDown && text === "Analysis") {
+          throw new Error("Network request failed");
+        }
+        return { message_id: 100 };
+      });
+
+      await streamDraft(api, summaryAggregator, "Analysis");
+      emitQuestionAsked(summaryAggregator, "q1");
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+
+      telegramDown = false;
+      const failedAttempts = countSent(api, "Analysis");
+      emitAssistantCompleted(summaryAggregator);
+
+      await vi.waitFor(() => {
+        expect(mocked.sendTtsResponseForSession).toHaveBeenCalledTimes(1);
+      });
+      expect(countSent(api, "Analysis")).toBe(failedAttempts + 1);
+      expect(indexOfSent(api, "Which option for q1?")).toBeLessThan(
+        sentMessageTexts(api).lastIndexOf("Analysis"),
+      );
+    });
+
+    it("sends the parent's drafted text above a subagent's permission request", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+
+      await streamDraft(api, summaryAggregator, "Analysis");
+      emitSubagentStart(summaryAggregator);
+      emitPermissionAsked(summaryAggregator, "perm-1", ["D:/shared/*"], "child-session-1");
+
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "D:/shared/*")).toBeGreaterThanOrEqual(0);
+      });
+      expect(indexOfSent(api, "Analysis")).toBeGreaterThanOrEqual(0);
+      expect(indexOfSent(api, "Analysis")).toBeLessThan(indexOfSent(api, "D:/shared/*"));
+    });
+
+    it("sends the drafted text above the question in compact output mode", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "draft",
+      });
+      const settingsStore = await import("../../../src/app/stores/settings-store.js");
+      settingsStore.setCompactOutputMode(true);
+
+      await streamDraft(api, summaryAggregator, "Analysis");
+      emitQuestionAsked(summaryAggregator, "q1");
+
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+      expect(indexOfSent(api, "Analysis")).toBeGreaterThanOrEqual(0);
+      expect(indexOfSent(api, "Analysis")).toBeLessThan(indexOfSent(api, "Which option for q1?"));
+    });
+
+    it("leaves edit mode as it was: the streamed message stays and is not sent twice", async () => {
+      const { api, summaryAggregator } = await setupService(false, {
+        responseStreamingMode: "edit",
+      });
+
+      emitAssistantTextPart(summaryAggregator, "Analysis");
+      await vi.waitFor(
+        () => {
+          expect(indexOfSent(api, "Analysis")).toBeGreaterThanOrEqual(0);
+        },
+        { timeout: 3000 },
+      );
+      emitQuestionAsked(summaryAggregator, "q1");
+      await vi.waitFor(() => {
+        expect(indexOfSent(api, "Which option for q1?")).toBeGreaterThanOrEqual(0);
+      });
+
+      emitAssistantCompleted(summaryAggregator);
+      await vi.waitFor(() => {
+        expect(mocked.sendTtsResponseForSession).toHaveBeenCalledTimes(1);
+      });
+      expect(countSent(api, "Analysis")).toBe(1);
+      expect(api.sendMessageDraft).not.toHaveBeenCalled();
+    });
+  });
+
   it("clears permission prompts when OpenCode resolves pending requests", async () => {
     const { api, summaryAggregator } = await setupService(true);
-    const [{ permissionManager }, { interactionManager }] = await Promise.all([
-      import("../../../src/app/managers/permission-manager.js"),
-      import("../../../src/app/managers/interaction-manager.js"),
-    ]);
+    const { permissionManager, interactionManager } = activeContainer;
     api.sendMessage
       .mockResolvedValueOnce({ message_id: 500 })
       .mockResolvedValueOnce({ message_id: 501 });
@@ -1211,10 +1824,7 @@ describe("bot/services/event-subscription-service", () => {
 
   it("discards a permission prompt resolved while its Telegram message is being sent", async () => {
     const { api, summaryAggregator } = await setupService(true);
-    const [{ permissionManager }, { interactionManager }] = await Promise.all([
-      import("../../../src/app/managers/permission-manager.js"),
-      import("../../../src/app/managers/interaction-manager.js"),
-    ]);
+    const { permissionManager, interactionManager } = activeContainer;
     let resolveSend: (message: { message_id: number }) => void = () => {};
     const pendingSend = new Promise<{ message_id: number }>((resolve) => {
       resolveSend = resolve;
@@ -1240,27 +1850,202 @@ describe("bot/services/event-subscription-service", () => {
     expect(interactionManager.getSnapshot()).toBeNull();
   });
 
-  it("does not replace a newer interaction when a permission is resolved", async () => {
-    const { api, summaryAggregator } = await setupService(true);
-    const [{ permissionManager }, { interactionManager }] = await Promise.all([
-      import("../../../src/app/managers/permission-manager.js"),
-      import("../../../src/app/managers/interaction-manager.js"),
-    ]);
-    api.sendMessage
-      .mockResolvedValueOnce({ message_id: 510 })
-      .mockResolvedValueOnce({ message_id: 511 });
+  function getInteractionManagers() {
+    const { permissionManager, questionManager, interactionManager } = activeContainer;
+    return { permissionManager, questionManager, interactionManager };
+  }
+
+  async function settle(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 30));
+  }
+
+  async function showPollWithWaitingPermission(summaryAggregator: {
+    processEvent(event: Event): void;
+  }): Promise<void> {
+    const { questionManager, interactionManager } = getInteractionManagers();
+
+    emitQuestionAsked(summaryAggregator, "question-1");
+    await vi.waitFor(() => {
+      expect(questionManager.getActiveMessageId()).not.toBeNull();
+    });
     emitPermissionAsked(summaryAggregator, "permission-1");
+    await vi.waitFor(() => {
+      expect(interactionManager.getWaitingKind()).toBe("permission");
+    });
+  }
+
+  it("leaves a poll waiting while permissions are on screen and shows it after the last one", async () => {
+    const { api, summaryAggregator } = await setupService(true);
+    const { permissionManager, questionManager, interactionManager } = getInteractionManagers();
+    api.sendMessage.mockResolvedValueOnce({ message_id: 510 });
+
+    emitPermissionAsked(summaryAggregator, "permission-1");
+    await vi.waitFor(() => {
+      expect(permissionManager.getPendingCount()).toBe(1);
+    });
+
+    emitQuestionAsked(summaryAggregator, "question-1");
+    await vi.waitFor(() => {
+      expect(interactionManager.getWaitingKind()).toBe("question");
+    });
+    expect(questionManager.isActive()).toBe(false);
+    expect(api.sendMessage).toHaveBeenCalledTimes(1);
+
+    emitPermissionReplied(summaryAggregator, "permission-1");
+
+    await vi.waitFor(() => {
+      expect(questionManager.getActiveMessageId()).not.toBeNull();
+    });
+    expect(questionManager.getRequestID()).toBe("question-1");
+    expect(interactionManager.getWaitingKind()).toBeNull();
+  });
+
+  it("leaves permissions waiting while a poll is on screen and shows them after cancel", async () => {
+    const { api, summaryAggregator } = await setupService(true);
+    const { permissionManager, questionManager, interactionManager } = getInteractionManagers();
+    let nextMessageId = 600;
+    api.sendMessage.mockImplementation(async () => ({ message_id: nextMessageId++ }));
+
+    await showPollWithWaitingPermission(summaryAggregator);
     emitPermissionAsked(summaryAggregator, "permission-2", ["D:/other/*"]);
+    await settle();
+    const sendsBefore = api.sendMessage.mock.calls.length;
+    expect(permissionManager.isActive()).toBe(false);
+
+    questionManager.cancel();
+
     await vi.waitFor(() => {
       expect(permissionManager.getPendingCount()).toBe(2);
     });
-    interactionManager.start({ kind: "rename", expectedInput: "text" });
+    expect(api.sendMessage).toHaveBeenCalledTimes(sendsBefore + 2);
+    expect(interactionManager.getSnapshot()?.kind).toBe("permission");
+  });
 
-    emitPermissionReplied(summaryAggregator, "permission-2");
+  it("never shows a waiting permission answered elsewhere", async () => {
+    const { api, summaryAggregator } = await setupService(true);
+    const { permissionManager, questionManager, interactionManager } = getInteractionManagers();
+
+    await showPollWithWaitingPermission(summaryAggregator);
+
+    emitPermissionReplied(summaryAggregator, "permission-1");
+    await vi.waitFor(() => {
+      expect(interactionManager.getWaitingKind()).toBeNull();
+    });
+    expect(questionManager.isActive()).toBe(true);
+    const sendsBefore = api.sendMessage.mock.calls.length;
+
+    questionManager.cancel();
+    await settle();
+
+    expect(api.sendMessage).toHaveBeenCalledTimes(sendsBefore);
+    expect(permissionManager.isActive()).toBe(false);
+    expect(interactionManager.getSnapshot()).toBeNull();
+  });
+
+  it("replaces the poll on screen without releasing the waiting permission", async () => {
+    const { summaryAggregator } = await setupService(true);
+    const { permissionManager, questionManager, interactionManager } = getInteractionManagers();
+
+    await showPollWithWaitingPermission(summaryAggregator);
+
+    emitQuestionAsked(summaryAggregator, "question-2");
+    await vi.waitFor(() => {
+      expect(questionManager.getRequestID()).toBe("question-2");
+    });
+    await settle();
+
+    expect(interactionManager.getWaitingKind()).toBe("permission");
+    expect(permissionManager.isActive()).toBe(false);
+  });
+
+  it("shows the waiting permission when the question tool fails", async () => {
+    const { summaryAggregator } = await setupService(true);
+    const { permissionManager, questionManager } = getInteractionManagers();
+
+    await showPollWithWaitingPermission(summaryAggregator);
+
+    const aggregator = summaryAggregator as unknown as {
+      onQuestionErrorCallback: (sessionId: string) => void;
+    };
+    aggregator.onQuestionErrorCallback("session-1");
 
     await vi.waitFor(() => {
       expect(permissionManager.getPendingCount()).toBe(1);
     });
-    expect(interactionManager.getSnapshot()?.kind).toBe("rename");
+    expect(questionManager.isActive()).toBe(false);
+  });
+
+  it("drops a waiting poll when the question tool fails behind permissions", async () => {
+    const { summaryAggregator } = await setupService(true);
+    const { permissionManager, interactionManager } = getInteractionManagers();
+
+    emitPermissionAsked(summaryAggregator, "permission-1");
+    await vi.waitFor(() => {
+      expect(permissionManager.getPendingCount()).toBe(1);
+    });
+    emitQuestionAsked(summaryAggregator, "question-1");
+    await vi.waitFor(() => {
+      expect(interactionManager.getWaitingKind()).toBe("question");
+    });
+
+    const aggregator = summaryAggregator as unknown as {
+      onQuestionErrorCallback: (sessionId: string) => void;
+    };
+    aggregator.onQuestionErrorCallback("session-1");
+
+    expect(interactionManager.getWaitingKind()).toBeNull();
+    expect(permissionManager.getPendingCount()).toBe(1);
+  });
+
+  it("drops a released request when a full reset lands before it is shown", async () => {
+    const { api, summaryAggregator } = await setupService(true);
+    const { permissionManager, questionManager, interactionManager } = getInteractionManagers();
+
+    await showPollWithWaitingPermission(summaryAggregator);
+    const sendsBefore = api.sendMessage.mock.calls.length;
+
+    questionManager.cancel();
+    interactionManager.reset("abort_command");
+    await settle();
+
+    expect(api.sendMessage).toHaveBeenCalledTimes(sendsBefore);
+    expect(permissionManager.isActive()).toBe(false);
+    expect(interactionManager.getSnapshot()).toBeNull();
+  });
+
+  it("does not close the compact card while a permission waits, and closes it when the prompt appears", async () => {
+    const { api, summaryAggregator } = await setupService(true);
+    const [settingsStore, { t }] = await Promise.all([
+      import("../../../src/app/stores/settings-store.js"),
+      import("../../../src/i18n/index.js"),
+    ]);
+    settingsStore.setCompactOutputMode(true);
+    const { questionManager } = getInteractionManagers();
+    const waitingPermissionText = t("progress.compact.waiting_permission");
+    const hasText = (fragment: string): boolean =>
+      collectSentTexts(api).some((text) => text.includes(fragment));
+
+    await showPollWithWaitingPermission(summaryAggregator);
+    emitThinkingPart(summaryAggregator, "still working");
+    await vi.waitFor(
+      () => {
+        expect(hasText("⏳ Working")).toBe(true);
+      },
+      { timeout: 3000 },
+    );
+    await settle();
+
+    expect(hasText(waitingPermissionText)).toBe(false);
+    expect(hasText("✅ Finished Work")).toBe(false);
+
+    questionManager.cancel();
+
+    await vi.waitFor(
+      () => {
+        expect(hasText("✅ Finished Work")).toBe(true);
+      },
+      { timeout: 3000 },
+    );
+    expect(hasText(waitingPermissionText)).toBe(false);
   });
 });

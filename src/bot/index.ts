@@ -1,8 +1,13 @@
+import { pinnedMessageManager } from "./pinned/pinned-message-manager.js";
+import { interactionManager } from "../app/managers/interaction-manager.js";
+import { summaryAggregator } from "../app/managers/summary-aggregation-manager.js";
+import { questionManager } from "../app/managers/question-manager.js";
+import { permissionManager } from "../app/managers/permission-manager.js";
 import { Bot, Context } from "grammy";
 import { config } from "../config.js";
 import { getCurrentProject } from "../app/stores/settings-store.js";
 import { attachManager } from "../app/managers/attach-manager.js";
-import { clearAllInteractionState } from "../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../app/managers/interaction-reset.js";
 import {
   configureAttachPresentation,
   restoreAttachedCurrentSession,
@@ -121,8 +126,7 @@ function createBotSync(localCommandRegistry = LocalCommandRegistry.empty()): Bot
         bot,
         chatId: config.telegram.allowedUserId,
         ensureEventSubscription: eventSubscriptionService.ensureEventSubscription,
-        forceFullRestore: true,
-      });
+        forceFullRestore: true, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager, pinnedMessageManager });
 
       if (restored) {
         logger.info("[Bot] Restored followed session after bot startup");
@@ -282,6 +286,7 @@ export function restoreFollowedSessionOnPollingStart(bot: Bot<Context>): void {
         chatId: config.telegram.allowedUserId,
         ensureEventSubscription: eventSubscriptionService.ensureEventSubscription,
         forceFullRestore: true,
+        attachManager, permissionManager, questionManager, summaryAggregator, interactionManager, pinnedMessageManager,
       }),
   });
 }

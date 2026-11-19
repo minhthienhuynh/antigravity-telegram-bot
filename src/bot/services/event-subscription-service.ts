@@ -106,7 +106,7 @@ import { showPermissionRequest, syncPermissionInteractionState } from "../menus/
 import {
   clearAllInteractionState,
   interactionManager,
-} from "../../app/managers/interaction-manager.js";
+} from "../../app/managers/interaction-reset.js";
 import {
   isMalformedFunctionCallError,
   sendPromptToActiveProcess,

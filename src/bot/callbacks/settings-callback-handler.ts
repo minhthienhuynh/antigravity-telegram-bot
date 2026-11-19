@@ -1,9 +1,10 @@
 import type { Context } from "grammy";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { isTtsConfigured } from "../../app/services/tts-service.js";
 import {
   getCompactOutputMode,
   getDeleteCompactProgressOnFinish,
-  getPromptQueueEnabled,
+  getPromptQueueMode,
   getResponseStreamingMode,
   getSendDiffFileAttachments,
   getPinnedDashboardEnabled,
@@ -13,19 +14,20 @@ import {
   setCompactOutputMode,
   setDeleteCompactProgressOnFinish,
   setPinnedDashboardEnabled,
-  setPromptQueueEnabled,
+  setPromptQueueMode,
   setResponseStreamingMode,
   setSendDiffFileAttachments,
   setShowAssistantRunFooter,
   setShowThinkingContent,
   setTtsMode,
+  type PromptQueueMode,
   type ResponseStreamingMode,
   type TtsMode,
 } from "../../app/stores/settings-store.js";
 import { t } from "../../i18n/index.js";
+import { opencodeServerVersion } from "../../opencode/client.js";
 import { logger } from "../../utils/logger.js";
 import { appendInlineMenuCancelButton, ensureActiveInlineMenu } from "../menus/inline-menu.js";
-import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
 import {
   buildSettingsMenuView,
   SETTINGS_ASSISTANT_FOOTER_CALLBACK,
@@ -64,18 +66,36 @@ function getNextTtsMode(mode: TtsMode): TtsMode {
   return "off";
 }
 
+/** V2 cycles Off → Queue → Steer; V1 toggles its own queue on and off. */
+function getNextPromptQueueMode(mode: PromptQueueMode): PromptQueueMode {
+  if (mode === "off") {
+    return "queue";
+  }
+
+  if (mode === "queue" && opencodeServerVersion === "v2") {
+    return "steer";
+  }
+
+  return "off";
+}
+
 function getNextResponseStreamingMode(mode: ResponseStreamingMode): ResponseStreamingMode {
   return mode === "edit" ? "draft" : "edit";
 }
 
-export async function handleSettingsCallback(ctx: Context): Promise<boolean> {
+export type SettingsCallbackDeps = Pick<AppContainer, "interactionManager" | "pinnedMessageManager">;
+
+export async function handleSettingsCallback(
+  ctx: Context,
+  deps: SettingsCallbackDeps,
+): Promise<boolean> {
   const callbackData = ctx.callbackQuery?.data;
 
   if (!callbackData?.startsWith(SETTINGS_CALLBACK_PREFIX)) {
     return false;
   }
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "settings");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "settings", deps);
   if (!isActiveMenu) {
     return true;
   }
@@ -132,7 +152,7 @@ export async function handleSettingsCallback(ctx: Context): Promise<boolean> {
     }
 
     if (callbackData === SETTINGS_PROMPT_QUEUE_CALLBACK) {
-      setPromptQueueEnabled(!getPromptQueueEnabled());
+      setPromptQueueMode(getNextPromptQueueMode(getPromptQueueMode()));
       const { text, keyboard } = buildSettingsMenuView();
       await ctx.answerCallbackQuery({ text: t("settings.saved") });
       await ctx.editMessageText(text, {
@@ -155,9 +175,9 @@ export async function handleSettingsCallback(ctx: Context): Promise<boolean> {
       const nextEnabled = !getPinnedDashboardEnabled();
       const chatId = ctx.chat?.id ?? ctx.callbackQuery?.message?.chat?.id;
       if (ctx.api && chatId !== undefined) {
-        pinnedMessageManager.initialize(ctx.api, chatId);
+        deps.pinnedMessageManager.initialize(ctx.api, chatId);
       }
-      await pinnedMessageManager.applyPinnedDashboardEnabled(nextEnabled);
+      await deps.pinnedMessageManager.applyPinnedDashboardEnabled(nextEnabled);
       setPinnedDashboardEnabled(nextEnabled);
       const { text, keyboard } = buildSettingsMenuView();
       await ctx.answerCallbackQuery({ text: t("settings.saved") });

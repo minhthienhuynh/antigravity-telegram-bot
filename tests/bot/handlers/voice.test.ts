@@ -4,17 +4,18 @@ import type { Context } from "grammy";
 import type { VoiceMessageDeps } from "../../../src/bot/handlers/voice-handler.js";
 import { t } from "../../../src/i18n/index.js";
 import { defined } from "../../helpers/defined.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   getTtsModeMock: vi.fn(),
-  getPromptQueueEnabledMock: vi.fn(),
+  getPromptQueueModeMock: vi.fn(),
   flushPendingPromptMock: vi.fn(),
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
   __resetSettingsForTests: vi.fn(),
   getTtsMode: mocked.getTtsModeMock,
-  getPromptQueueEnabled: mocked.getPromptQueueEnabledMock,
+  getPromptQueueMode: mocked.getPromptQueueModeMock,
 }));
 
 vi.mock("../../../src/utils/logger.js", () => ({
@@ -74,6 +75,7 @@ function createVoiceDeps(overrides: Record<string, unknown> = {}): {
   const transcribeMock = vi.fn().mockResolvedValue({ text: "run tests" });
 
   const deps: VoiceMessageDeps = {
+    ...createTestAppContainer(),
     bot: {} as VoiceMessageDeps["bot"],
     ensureEventSubscription: vi.fn().mockResolvedValue(undefined),
     isSttConfigured: vi.fn(() => true),
@@ -83,7 +85,6 @@ function createVoiceDeps(overrides: Record<string, unknown> = {}): {
       processPromptMock(ctx, input.text, promptDeps, input.fileParts, options),
     ...overrides,
   };
-
   return { deps, processPromptMock, downloadMock, transcribeMock };
 }
 
@@ -141,7 +142,7 @@ describe("bot/handlers/voice-handler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.getTtsModeMock.mockReturnValue("off");
-    mocked.getPromptQueueEnabledMock.mockReturnValue(false);
+    mocked.getPromptQueueModeMock.mockReturnValue("off");
     vi.doUnmock("node:https");
     vi.stubEnv("TELEGRAM_BOT_TOKEN", "test-telegram-token");
     vi.stubEnv("TELEGRAM_ALLOWED_USER_ID", "123456789");
@@ -173,17 +174,23 @@ describe("bot/handlers/voice-handler", () => {
   });
 
   it("transcribes and queues a voice message while the agent is busy", async () => {
-    mocked.getPromptQueueEnabledMock.mockReturnValue(true);
+    mocked.getPromptQueueModeMock.mockReturnValue("queue");
     const { handleVoiceMessage } = await loadVoiceModule();
-    const { foregroundSessionState } = await import(
-      "../../../src/app/managers/foreground-session-state-manager.js"
-    );
     const { promptQueue } = await import("../../../src/app/managers/prompt-queue-manager.js");
-    foregroundSessionState.__resetForTests();
+    const { initializePromptQueueDispatch } = await import(
+      "../../../src/bot/handlers/prompt-queue-dispatch.js"
+    );
+    // The module graph was reset above, so the container has to come from it as well.
+    const { createTestAppContainer: createFreshTestAppContainer } = await import(
+      "../../helpers/app-container.js"
+    );
+    const container = createFreshTestAppContainer();
     promptQueue.__resetForTests();
-    foregroundSessionState.markBusy("session-1", "/repo");
+    container.foregroundSessionState.markBusy("session-1", "/repo");
     const { ctx } = createVoiceContext();
-    const { deps, processPromptMock, transcribeMock } = createVoiceDeps();
+    const { deps: baseDeps, processPromptMock, transcribeMock } = createVoiceDeps();
+    const deps = { ...baseDeps, ...container };
+    initializePromptQueueDispatch(deps);
 
     await handleVoiceMessage(ctx, deps);
 

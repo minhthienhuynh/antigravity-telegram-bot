@@ -101,7 +101,7 @@ type ToolFileCallback = (fileInfo: ToolFileInfo) => void;
 
 type QuestionCallback = (questions: Question[], requestID: string, sessionId: string) => void;
 
-type QuestionErrorCallback = () => void;
+type QuestionErrorCallback = (sessionId: string) => void;
 
 type ThinkingCallback = (update: ThinkingUpdate) => void;
 
@@ -115,9 +115,9 @@ export interface TokensInfo {
   cacheWrite: number;
 }
 
-type TokensCallback = (tokens: TokensInfo, isCompleted: boolean) => void;
+type TokensCallback = (sessionId: string, tokens: TokensInfo, isCompleted: boolean) => void;
 
-type CostCallback = (cost: number) => void;
+type CostCallback = (sessionId: string, cost: number) => void;
 
 export type SubagentStatus = "pending" | "running" | "completed" | "error";
 
@@ -169,7 +169,7 @@ type PermissionRepliedCallback = (sessionId: string, requestID: string) => void 
 
 type SessionDiffCallback = (sessionId: string, diffs: FileChange[]) => void;
 
-type FileChangeCallback = (change: FileChange) => void;
+type FileChangeCallback = (sessionId: string, change: FileChange) => void;
 
 type ClearedCallback = () => void;
 
@@ -282,7 +282,7 @@ function normalizeSnapshotValue(value: unknown): unknown {
   return value;
 }
 
-class SummaryAggregator {
+export class SummaryAggregator {
   private currentSessionId: string | null = null;
   private textMessageStates: Map<string, TextMessageState> = new Map();
   private thinkingMessageStates: Map<string, ThinkingMessageState> = new Map();
@@ -311,6 +311,8 @@ class SummaryAggregator {
   private onSessionDiffCallback: SessionDiffCallback | null = null;
   private onFileChangeCallback: FileChangeCallback | null = null;
   private onClearedCallback: ClearedCallback | null = null;
+  private outboundHeld = false;
+  private deferredOutbound: Array<() => void | Promise<void>> = [];
   private processedToolStates: Set<string> = new Set();
   private thinkingFiredForMessages: Set<string> = new Set();
   private thinkingFinishedForMessages: Set<string> = new Set();
@@ -427,6 +429,58 @@ class SummaryAggregator {
 
   setOnCleared(callback: ClearedCallback): void {
     this.onClearedCallback = callback;
+  }
+
+  holdOutbound(): void {
+    this.outboundHeld = true;
+  }
+
+  hasDeferredOutbound(): boolean {
+    return this.deferredOutbound.length > 0;
+  }
+
+  async drainOutbound(gapMs: number): Promise<void> {
+    if (!this.outboundHeld) {
+      return;
+    }
+
+    let first = true;
+    for (;;) {
+      const task = this.deferredOutbound.shift();
+      if (!task) {
+        this.outboundHeld = false;
+        return;
+      }
+
+      if (!first) {
+        await new Promise((resolve) => setTimeout(resolve, gapMs));
+      }
+      first = false;
+
+      try {
+        await task();
+      } catch (err) {
+        logger.error("[Aggregator] Error in deferred outbound callback:", err);
+      }
+    }
+  }
+
+  private scheduleOutbound(task: () => void | Promise<void>, immediate: boolean): void {
+    if (this.outboundHeld) {
+      this.deferredOutbound.push(task);
+      return;
+    }
+
+    if (immediate) {
+      setImmediate(() => {
+        void Promise.resolve(task()).catch((err) => {
+          logger.error("[Aggregator] Error in outbound callback:", err);
+        });
+      });
+      return;
+    }
+
+    void task();
   }
 
   setTypingIndicatorEnabled(enabled: boolean): void {
@@ -585,7 +639,9 @@ class SummaryAggregator {
 
     if (this.onClearedCallback) {
       try {
-        this.onClearedCallback();
+        this.scheduleOutbound(() => {
+          this.onClearedCallback?.();
+        }, false);
       } catch (err) {
         logger.error("[Aggregator] Error in clear callback:", err);
       }
@@ -601,6 +657,29 @@ class SummaryAggregator {
    */
   isSubagentSession(sessionId: string): boolean {
     return this.isTrackedChildSession(sessionId);
+  }
+
+  registerRestoredPermissionChild(child: string, parent: string): void {
+    if (this.trackedSessionParents.has(parent) && child !== this.currentSessionId) {
+      this.trackedSessionParents.set(child, parent);
+    }
+  }
+
+  /**
+   * The root session a tracked session belongs to, found by walking its parents;
+   * an untracked session is its own root.
+   */
+  getRootSessionId(sessionId: string): string {
+    const visited = new Set<string>();
+    let rootSessionId = sessionId;
+    let parentSessionId = this.trackedSessionParents.get(rootSessionId);
+    while (parentSessionId && !visited.has(parentSessionId)) {
+      visited.add(rootSessionId);
+      rootSessionId = parentSessionId;
+      parentSessionId = this.trackedSessionParents.get(rootSessionId);
+    }
+
+    return rootSessionId;
   }
 
   private getQueue(map: Map<string, string[]>, parentSessionId: string): string[] {
@@ -743,7 +822,12 @@ class SummaryAggregator {
 
     this.lastSubagentSnapshot = snapshot;
 
-    this.onSubagentCallback(this.currentSessionId, subagents);
+    const sessionId = this.currentSessionId;
+    this.scheduleOutbound(() => {
+      if (sessionId) {
+        this.onSubagentCallback?.(sessionId, subagents);
+      }
+    }, false);
   }
 
   private createSubagentState(
@@ -1250,7 +1334,10 @@ class SummaryAggregator {
           `[Aggregator] Tokens: input=${tokens.input}, output=${tokens.output}, reasoning=${tokens.reasoning}, cacheRead=${tokens.cacheRead}, cacheWrite=${tokens.cacheWrite}, completed=${isCompleted}`,
         );
         // Call synchronously so keyboardManager is updated before onComplete sends the reply
-        this.onTokensCallback(tokens, isCompleted);
+        this.scheduleOutbound(
+          () => this.onTokensCallback?.(info.sessionID, tokens, isCompleted),
+          false,
+        );
       }
 
       if (isCompleted) {
@@ -1274,17 +1361,26 @@ class SummaryAggregator {
         // Extract and report cost
         if (this.onCostCallback && assistantInfo.cost !== undefined) {
           logger.debug(`[Aggregator] Cost: $${assistantInfo.cost.toFixed(2)}`);
-          this.onCostCallback(assistantInfo.cost);
+          this.scheduleOutbound(
+            () => this.onCostCallback?.(info.sessionID, assistantInfo.cost),
+            false,
+          );
         }
 
         if (this.onCompleteCallback && finalText.length > 0) {
-          this.onCompleteCallback(this.currentSessionId!, messageID, finalText, {
-            agent: info.agent,
-            providerID: info.providerID,
-            modelID: info.modelID,
-            createdAt: time?.created,
-            completedAt: time?.completed,
-          });
+          const sessionId = this.currentSessionId;
+          this.scheduleOutbound(() => {
+            if (!sessionId) {
+              return;
+            }
+            this.onCompleteCallback?.(sessionId, messageID, finalText, {
+              agent: info.agent,
+              providerID: info.providerID,
+              modelID: info.modelID,
+              createdAt: time?.created,
+              completedAt: time?.completed,
+            });
+          }, false);
         }
 
           this.cleanupCompletedMessage(messageID);
@@ -1457,7 +1553,8 @@ class SummaryAggregator {
       );
 
       if (this.onRootToolUpdateCallback) {
-        this.onRootToolUpdateCallback({
+        const callback = this.onRootToolUpdateCallback;
+        this.scheduleOutbound(() => callback({
           sessionId: part.sessionID,
           messageId: messageID,
           callId: part.callID,
@@ -1467,7 +1564,7 @@ class SummaryAggregator {
           title,
           metadata: "metadata" in state ? state.metadata : undefined,
           hasFileAttachment: false,
-        });
+        }), false);
       }
 
       if (part.tool === "question") {
@@ -1480,9 +1577,10 @@ class SummaryAggregator {
             `[Aggregator] Question tool failed with error, clearing active poll. callID=${part.callID}`,
           );
           if (this.onQuestionErrorCallback) {
-            setImmediate(() => {
-              this.onQuestionErrorCallback!();
-            });
+            const sessionId = part.sessionID;
+            this.scheduleOutbound(() => {
+              this.onQuestionErrorCallback?.(sessionId);
+            }, true);
           }
           return;
         }
@@ -1552,22 +1650,31 @@ class SummaryAggregator {
           );
 
           if (this.onToolCallback) {
-            this.onToolCallback(toolData);
+            const callback = this.onToolCallback;
+            this.scheduleOutbound(() => callback(toolData), false);
           }
 
           if (preparedFileContext.fileData && this.onToolFileCallback) {
             logger.debug(
               `[Aggregator] Sending ${part.tool} file: ${preparedFileContext.fileData.filename} (${preparedFileContext.fileData.buffer.length} bytes)`,
             );
-            this.onToolFileCallback({
-              ...toolData,
-              hasFileAttachment: true,
-              fileData: preparedFileContext.fileData,
-            });
+            const callback = this.onToolFileCallback;
+            const fileData = preparedFileContext.fileData;
+            this.scheduleOutbound(
+              () =>
+                callback({
+                  ...toolData,
+                  hasFileAttachment: true,
+                  fileData,
+                }),
+              false,
+            );
           }
 
           if (preparedFileContext.fileChange && this.onFileChangeCallback) {
-            this.onFileChangeCallback(preparedFileContext.fileChange);
+            const callback = this.onFileChangeCallback;
+            const fileChange = preparedFileContext.fileChange;
+            this.scheduleOutbound(() => callback(part.sessionID, fileChange), false);
           }
         }
       }
@@ -1806,9 +1913,9 @@ class SummaryAggregator {
     }
 
     const callback = this.onThinkingCallback;
-    setImmediate(() => {
+    this.scheduleOutbound(() => {
       callback({ sessionId, messageId, sections, isFirstUpdate });
-    });
+    }, true);
   }
 
   private emitThinkingFinishedOnce(sessionId: string, messageId: string): void {
@@ -1822,9 +1929,9 @@ class SummaryAggregator {
 
     this.thinkingFinishedForMessages.add(messageId);
     const callback = this.onThinkingFinishedCallback;
-    setImmediate(() => {
+    this.scheduleOutbound(() => {
       callback(sessionId, messageId);
-    });
+    }, true);
   }
 
   private emitExternalUserInputIfReady(sessionId: string, messageId: string): void {
@@ -1850,11 +1957,11 @@ class SummaryAggregator {
     }
 
     const callback = this.onExternalUserInputCallback;
-    setImmediate(() => {
-      Promise.resolve(callback(sessionId, messageId, messageText)).catch((err) => {
+    this.scheduleOutbound(() => {
+      return Promise.resolve(callback(sessionId, messageId, messageText)).catch((err) => {
         logger.error("[Aggregator] Error in external user input callback:", err);
       });
-    });
+    }, true);
   }
 
   /**
@@ -1904,11 +2011,14 @@ class SummaryAggregator {
       return;
     }
 
-    try {
-      this.onPartialCallback(sessionId, messageId, messageText);
-    } catch (err) {
-      logger.error("[Aggregator] Error in partial callback:", err);
-    }
+    const callback = this.onPartialCallback;
+    this.scheduleOutbound(() => {
+      try {
+        callback(sessionId, messageId, messageText);
+      } catch (err) {
+        logger.error("[Aggregator] Error in partial callback:", err);
+      }
+    }, false);
   }
 
   private getOrCreateTextMessageState(messageID: string): TextMessageState {
@@ -2131,14 +2241,14 @@ class SummaryAggregator {
       `[Aggregator] Session retry: session=${sessionID}, attempt=${status.attempt ?? "n/a"}, message=${message}`,
     );
 
-    setImmediate(() => {
+    this.scheduleOutbound(() => {
       callback({
         sessionId: sessionID,
         attempt: status.attempt,
         message,
         next: status.next,
       });
-    });
+    }, true);
   }
 
   private handleSessionIdle(
@@ -2167,9 +2277,9 @@ class SummaryAggregator {
 
     if (this.onSessionIdleCallback) {
       const callback = this.onSessionIdleCallback;
-      setImmediate(() => {
+      this.scheduleOutbound(() => {
         callback(sessionID);
-      });
+      }, true);
     }
   }
 
@@ -2189,12 +2299,13 @@ class SummaryAggregator {
 
     // Reload context from history after compaction
     if (this.onSessionCompactedCallback) {
-      setImmediate(() => {
+      const callback = this.onSessionCompactedCallback;
+      this.scheduleOutbound(() => {
         const project = getCurrentProject();
-        if (project) {
-          this.onSessionCompactedCallback!(sessionID, project.worktree);
+        if (project && callback) {
+          callback(sessionID, project.worktree);
         }
-      });
+      }, true);
     }
   }
 
@@ -2227,9 +2338,9 @@ class SummaryAggregator {
 
     if (this.onSessionErrorCallback) {
       const callback = this.onSessionErrorCallback;
-      setImmediate(() => {
+      this.scheduleOutbound(() => {
         callback(sessionID, message);
-      });
+      }, true);
     }
   }
 
@@ -2251,13 +2362,13 @@ class SummaryAggregator {
 
     if (this.onQuestionCallback) {
       const callback = this.onQuestionCallback;
-      setImmediate(async () => {
+      this.scheduleOutbound(async () => {
         try {
           await callback(questions, id, sessionID);
         } catch (err) {
           logger.error("[Aggregator] Error in question callback:", err);
         }
-      });
+      }, true);
     }
   }
 
@@ -2282,9 +2393,9 @@ class SummaryAggregator {
       }));
 
       const callback = this.onSessionDiffCallback;
-      setImmediate(() => {
+      this.scheduleOutbound(() => {
         callback(properties.sessionID, diffs);
-      });
+      }, true);
     }
   }
 
@@ -2311,11 +2422,13 @@ class SummaryAggregator {
 
     if (this.onPermissionCallback) {
       const callback = this.onPermissionCallback;
-      this.permissionQueue = this.permissionQueue
-        .then(() => callback(request))
-        .catch((err) => {
+      const run = (): Promise<void> => {
+        this.permissionQueue = this.permissionQueue.then(() => callback(request)).catch((err) => {
           logger.error("[Aggregator] Error in permission callback:", err);
         });
+        return this.permissionQueue;
+      };
+      this.scheduleOutbound(run, false);
     }
   }
 
@@ -2339,15 +2452,16 @@ class SummaryAggregator {
 
     if (this.onPermissionRepliedCallback) {
       const callback = this.onPermissionRepliedCallback;
-      setImmediate(async () => {
+      this.scheduleOutbound(async () => {
         try {
           await callback(sessionID, requestID);
         } catch (err) {
           logger.error("[Aggregator] Error in permission replied callback:", err);
         }
-      });
+      }, true);
     }
   }
 }
 
+/** Process-wide singleton shared with the app container (single-user bot). */
 export const summaryAggregator = new SummaryAggregator();

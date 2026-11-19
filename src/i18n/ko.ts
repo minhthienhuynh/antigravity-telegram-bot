@@ -1,14 +1,20 @@
 import type { I18nDictionary } from "./en.js";
 
 /**
- * Korean localization for Antigravity Telegram Bot.
+ * Korean localization for OpenCode Telegram Bot.
  *
  * Keep upstream emoji and technical terms where they help recognition.
  * Prefer natural Korean wording over literal translation.
  * Keep this dictionary complete to avoid falling back to another locale.
  */
 export const ko: I18nDictionary = {
-  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.description.recent": "모든 프로젝트의 최근 세션",
+  "recent.heading": "모든 프로젝트의 최근 세션 (/recent로 새로고침):",
+  "recent.empty": "📭 프로젝트에 세션이 없습니다.",
+  "recent.running": "실행 중",
+  "recent.idle": "대기 중",
+  "recent.question": "답변 대기 중",
+  "recent.permission": "권한 승인 대기 중",
   "cmd.description.status": "서버 및 세션 상태",
   "cmd.description.new": "새 세션 만들기",
   "cmd.description.stop": "현재 작업 중지",
@@ -26,43 +32,14 @@ export const ko: I18nDictionary = {
   "cmd.description.opencode_start": "Antigravity 서버 시작",
   "cmd.description.opencode_stop": "Antigravity 서버 중지",
   "cmd.description.ls": "디렉터리 내용 보기",
-  "cmd.restart.ack":
-    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
-  "switch.code_needed":
-    "Falta el código: usa /code <código> con el código que te dio Google.",
-  "switch.already_pending":
-    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
-  "switch.working":
-    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
-  "switch.no_url_yet":
-    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
-  "switch.url_intro":
-    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
-  "switch.paste_code_hint":
-    "🔑 Luego pega el código aquí con: /code <código>",
-  "switch.submitting":
-    "⏳ Entregando el código a agy...",
-  "switch.done":
-    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
-  "switch.failed":
-    "❌ El switch falló:",
   "cmd.description.help": "도움말",
-
   "callback.unknown_command": "알 수 없는 명령어",
   "callback.processing_error": "처리 오류",
-
   "error.load_agents": "❌ 에이전트 목록을 불러오지 못했습니다",
   "error.load_models": "❌ 모델 목록을 불러오지 못했습니다",
   "error.load_variants": "❌ 변형 목록을 불러오지 못했습니다",
   "error.context_button": "❌ 컨텍스트 버튼을 처리하지 못했습니다",
   "error.generic": "🔴 문제가 발생했습니다.",
-
   "interaction.blocked.expired": "⚠️ 이 상호작용은 만료되었습니다. 다시 시작해 주세요.",
   "interaction.blocked.expected_callback":
     "⚠️ 이 단계에서는 인라인 버튼을 사용하거나 취소를 눌러 주세요.",
@@ -72,36 +49,26 @@ export const ko: I18nDictionary = {
     "⚠️ 현재 단계에서는 이 명령어를 사용할 수 없습니다.",
   "interaction.blocked.finish_current":
     "⚠️ 먼저 현재 상호작용을 마친(답변 또는 취소) 뒤에 다른 메뉴를 열어 주세요.",
-
   "inline.blocked.expected_choice": "⚠️ 인라인 버튼으로 옵션을 선택하거나 취소를 눌러 주세요.",
   "inline.blocked.command_not_allowed":
     "⚠️ 인라인 메뉴가 활성화된 동안에는 이 명령어를 사용할 수 없습니다.",
-
   "question.blocked.expected_answer":
     "⚠️ 버튼, 직접 입력, 또는 취소로 현재 질문에 답해 주세요.",
   "question.blocked.command_not_allowed":
     "⚠️ 현재 질문 흐름이 끝날 때까지는 이 명령어를 사용할 수 없습니다.",
-
   "inline.button.cancel": "❌ 취소",
   "inline.button.close": "❌ 닫기",
   "inline.inactive_callback": "이 메뉴는 비활성 상태입니다",
-
   "common.cancelled": "취소됨",
   "common.unknown": "알 수 없음",
   "common.unknown_error": "알 수 없는 오류",
-
   "start.welcome":
     "👋 Antigravity Telegram Bot에 오신 것을 환영합니다!\n\n사용 가능한 명령어:\n/projects — 프로젝트 선택\n/sessions — 세션 목록\n/new — 새 세션\n/commands — 사용자 지정 명령어\n/skills — 스킬 카탈로그\n/task — 예약 작업\n/tasklist — 예약 작업 목록\n/status — 상태\n/help — 도움말\n\n아래 버튼으로 에이전트, 모델, 변형을 선택하세요.",
   "help.keyboard_hint":
     "💡 아래 키보드 버튼으로 에이전트, 모델, 변형 및 컨텍스트 작업을 사용할 수 있습니다.",
   "help.text":
     "📖 **도움말**\n\n/status - 서버 상태 확인\n/sessions - 세션 목록\n/new - 새 세션 만들기\n/help - 도움말",
-
   "bot.thinking": "💭 생각하는 중...",
-  "bot.prompt_received": "📨 수신됨 — 에이전트 준비 중…",
-  "bot.prompt_dispatched": "⚙️ 에이전트 파이프에 전송됨 — 작업 시작.",
-  "bot.prompt_slow_start": "⏳ 에이전트가 아직 시작 중입니다…",
-  "bot.queue_hot_taken": "⚡ 메시지가 현재 턴에 즉시 반영되었습니다 (hot takeover).",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ 작업 중",
   "progress.compact.finished_header": "✅ 작업 완료",
@@ -118,28 +85,12 @@ export const ko: I18nDictionary = {
   "bot.create_session_error":
     "🔴 세션 생성에 실패했습니다. /new를 다시 시도하거나 /status로 서버 상태를 확인해 주세요.",
   "bot.session_created": "✅ 세션이 생성되었습니다: {title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
-  "cmd.description.compact": "대화 컨텍스트 압축",
-  "compact.busy": "⏳ 에이전트가 작업 중입니다 — 현재 작업이 끝나면 다시 시도하세요.",
-  "compact.no_session": "아직 압축할 활성 대화가 없습니다.",
-  "compact.started": "🧹 압축 중: 에이전트에 핸드오프 요약을 요청했습니다…",
-  "compact.auto_started": "🧹 대화가 {tokens}k 토큰에 도달했습니다 — 자동으로 압축합니다…",
-  "compact.done": "✅ 압축 완료 — 컨텍스트를 넘겨받은 새 대화에서 계속합니다.",
-  "compact.failed": "⚠️ 압축 실패 — 로그를 확인하세요; /compact로 다시 시도할 수 있습니다.",
-  "compact.damaged_hint": "🛠 이 오류는 보통 대화 상태가 손상되었음을 의미합니다. 압축하고 새 대화에서 계속할 수 있습니다.",
-  "compact.button": "🧹 압축 후 계속",
   "bot.session_busy":
     "⏳ 에이전트가 이미 작업을 실행 중입니다. 완료될 때까지 기다리거나 /abort로 현재 실행을 중단하세요.",
   "bot.session_reset_project_mismatch":
     "⚠️ 활성 세션이 선택한 프로젝트와 일치하지 않아 초기화되었습니다. /sessions에서 세션을 선택하거나 /new로 새 세션을 만들어 주세요.",
   "bot.prompt_send_error": "Antigravity에 요청을 보내지 못했습니다.",
   "bot.session_error": "🔴 Antigravity 오류가 발생했습니다: {message}",
-  "bot.retrying": "⚠️ Antigravity 서비스를 사용할 수 없습니다(503) — 자동으로 재시도 중… 시도 {attempt}/{max}, 다음 시도 약 {seconds}초 후.",
-  "bot.retry_recovered": "✅ Antigravity가 복구되었습니다 — 계속합니다.",
-  "bot.retry_exhausted": "❌ Antigravity가 계속 사용 불가 상태입니다 — 재시도 소진. 서비스가 복구되면 메시지를 다시 보내주세요.",
   "bot.assistant_reply_undelivered":
     "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
   "bot.stale_messages_skipped":
@@ -173,7 +124,6 @@ export const ko: I18nDictionary = {
   "bot.model_no_pdf": "⚠️ 현재 모델은 PDF 입력을 지원하지 않습니다. 텍스트만 전송합니다.",
   "bot.document_extraction_error": "🔴 문서 텍스트 추출에 실패했습니다.",
   "bot.text_file_too_large": "⚠️ 텍스트 파일이 너무 큽니다 (최대 {maxSizeKb}KB)",
-
   "status.header_running": "🟢 Antigravity 서버 실행 중",
   "status.health.healthy": "정상",
   "status.health.unhealthy": "비정상",
@@ -199,16 +149,13 @@ export const ko: I18nDictionary = {
   "status.session_not_selected": "현재 세션: 선택 안 됨",
   "status.session_hint": "/sessions에서 선택하거나 /new로 새로 만들어 주세요",
   "status.header_unavailable": "🔴 Antigravity 서버에 연결할 수 없습니다",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "/opencode_start로 서버를 시작해 주세요.",
-
   "tts.off": "🔇 음성 답변이 비활성화되었습니다.",
   "tts.all": "🔊 모든 메시지에 음성 답변이 활성화되었습니다.",
   "tts.auto": "🎤 음성/오디오 메시지에만 음성 답변이 활성화되었습니다.",
   "tts.not_configured":
     "⚠️ 음성 답변을 사용할 수 없습니다. 먼저 `TTS_API_URL`과 `TTS_API_KEY`를 설정해 주세요.",
   "tts.failed": "⚠️ 음성 답변 생성에 실패했습니다.",
-
   "settings.menu.title": "⚙️ 봇 설정\n항목을 탭하여 값을 전환하세요:",
   "settings.compact_output.label": "간결 출력 모드",
   "settings.delete_progress_on_finish.label": "완료 시 진행 삭제",
@@ -223,8 +170,9 @@ export const ko: I18nDictionary = {
   "settings.prompt_queue.label": "메시지 대기열",
   "settings.value.on": "켜기",
   "settings.value.off": "끄기",
+  "settings.prompt_queue.queue": "Queue",
+  "settings.prompt_queue.steer": "Steer",
   "settings.saved": "✅ 설정이 저장되었습니다.",
-
   "projects.empty":
     "📭 프로젝트가 없습니다.\n\nAntigravity에서 디렉터리를 열고 세션을 하나 이상 만들면 여기에 표시됩니다.",
   "projects.select": "프로젝트를 선택하세요:",
@@ -238,7 +186,6 @@ export const ko: I18nDictionary = {
   "projects.selected":
     "✅ 프로젝트 선택됨: {project}\n\n📋 세션이 초기화되었습니다. 이 프로젝트에서 /sessions 또는 /new를 사용해 주세요.",
   "projects.select_error": "🔴 프로젝트 선택에 실패했습니다.",
-
   "sessions.project_not_selected":
     "🏗 프로젝트가 선택되지 않았습니다.\n\n먼저 /projects로 프로젝트를 선택해 주세요.",
   "sessions.empty": "📭 세션이 없습니다.\n\n/new로 새 세션을 만들어 주세요.",
@@ -255,10 +202,8 @@ export const ko: I18nDictionary = {
   "sessions.selected": "✅ 세션 선택됨: {title}",
   "sessions.select_error": "🔴 세션 선택에 실패했습니다.",
   "sessions.preview.empty": "최근 메시지가 없습니다.",
-  "sessions.preview.title": "최근 메시지:",
-  "sessions.preview.you": "나:",
-  "sessions.preview.agent": "에이전트:",
-
+  "sessions.last_input.title": "마지막 사용자 입력:",
+  "sessions.last_input.attachment": "첨부 파일",
   "messages.project_not_selected":
     "🏗 프로젝트가 선택되지 않았습니다.\n\n먼저 /projects로 프로젝트를 선택해 주세요.",
   "messages.session_not_selected":
@@ -282,7 +227,6 @@ export const ko: I18nDictionary = {
   "messages.revert_error": "❌ 메시지 되돌리기에 실패했습니다. 다시 시도해 주세요.",
   "messages.fork_success": "🔀 이 메시지에서 포크를 만들었습니다:\n\n{text}",
   "messages.fork_error": "❌ 포크 생성에 실패했습니다. 다시 시도해 주세요.",
-
   "attach.project_not_selected":
     "🏗 프로젝트가 선택되지 않았습니다.\n\n먼저 /projects로 프로젝트를 선택해 주세요.",
   "attach.session_not_selected":
@@ -297,20 +241,17 @@ export const ko: I18nDictionary = {
   "attach.restored_permissions": "대기 중이던 권한 요청을 복구했습니다: {count}건.",
   "attach.disconnect_hint": "연결을 해제하려면 다른 세션이나 프로젝트로 전환하세요.",
   "attach.error": "🔴 현재 세션에 연결하지 못했습니다.",
-
   "detach.project_not_selected":
     "🏗 프로젝트가 선택되지 않았습니다.\n\n먼저 /projects로 프로젝트를 선택해 주세요.",
   "detach.no_active_session": "ℹ️ 봇은 이미 어떤 세션에도 연결되어 있지 않습니다.",
   "detach.success":
     "✅ 세션에서 분리됨: {title}\n\nAntigravity 세션은 중지되지 않았습니다. 아직 실행 중이라면 별도로 계속 진행됩니다. 나중에 확인하려면 /sessions에서 다시 선택하세요.",
   "detach.error": "🔴 현재 세션에서 분리하지 못했습니다.",
-
   "new.project_not_selected":
     "🏗 프로젝트가 선택되지 않았습니다.\n\n먼저 /projects로 프로젝트를 선택해 주세요.",
   "new.created": "✅ 새 세션이 생성되었습니다: {title}",
   "new.create_error":
     "🔴 Antigravity 서버에 연결할 수 없거나 세션을 만드는 중 오류가 발생했습니다.",
-
   "stop.no_active_session":
     "🛑 에이전트가 시작되지 않았습니다\n\n/new로 세션을 만들거나 /sessions에서 선택해 주세요.",
   "stop.in_progress":
@@ -325,7 +266,6 @@ export const ko: I18nDictionary = {
     "⚠️ 중단 요청 시간이 초과되었습니다.\n\n이벤트 스트림은 이미 비활성화되어 있습니다. 몇 초 후 /abort를 다시 시도해 주세요.",
   "stop.warn_local_only": "⚠️ 로컬에서는 이벤트 스트림이 중지되었지만 서버 측 중단에는 실패했습니다.",
   "stop.error": "🔴 작업 중지에 실패했습니다.\n\n이벤트 스트림은 중지되었습니다. /abort를 다시 시도해 주세요.",
-
   "opencode_start.already_running_managed":
     "⚠️ Antigravity 서버가 이미 실행 중입니다\n\nPID: {pid}\n가동 시간: {seconds}초",
   "opencode_start.already_running_external":
@@ -353,14 +293,12 @@ export const ko: I18nDictionary = {
   "opencode_stop.success": "✅ Antigravity 서버가 성공적으로 중지되었습니다",
   "opencode_stop.error":
     "🔴 서버 중지 중 오류가 발생했습니다.\n\n자세한 내용은 애플리케이션 로그를 확인해 주세요.",
-
   "agent.changed_message": "✅ 에이전트가 변경되었습니다: {name}",
   "agent.change_error_callback": "에이전트 변경 실패",
   "agent.menu.current": "현재 에이전트: {name}\n\n에이전트를 선택하세요:",
   "agent.menu.select": "에이전트를 선택하세요:",
   "agent.menu.empty": "⚠️ 사용 가능한 에이전트가 없습니다",
   "agent.menu.error": "🔴 에이전트 목록을 가져오지 못했습니다",
-
   "model.changed_message": "✅ 모델이 변경되었습니다: {name}",
   "model.change_error_callback": "모델 변경 실패",
   "model.menu.empty": "⚠️ 사용 가능한 모델이 없습니다",
@@ -390,7 +328,6 @@ export const ko: I18nDictionary = {
   "model.provider_models.title": "{provider} — 모델을 선택하세요:",
   "model.provider_models.empty": "⚠️ {provider}에서 사용 가능한 모델이 없습니다",
   "model.provider_models.page_indicator": "{current}/{total} 페이지",
-
   "variant.model_not_selected_callback": "오류: 모델이 선택되지 않았습니다",
   "variant.changed_message": "✅ 변형이 변경되었습니다: {name}",
   "variant.change_error_callback": "변형 변경 실패",
@@ -398,16 +335,25 @@ export const ko: I18nDictionary = {
   "variant.menu.empty": "⚠️ 사용 가능한 변형이 없습니다",
   "variant.menu.current": "현재 변형: {name}\n\n변형을 선택하세요:",
   "variant.menu.error": "🔴 변형 목록을 가져오지 못했습니다",
-
   "context.button.confirm": "✅ 예, 컨텍스트를 압축합니다",
+  "context.button.details_compact": "📦 Compact context",
+  "context.button.close": "❌ Close",
+  "context.details.title": "📊 Context details",
+  "context.details.window": "Window: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Token breakdown of the latest assistant message:",
+  "context.details.input": "Input: {count}",
+  "context.details.output": "Output: {count}",
+  "context.details.reasoning": "Reasoning: {count}",
+  "context.details.cache_read": "Cache read: {count}",
+  "context.details.cache_write": "Cache write: {count}",
+  "context.details.cost": "Cost: {cost}",
   "context.no_active_session": "⚠️ 활성 세션이 없습니다. /new로 세션을 만들어 주세요",
   "context.confirm_text":
-    '📊 세션 "{title}"의 컨텍스트 압축\n\n기록에서 오래된 메시지를 제거하여 컨텍스트 사용량을 줄입니다. 현재 작업은 중단되지 않습니다.\n\n계속하시겠습니까?',
+    '📊 세션 "{title}"의 컨텍스트 압축\n\n기록에서 오래된 메시지를 제거하여 컨텍스트 사용량을 줄입니다.\n\n계속하시겠습니까?',
   "context.callback_compacting": "컨텍스트를 압축하는 중...",
   "context.progress": "⏳ 컨텍스트를 압축하는 중...",
   "context.error": "❌ 컨텍스트 압축에 실패했습니다",
   "context.success": "✅ 컨텍스트 압축이 완료되었습니다",
-
   "permission.inactive_callback": "권한 요청이 비활성 상태입니다",
   "permission.processing_error_callback": "처리 오류",
   "permission.no_active_request_callback": "오류: 활성 요청이 없습니다",
@@ -436,7 +382,6 @@ export const ko: I18nDictionary = {
   "permission.name.task": "작업",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "외부 디렉터리",
-
   "question.inactive_callback": "설문이 비활성 상태입니다",
   "question.processing_error_callback": "처리 오류",
   "question.select_one_required_callback": "옵션을 하나 이상 선택해 주세요",
@@ -456,7 +401,6 @@ export const ko: I18nDictionary = {
   "question.summary.title": "✅ 설문이 완료되었습니다!\n\n",
   "question.summary.question": "질문 {index}:\n{question}\n\n",
   "question.summary.answer": "답변:\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} {name} 에이전트",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -468,9 +412,9 @@ export const ko: I18nDictionary = {
   "queue.media_limit": "⚠️ 대기열 미디어는 총 {maxSizeMb} MiB로 제한됩니다. 항목이 전송된 후 다시 시도하세요.",
   "queue.removed": "🗑 대기열에서 메시지를 삭제했습니다.",
   "queue.not_found": "이 메시지는 더 이상 대기열에 없습니다.",
+  "queue.steer_added": "📥 Added to the current task ({count}/{max}).",
   "queue.disabled_hint": "메시지 대기열은 /settings에서 활성화할 수 있습니다.",
   "keyboard.updated": "⌨️ 키보드가 업데이트되었습니다",
-
   "pinned.default_session_title": "새 세션",
   "pinned.unknown": "알 수 없음",
   "pinned.line.project": "프로젝트: {project}",
@@ -496,13 +440,11 @@ export const ko: I18nDictionary = {
   "pinned.files.title": "파일 ({count}):",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... 외 {count}개",
-
   "tool.todo.overflow": "*({count}개 작업 더 보기)*",
   "tool.file_header.write":
     "파일 쓰기 경로: {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "파일 편집 경로: {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token": "텔레그램 봇 토큰을 입력하세요 (@BotFather에서 발급).\n> ",
   "runtime.wizard.ask_language":
     "인터페이스 언어를 선택하세요.\n목록의 번호 또는 로케일 코드를 입력하세요.\nEnter를 누르면 기본 언어({defaultLocale})가 유지됩니다.\n{options}\n> ",
@@ -521,6 +463,15 @@ export const ko: I18nDictionary = {
     "Antigravity 서버 사용자 이름을 입력하세요 (선택 사항).\nEnter를 누르면 기본값({defaultUsername})이 사용됩니다.\n> ",
   "runtime.wizard.ask_server_password":
     "Antigravity 서버 비밀번호를 입력하세요 (선택 사항).\nEnter를 누르면 비워 둡니다.\n> ",
+  "runtime.wizard.ask_server_version":
+    "Select OpenCode server version:\n1 - OpenCode V1 (1.x, npm package opencode-ai)\n2 - OpenCode V2 (2.x, npm package @opencode/cli)\nPress Enter to use default: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid": "Enter 1 or 2, or press Enter for default.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Enter OpenCode V2 server password (required).\nShow it with: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "The password is required for OpenCode V2. Please try again.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Enter OpenCode server password.\nPress Enter to keep the saved password.\n> ",
   "runtime.wizard.api_url_invalid":
     "유효한 URL(http/https)을 입력하거나 Enter를 눌러 기본값을 사용하세요.\n",
   "runtime.wizard.start": "Antigravity Telegram Bot 설정을 시작합니다.\n",
@@ -531,7 +482,6 @@ export const ko: I18nDictionary = {
     "대화형 마법사에는 TTY 터미널이 필요합니다. 대화형 셸에서 `opencode-telegram config`를 실행해 주세요.",
   "runtime.container.command_unavailable":
     "⚠️ 이 명령은 Docker 이미지에서 사용할 수 없습니다.",
-
   "rename.no_session": "⚠️ 활성 세션이 없습니다. 먼저 세션을 만들거나 선택해 주세요.",
   "rename.prompt": "📝 세션의 새 제목을 입력하세요:\n\n현재: {title}",
   "rename.empty_title": "⚠️ 제목은 비워 둘 수 없습니다.",
@@ -545,7 +495,6 @@ export const ko: I18nDictionary = {
   "rename.blocked.command_not_allowed":
     "⚠️ 새 이름을 기다리는 동안에는 이 명령어를 사용할 수 없습니다.",
   "rename.button.cancel": "❌ 취소",
-
   "task.prompt.schedule":
     "⏰ 작업 일정을 자연어로 입력하세요.\n\n예시:\n- 5분마다\n- 매일 17:00\n- 내일 12:00",
   "task.schedule_empty": "⚠️ 일정은 비워 둘 수 없습니다.",
@@ -580,7 +529,6 @@ export const ko: I18nDictionary = {
     "예약 작업이 대화형 질문을 요청하여 무인 실행을 계속할 수 없습니다.",
   "task.run.error.interactive_permission":
     "예약 작업이 대화형 권한 승인을 요청하여 무인 실행을 계속할 수 없습니다.",
-
   "tasklist.empty": "📭 아직 예약 작업이 없습니다.",
   "tasklist.select": "예약 작업을 선택하세요:",
   "tasklist.details":
@@ -591,7 +539,6 @@ export const ko: I18nDictionary = {
   "tasklist.deleted_callback": "삭제됨",
   "tasklist.inactive_callback": "이 예약 작업 메뉴는 비활성 상태입니다",
   "tasklist.load_error": "🔴 예약 작업을 불러오지 못했습니다.",
-
   "commands.select": "Antigravity 명령어를 선택하세요:",
   "commands.empty": "📭 이 프로젝트에서 사용 가능한 Antigravity 명령어가 없습니다.",
   "commands.fetch_error": "🔴 Antigravity 명령어를 불러오지 못했습니다.",
@@ -618,7 +565,6 @@ export const ko: I18nDictionary = {
   "commands.download.size": "크기",
   "commands.download.modified": "수정됨",
   "commands.download.error": "파일 다운로드에 실패했습니다.",
-
   "skills.select": "Antigravity 스킬을 선택하세요:",
   "skills.empty": "📭 이 프로젝트에서 사용 가능한 Antigravity 스킬이 없습니다.",
   "skills.fetch_error": "🔴 Antigravity 스킬을 불러오지 못했습니다.",
@@ -636,7 +582,6 @@ export const ko: I18nDictionary = {
   "skills.button.next_page": "다음 ➡️",
   "skills.page_empty_callback": "이 페이지에는 스킬이 없습니다",
   "skills.page_load_error_callback": "이 페이지를 불러올 수 없습니다. 다시 시도해 주세요.",
-
   "mcps.select": "MCP 서버:",
   "mcps.empty": "📭 설정된 MCP 서버가 없습니다.",
   "mcps.fetch_error": "🔴 MCP 서버를 불러오지 못했습니다.",
@@ -655,23 +600,19 @@ export const ko: I18nDictionary = {
   "mcps.button.disable": "🔴 비활성화",
   "mcps.button.back": "⬅️ 뒤로",
   "mcps.auth_required": "이 서버는 인증이 필요하여 봇에서 활성화할 수 없습니다.",
-
   "cmd.description.rename": "현재 세션 이름 변경",
-
   "legacy.models.fetch_error": "🔴 모델 목록을 가져오지 못했습니다. /status로 서버 상태를 확인해 주세요.",
   "legacy.models.empty": "📋 사용 가능한 모델이 없습니다. Antigravity에서 프로바이더를 설정해 주세요.",
   "legacy.models.header": "📋 사용 가능한 모델:\n\n",
   "legacy.models.no_provider_models": "  ⚠️ 사용 가능한 모델이 없습니다\n",
   "legacy.models.env_hint": "💡 .env에서 이 모델을 사용하려면:\n",
   "legacy.models.error": "🔴 모델 목록을 불러오는 중 오류가 발생했습니다.",
-
   "stt.recognizing": "🎤 오디오를 인식하는 중...",
   "stt.recognized": "🎤 인식 결과:",
   "stt.not_configured":
     "🎤 음성 인식이 설정되지 않았습니다.\n\n사용하려면 .env에 STT_API_URL과 STT_API_KEY를 설정해 주세요.",
   "stt.error": "🔴 오디오 인식에 실패했습니다: {error}",
   "stt.empty_result": "🎤 오디오 메시지에서 음성을 감지하지 못했습니다.",
-
   "cmd.description.open": "디렉터리를 탐색하여 프로젝트 추가",
   "worktree.branch_detached": "detached HEAD",
   "worktree.select_with_current": "워크트리를 선택하세요:",
@@ -717,4 +658,54 @@ export const ko: I18nDictionary = {
   "local_command.empty_output": "The command produced no output.",
   "local_command.failed": "Command failed with exit code {exitCode}: {stderr}",
   "local_command.timeout": "The command timed out.",
-};
+  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.restart.ack":
+    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
+  "switch.code_needed":
+    "Falta el código: usa /code <código> con el código que te dio Google.",
+  "switch.already_pending":
+    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
+  "switch.working":
+    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
+  "switch.no_url_yet":
+    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
+  "switch.url_intro":
+    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
+  "switch.paste_code_hint":
+    "🔑 Luego pega el código aquí con: /code <código>",
+  "switch.submitting":
+    "⏳ Entregando el código a agy...",
+  "switch.done":
+    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
+  "switch.failed":
+    "❌ El switch falló:",
+  "bot.prompt_received": "📨 수신됨 — 에이전트 준비 중…",
+  "bot.prompt_dispatched": "⚙️ 에이전트 파이프에 전송됨 — 작업 시작.",
+  "bot.prompt_slow_start": "⏳ 에이전트가 아직 시작 중입니다…",
+  "bot.queue_hot_taken": "⚡ 메시지가 현재 턴에 즉시 반영되었습니다 (hot takeover).",
+  "bot.prompt_taken_in_flight":
+    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
+  "cmd.description.compact": "대화 컨텍스트 압축",
+  "compact.busy": "⏳ 에이전트가 작업 중입니다 — 현재 작업이 끝나면 다시 시도하세요.",
+  "compact.no_session": "아직 압축할 활성 대화가 없습니다.",
+  "compact.started": "🧹 압축 중: 에이전트에 핸드오프 요약을 요청했습니다…",
+  "compact.auto_started": "🧹 대화가 {tokens}k 토큰에 도달했습니다 — 자동으로 압축합니다…",
+  "compact.done": "✅ 압축 완료 — 컨텍스트를 넘겨받은 새 대화에서 계속합니다.",
+  "compact.failed": "⚠️ 압축 실패 — 로그를 확인하세요; /compact로 다시 시도할 수 있습니다.",
+  "compact.damaged_hint": "🛠 이 오류는 보통 대화 상태가 손상되었음을 의미합니다. 압축하고 새 대화에서 계속할 수 있습니다.",
+  "compact.button": "🧹 압축 후 계속",
+  "bot.retrying": "⚠️ Antigravity 서비스를 사용할 수 없습니다(503) — 자동으로 재시도 중… 시도 {attempt}/{max}, 다음 시도 약 {seconds}초 후.",
+  "bot.retry_recovered": "✅ Antigravity가 복구되었습니다 — 계속합니다.",
+  "bot.retry_exhausted": "❌ Antigravity가 계속 사용 불가 상태입니다 — 재시도 소진. 서비스가 복구되면 메시지를 다시 보내주세요.",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "최근 메시지:",
+  "sessions.preview.you": "나:",
+  "sessions.preview.agent": "에이전트:",};

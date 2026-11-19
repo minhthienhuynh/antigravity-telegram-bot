@@ -1,65 +1,78 @@
+import { interactionManager } from "./interaction-manager.js";
 import type { Question, QuestionState, QuestionAnswer } from "../types/question.js";
+import type { InteractionManager } from "./interaction-manager.js";
 import { logger } from "../../utils/logger.js";
 
-class QuestionManager {
-  private state: QuestionState = {
-    questions: [],
-    currentIndex: 0,
-    selectedOptions: new Map(),
-    customAnswers: new Map(),
-    customInputQuestionIndex: null,
-    activeMessageId: null,
-    messageIds: [],
-    isActive: false,
-    requestID: null,
-  };
+export class QuestionManager {
+  constructor(private readonly interactionManager: InteractionManager) {}
 
-  startQuestions(questions: Question[], requestID: string): void {
+  private get state(): QuestionState | null {
+    return this.interactionManager.getPayload("question");
+  }
+
+  /**
+   * Opens the question slot, replacing a poll already on screen. Refuses while
+   * permission prompts hold the slot: the poll has to wait for them.
+   */
+  startQuestions(questions: Question[], requestID: string): boolean {
+    const current = this.interactionManager.getSnapshot();
     logger.debug(
-      `[QuestionManager] startQuestions called: isActive=${this.state.isActive}, currentQuestions=${this.state.questions.length}, newQuestions=${questions.length}, requestID=${requestID}`,
+      `[QuestionManager] startQuestions called: slot=${current?.kind ?? "none"}, newQuestions=${questions.length}, requestID=${requestID}`,
     );
 
-    if (this.state.isActive) {
-      logger.info(`[QuestionManager] Poll already active! Forcing reset before starting new poll.`);
-      // Force-reset the previous poll before starting a new one
-      this.clear();
+    if (current?.kind === "permission") {
+      logger.info(
+        `[QuestionManager] Permission prompts are on screen, not starting poll: requestID=${requestID}`,
+      );
+      return false;
+    }
+
+    if (current?.kind === "question") {
+      logger.info(`[QuestionManager] Poll already active! Replacing it with the new poll.`);
     }
 
     logger.info(
       `[QuestionManager] Starting new poll with ${questions.length} questions, requestID=${requestID}`,
     );
-    this.state = {
-      questions,
-      currentIndex: 0,
-      selectedOptions: new Map(),
-      customAnswers: new Map(),
-      customInputQuestionIndex: null,
-      activeMessageId: null,
-      messageIds: [],
-      isActive: true,
-      requestID,
-    };
+    this.interactionManager.start({
+      kind: "question",
+      expectedInput: "callback",
+      payload: {
+        questions,
+        currentIndex: 0,
+        selectedOptions: new Map(),
+        customAnswers: new Map(),
+        selectedCustomAnswers: new Set(),
+        customInputQuestionIndex: null,
+        activeMessageId: null,
+        messageIds: [],
+        requestID,
+      },
+    });
+    return true;
   }
 
   getRequestID(): string | null {
-    return this.state.requestID;
+    return this.state?.requestID ?? null;
   }
 
   getCurrentQuestion(): Question | null {
-    return this.state.questions[this.state.currentIndex] ?? null;
+    const state = this.state;
+    return state?.questions[state.currentIndex] ?? null;
   }
 
   selectOption(questionIndex: number, optionIndex: number): void {
-    if (!this.state.isActive) {
+    const state = this.state;
+    if (!state) {
       return;
     }
 
-    const question = this.state.questions[questionIndex];
+    const question = state.questions[questionIndex];
     if (!question) {
       return;
     }
 
-    const selected = this.state.selectedOptions.get(questionIndex) || new Set();
+    const selected = state.selectedOptions.get(questionIndex) || new Set();
 
     if (question.multiple) {
       if (selected.has(optionIndex)) {
@@ -72,7 +85,7 @@ class QuestionManager {
       selected.add(optionIndex);
     }
 
-    this.state.selectedOptions.set(questionIndex, selected);
+    state.selectedOptions.set(questionIndex, selected);
 
     logger.debug(
       `[QuestionManager] Selected options for question ${questionIndex}: ${Array.from(selected).join(", ")}`,
@@ -80,16 +93,17 @@ class QuestionManager {
   }
 
   getSelectedOptions(questionIndex: number): Set<number> {
-    return this.state.selectedOptions.get(questionIndex) || new Set();
+    return this.state?.selectedOptions.get(questionIndex) || new Set();
   }
 
   getSelectedAnswer(questionIndex: number): string {
-    const question = this.state.questions[questionIndex];
-    if (!question) {
+    const state = this.state;
+    const question = state?.questions[questionIndex];
+    if (!state || !question) {
       return "";
     }
 
-    const selected = this.state.selectedOptions.get(questionIndex) || new Set();
+    const selected = state.selectedOptions.get(questionIndex) || new Set();
     const options = Array.from(selected).flatMap((idx) => {
       const opt = question.options[idx];
       return opt ? [`* ${opt.label}: ${opt.description}`] : [];
@@ -102,119 +116,176 @@ class QuestionManager {
     logger.debug(
       `[QuestionManager] Custom answer received for question ${questionIndex}: ${answer}`,
     );
-    this.state.customAnswers.set(questionIndex, answer);
+    const state = this.state;
+    if (!state) {
+      return;
+    }
+
+    state.customAnswers.set(questionIndex, answer);
+    if (state.questions[questionIndex]?.multiple) {
+      state.selectedCustomAnswers.add(questionIndex);
+    }
   }
 
   getCustomAnswer(questionIndex: number): string | undefined {
-    return this.state.customAnswers.get(questionIndex);
+    return this.state?.customAnswers.get(questionIndex);
   }
 
   hasCustomAnswer(questionIndex: number): boolean {
-    return this.state.customAnswers.has(questionIndex);
+    return this.state?.customAnswers.has(questionIndex) ?? false;
+  }
+
+  /** Ticks or unticks the custom answer of a multi-select question, like an option. */
+  toggleCustomAnswer(questionIndex: number): void {
+    const state = this.state;
+    if (!state || !state.customAnswers.has(questionIndex)) {
+      return;
+    }
+
+    if (state.selectedCustomAnswers.has(questionIndex)) {
+      state.selectedCustomAnswers.delete(questionIndex);
+    } else {
+      state.selectedCustomAnswers.add(questionIndex);
+    }
+  }
+
+  isCustomAnswerSelected(questionIndex: number): boolean {
+    return this.state?.selectedCustomAnswers.has(questionIndex) ?? false;
+  }
+
+  hasAnswer(questionIndex: number): boolean {
+    return this.getAnswerItems(questionIndex).length > 0;
+  }
+
+  /**
+   * The answer items sent to the agent for one question. A multi-select question
+   * sends its ticked options, then the ticked custom answer as one more item.
+   */
+  getAnswerItems(questionIndex: number): string[] {
+    const question = this.state?.questions[questionIndex];
+    if (!question) {
+      return [];
+    }
+
+    const selectedAnswer = this.getSelectedAnswer(questionIndex);
+    const customAnswer = this.getCustomAnswer(questionIndex);
+
+    if (!question.multiple) {
+      // Each option is formatted as "* Label: Description"
+      const answer = customAnswer || selectedAnswer;
+      return answer.split("\n").filter((part) => part.trim());
+    }
+
+    const items = selectedAnswer.split("\n").filter((part) => part.trim());
+    if (customAnswer && this.isCustomAnswerSelected(questionIndex)) {
+      items.push(customAnswer);
+    }
+
+    return items;
   }
 
   nextQuestion(): void {
-    this.state.currentIndex++;
-    this.state.customInputQuestionIndex = null;
-    this.state.activeMessageId = null;
+    const state = this.state;
+    if (!state) {
+      return;
+    }
+
+    state.currentIndex++;
+    state.customInputQuestionIndex = null;
+    state.activeMessageId = null;
 
     logger.debug(
-      `[QuestionManager] Moving to next question: ${this.state.currentIndex}/${this.state.questions.length}`,
+      `[QuestionManager] Moving to next question: ${state.currentIndex}/${state.questions.length}`,
     );
   }
 
   hasNextQuestion(): boolean {
-    return this.state.currentIndex < this.state.questions.length;
+    const state = this.state;
+    return state !== null && state.currentIndex < state.questions.length;
   }
 
   getCurrentIndex(): number {
-    return this.state.currentIndex;
+    return this.state?.currentIndex ?? 0;
   }
 
   getTotalQuestions(): number {
-    return this.state.questions.length;
+    return this.state?.questions.length ?? 0;
   }
 
   addMessageId(messageId: number): void {
-    this.state.messageIds.push(messageId);
+    this.state?.messageIds.push(messageId);
   }
 
   setActiveMessageId(messageId: number): void {
-    this.state.activeMessageId = messageId;
+    const state = this.state;
+    if (state) {
+      state.activeMessageId = messageId;
+    }
   }
 
   getActiveMessageId(): number | null {
-    return this.state.activeMessageId;
+    return this.state?.activeMessageId ?? null;
   }
 
   isActiveMessage(messageId: number | null): boolean {
-    return (
-      this.state.isActive &&
-      this.state.activeMessageId !== null &&
-      messageId === this.state.activeMessageId
-    );
+    const activeMessageId = this.getActiveMessageId();
+    return activeMessageId !== null && messageId === activeMessageId;
   }
 
   startCustomInput(questionIndex: number): void {
-    if (!this.state.isActive || !this.state.questions[questionIndex]) {
+    const state = this.state;
+    if (!state || !state.questions[questionIndex]) {
       return;
     }
 
-    this.state.customInputQuestionIndex = questionIndex;
+    state.customInputQuestionIndex = questionIndex;
   }
 
   clearCustomInput(): void {
-    this.state.customInputQuestionIndex = null;
+    const state = this.state;
+    if (state) {
+      state.customInputQuestionIndex = null;
+    }
   }
 
   isWaitingForCustomInput(questionIndex: number): boolean {
-    return this.state.customInputQuestionIndex === questionIndex;
+    return this.state?.customInputQuestionIndex === questionIndex;
   }
 
   getMessageIds(): number[] {
-    return [...this.state.messageIds];
+    return [...(this.state?.messageIds ?? [])];
   }
 
   isActive(): boolean {
-    logger.debug(
-      `[QuestionManager] isActive check: ${this.state.isActive}, questions=${this.state.questions.length}, currentIndex=${this.state.currentIndex}`,
-    );
-    return this.state.isActive;
+    const active = this.state !== null;
+    logger.debug(`[QuestionManager] isActive check: ${active}`);
+    return active;
   }
 
   cancel(): void {
     logger.info("[QuestionManager] Poll cancelled");
-    this.state.isActive = false;
-    this.state.customInputQuestionIndex = null;
-    this.state.activeMessageId = null;
+    this.interactionManager.clearKind("question", "question_cancelled");
   }
 
   clear(): void {
-    this.state = {
-      questions: [],
-      currentIndex: 0,
-      selectedOptions: new Map(),
-      customAnswers: new Map(),
-      customInputQuestionIndex: null,
-      activeMessageId: null,
-      messageIds: [],
-      isActive: false,
-      requestID: null,
-    };
+    this.interactionManager.clearKind("question", "question_cleared");
   }
 
   getAllAnswers(): QuestionAnswer[] {
+    const state = this.state;
     const answers: QuestionAnswer[] = [];
+    if (!state) {
+      return answers;
+    }
 
-    for (let i = 0; i < this.state.questions.length; i++) {
-      const question = this.state.questions[i];
+    for (let i = 0; i < state.questions.length; i++) {
+      const question = state.questions[i];
       if (!question) {
         continue;
       }
-      const selectedAnswer = this.getSelectedAnswer(i);
-      const customAnswer = this.getCustomAnswer(i);
-
-      const finalAnswer = customAnswer || selectedAnswer;
+      const finalAnswer = question.multiple
+        ? this.getAnswerItems(i).join("\n")
+        : this.getCustomAnswer(i) || this.getSelectedAnswer(i);
 
       if (finalAnswer) {
         answers.push({
@@ -228,4 +299,5 @@ class QuestionManager {
   }
 }
 
-export const questionManager = new QuestionManager();
+/** Process-wide singleton shared with the app container (single-user bot). */
+export const questionManager = new QuestionManager(interactionManager);

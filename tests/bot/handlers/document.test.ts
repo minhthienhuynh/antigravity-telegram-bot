@@ -20,8 +20,10 @@ vi.mock("../../../src/app/services/document-extractor-service.js", () => ({
 import { t } from "../../../src/i18n/index.js";
 import { isDocExtractorConfigured } from "../../../src/app/services/document-extractor-service.js";
 import { MAX_QUEUED_MEDIA_BYTES, promptQueue } from "../../../src/app/managers/prompt-queue-manager.js";
-import { foregroundSessionState } from "../../../src/app/managers/foreground-session-state-manager.js";
 import * as settingsStore from "../../../src/app/stores/settings-store.js";
+import { initializePromptQueueDispatch } from "../../../src/bot/handlers/prompt-queue-dispatch.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 function createDocumentContext(overrides: Partial<Context["message"]> = {}): {
   ctx: Context;
@@ -75,6 +77,7 @@ function createDocumentDeps(overrides: Partial<DocumentHandlerDeps> = {}): {
   });
 
   const deps: DocumentHandlerDeps = {
+    ...container,
     bot: {} as DocumentHandlerDeps["bot"],
     ensureEventSubscription: vi.fn().mockResolvedValue(undefined),
     downloadFile: downloadMock,
@@ -86,21 +89,27 @@ function createDocumentDeps(overrides: Partial<DocumentHandlerDeps> = {}): {
         : processPromptMock(ctx, input.text, promptDeps),
     ...overrides,
   };
+  initializePromptQueueDispatch(deps);
 
   return { deps, processPromptMock, downloadMock, getCapabilitiesMock, getStoredModelMock };
 }
+
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
 
 describe("bot/handlers/document", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     flushPendingPromptMock.mockClear();
     promptQueue.__resetForTests();
-    foregroundSessionState.__resetForTests();
   });
 
   it("rejects oversized queued image documents before downloading", async () => {
-    vi.spyOn(settingsStore, "getPromptQueueEnabled").mockReturnValue(true);
-    foregroundSessionState.markBusy("session-1", "/repo");
+    vi.spyOn(settingsStore, "getPromptQueueMode").mockReturnValue("queue");
+    container.foregroundSessionState.markBusy("session-1", "/repo");
     const { ctx } = createDocumentContext({
       document: {
         file_id: "image-file-id",
@@ -120,8 +129,8 @@ describe("bot/handlers/document", () => {
   });
 
   it("rejects oversized queued PDFs before downloading", async () => {
-    vi.spyOn(settingsStore, "getPromptQueueEnabled").mockReturnValue(true);
-    foregroundSessionState.markBusy("session-1", "/repo");
+    vi.spyOn(settingsStore, "getPromptQueueMode").mockReturnValue("queue");
+    container.foregroundSessionState.markBusy("session-1", "/repo");
     const { ctx } = createDocumentContext({
       document: {
         file_id: "pdf-file-id",
@@ -141,8 +150,8 @@ describe("bot/handlers/document", () => {
   });
 
   it("rejects queued documents with an unknown media size", async () => {
-    vi.spyOn(settingsStore, "getPromptQueueEnabled").mockReturnValue(true);
-    foregroundSessionState.markBusy("session-1", "/repo");
+    vi.spyOn(settingsStore, "getPromptQueueMode").mockReturnValue("queue");
+    container.foregroundSessionState.markBusy("session-1", "/repo");
     const { ctx } = createDocumentContext({
       document: {
         file_id: "unknown-file-id",
@@ -161,8 +170,8 @@ describe("bot/handlers/document", () => {
 
   describe("text files", () => {
     it("reserves raw source bytes when a text file is queued", async () => {
-      vi.spyOn(settingsStore, "getPromptQueueEnabled").mockReturnValue(true);
-      foregroundSessionState.markBusy("session-1", "/repo");
+      vi.spyOn(settingsStore, "getPromptQueueMode").mockReturnValue("queue");
+      container.foregroundSessionState.markBusy("session-1", "/repo");
       const { ctx } = createDocumentContext();
       const { deps, downloadMock, processPromptMock } = createDocumentDeps();
 

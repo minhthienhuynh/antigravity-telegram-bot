@@ -55,17 +55,19 @@ vi.mock("../../../src/app/services/project-switch-service.js", () => ({
   switchToProject: mocked.switchToProjectMock,
 }));
 
-vi.mock("../../../src/app/managers/interaction-manager.js", () => ({
-  interactionManager: { clear: vi.fn() },
-  clearAllInteractionState: mocked.clearAllInteractionStateMock,
-}));
-
 vi.mock("../../../src/utils/logger.js", () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 import { worktreeCommand } from "../../../src/bot/commands/worktree-command.js";
 import { handleWorktreeCallback } from "../../../src/bot/callbacks/worktree-callback-handler.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+
+function createDeps() {
+  return createTestAppContainer({
+    resetInteractions: mocked.clearAllInteractionStateMock,
+  });
+}
 
 function createCommandContext(): Context {
   return {
@@ -114,7 +116,7 @@ describe("bot/commands/worktree", () => {
   it("warns instead of loading git worktrees when running in a container", async () => {
     vi.stubEnv("OPENCODE_TELEGRAM_CONTAINER", "1");
     const ctx = createCommandContext();
-    await worktreeCommand(ctx as never);
+    await worktreeCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(t("runtime.container.command_unavailable"));
     expect(mocked.getGitWorktreeContextMock).not.toHaveBeenCalled();
@@ -124,7 +126,7 @@ describe("bot/commands/worktree", () => {
     mocked.currentProject = null;
 
     const ctx = createCommandContext();
-    await worktreeCommand(ctx as never);
+    await worktreeCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(t("worktree.project_not_selected"));
     expect(mocked.replyWithInlineMenuMock).not.toHaveBeenCalled();
@@ -143,7 +145,7 @@ describe("bot/commands/worktree", () => {
     });
 
     const ctx = createCommandContext();
-    await worktreeCommand(ctx as never);
+    await worktreeCommand(ctx as never, createDeps());
 
     expect(mocked.replyWithInlineMenuMock).toHaveBeenCalledWith(
       ctx,
@@ -151,6 +153,7 @@ describe("bot/commands/worktree", () => {
         menuKind: "worktree",
         text: t("worktree.select_with_current"),
       }),
+      expect.anything(),
     );
 
     const keyboard = mocked.replyWithInlineMenuMock.mock.calls[0]?.[1]?.keyboard as {
@@ -173,7 +176,7 @@ describe("bot/commands/worktree", () => {
     });
 
     const ctx = createCallbackContext("worktree:1");
-    const handled = await handleWorktreeCallback(ctx);
+    const handled = await handleWorktreeCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.upsertSessionDirectoryMock).toHaveBeenCalledWith(
@@ -206,7 +209,7 @@ describe("bot/commands/worktree", () => {
     });
 
     const ctx = createCallbackContext("worktree:0");
-    const handled = await handleWorktreeCallback(ctx);
+    const handled = await handleWorktreeCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({

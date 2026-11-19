@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Event } from "@opencode-ai/sdk/v2";
-import { summaryAggregator } from "../../../src/app/managers/summary-aggregation-manager.js";
+import { SummaryAggregator } from "../../../src/app/managers/summary-aggregation-manager.js";
 import { logger } from "../../../src/utils/logger.js";
 import { defined } from "../../helpers/defined.js";
 
@@ -17,6 +17,12 @@ vi.mock("../../../src/app/stores/settings-store.js", async () => {
     ...actual,
     getCurrentProject: mocked.getCurrentProjectMock,
   };
+});
+
+let summaryAggregator: SummaryAggregator;
+
+beforeEach(() => {
+  summaryAggregator = new SummaryAggregator();
 });
 
 describe("summary/aggregator", () => {
@@ -2261,6 +2267,7 @@ describe("summary/aggregator", () => {
 
     expect(onTokens).toHaveBeenCalledTimes(1);
     expect(onTokens).toHaveBeenCalledWith(
+      "session-1",
       expect.objectContaining({ input: 800, output: 200, cacheRead: 100 }),
       true,
     );
@@ -2286,6 +2293,7 @@ describe("summary/aggregator", () => {
 
     expect(onTokens).toHaveBeenCalledTimes(1);
     expect(onTokens).toHaveBeenCalledWith(
+      "session-1",
       expect.objectContaining({ input: 500, output: 50, cacheRead: 200 }),
       false,
     );
@@ -2313,6 +2321,7 @@ describe("summary/aggregator", () => {
     // The callback IS fired (filtering zero tokens is done at bot/index.ts level)
     expect(onTokens).toHaveBeenCalledTimes(1);
     expect(onTokens).toHaveBeenCalledWith(
+      "session-1",
       expect.objectContaining({ input: 0, cacheRead: 0 }),
       false,
     );
@@ -2335,6 +2344,7 @@ describe("summary/aggregator", () => {
 
     expect(onTokens).toHaveBeenCalledTimes(1);
     expect(onTokens).toHaveBeenCalledWith(
+      "session-1",
       expect.objectContaining({ input: 4000, cacheRead: 12000 }),
       false,
     );

@@ -1,5 +1,7 @@
+import { interactionManager } from "./interaction-manager.js";
 import type { ParsedTaskSchedule, ScheduledTaskModel, TaskCreationState } from "../types/scheduled-task.js";
 import { cloneParsedTaskSchedule, cloneScheduledTaskModel } from "../types/scheduled-task.js";
+import type { InteractionManager } from "./interaction-manager.js";
 import { logger } from "../../utils/logger.js";
 
 function cloneState(state: TaskCreationState): TaskCreationState {
@@ -10,8 +12,22 @@ function cloneState(state: TaskCreationState): TaskCreationState {
   };
 }
 
-class TaskCreationManager {
-  private state: TaskCreationState | null = null;
+export class TaskCreationManager {
+  constructor(private readonly interactionManager: InteractionManager) {}
+
+  private get state(): TaskCreationState | null {
+    return this.interactionManager.getPayload("task");
+  }
+
+  private update(changes: Partial<TaskCreationState>): TaskCreationState | null {
+    const state = this.state;
+    if (!state) {
+      return null;
+    }
+
+    Object.assign(state, changes);
+    return cloneState(state);
+  }
 
   start(
     projectId: string,
@@ -19,7 +35,7 @@ class TaskCreationManager {
     model: ScheduledTaskModel,
     agent: string,
   ): TaskCreationState {
-    this.state = {
+    const state: TaskCreationState = {
       stage: "awaiting_schedule",
       projectId,
       projectWorktree,
@@ -31,10 +47,11 @@ class TaskCreationManager {
       previewMessageId: null,
       promptRequestMessageId: null,
     };
+    this.interactionManager.start({ kind: "task", expectedInput: "text", payload: state });
 
     logger.info(`[TaskCreationManager] Started task creation flow for project=${projectWorktree}`);
 
-    return cloneState(this.state);
+    return cloneState(state);
   }
 
   isActive(): boolean {
@@ -62,84 +79,55 @@ class TaskCreationManager {
     parsedSchedule: ParsedTaskSchedule,
     previewMessageId: number,
   ): TaskCreationState | null {
-    if (!this.state) {
-      return null;
-    }
-
-    this.state = {
-      ...this.state,
+    const state = this.update({
       stage: "awaiting_prompt",
       scheduleText,
       parsedSchedule: cloneParsedTaskSchedule(parsedSchedule),
       scheduleRequestMessageId: null,
       previewMessageId,
       promptRequestMessageId: null,
-    };
+    });
 
-    logger.info("[TaskCreationManager] Parsed schedule and switched flow to prompt input");
+    if (state) {
+      logger.info("[TaskCreationManager] Parsed schedule and switched flow to prompt input");
+    }
 
-    return cloneState(this.state);
+    return state;
   }
 
   markScheduleParsing(): TaskCreationState | null {
-    if (!this.state) {
-      return null;
+    const state = this.update({ stage: "parsing_schedule" });
+
+    if (state) {
+      logger.info("[TaskCreationManager] Schedule parsing started");
     }
 
-    this.state = {
-      ...this.state,
-      stage: "parsing_schedule",
-    };
-
-    logger.info("[TaskCreationManager] Schedule parsing started");
-
-    return cloneState(this.state);
+    return state;
   }
 
   setPromptRequestMessageId(messageId: number): TaskCreationState | null {
-    if (!this.state) {
-      return null;
-    }
-
-    this.state = {
-      ...this.state,
-      promptRequestMessageId: messageId,
-    };
-
-    return cloneState(this.state);
+    return this.update({ promptRequestMessageId: messageId });
   }
 
   setScheduleRequestMessageId(messageId: number): TaskCreationState | null {
-    if (!this.state) {
-      return null;
-    }
-
-    this.state = {
-      ...this.state,
-      scheduleRequestMessageId: messageId,
-    };
-
-    return cloneState(this.state);
+    return this.update({ scheduleRequestMessageId: messageId });
   }
 
   resetSchedule(): TaskCreationState | null {
-    if (!this.state) {
-      return null;
-    }
-
-    this.state = {
-      ...this.state,
+    const state = this.update({
       stage: "awaiting_schedule",
       scheduleText: null,
       parsedSchedule: null,
       scheduleRequestMessageId: null,
       previewMessageId: null,
       promptRequestMessageId: null,
-    };
+    });
 
-    logger.info("[TaskCreationManager] Reset task creation flow back to schedule input");
+    if (state) {
+      logger.info("[TaskCreationManager] Reset task creation flow back to schedule input");
+    }
 
-    return cloneState(this.state);
+    return state;
   }
 
   clear(): void {
@@ -148,8 +136,9 @@ class TaskCreationManager {
     }
 
     logger.debug("[TaskCreationManager] Clearing task creation state");
-    this.state = null;
+    this.interactionManager.clearKind("task", "task_creation_cleared");
   }
 }
 
-export const taskCreationManager = new TaskCreationManager();
+/** Process-wide singleton shared with the app container (single-user bot). */
+export const taskCreationManager = new TaskCreationManager(interactionManager);

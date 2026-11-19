@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "grammy";
-import { interactionManager } from "../../../src/app/managers/interaction-manager.js";
 import { promptAttachment } from "../../../src/app/managers/prompt-attachment-manager.js";
 import { handleLsCallback } from "../../../src/bot/callbacks/file-browser-callback-handler.js";
 import { LS_CALLBACK_ATTACH_PREFIX } from "../../../src/bot/menus/file-browser-menu.js";
 import { defined } from "../../helpers/defined.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const PROJECT_ROOT = "D:\\Repo";
 const FILE_PATH = "D:\\Repo\\src\\index.ts";
@@ -52,10 +53,20 @@ function createContext(data: string): Context {
   } as unknown as Context;
 }
 
+function createDeps() {
+  return container;
+}
+
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
+
 describe("bot/callbacks/file-browser-callback-handler - attach branch", () => {
   beforeEach(() => {
     promptAttachment.__resetForTests();
-    interactionManager.clear("test_reset");
+    container.interactionManager.clear("test_reset");
     mocked.isForegroundBusyMock.mockReturnValue(false);
     mocked.ensureActiveInlineMenuMock.mockResolvedValue(true);
     mocked.clearActiveInlineMenuMock.mockReset();
@@ -63,15 +74,16 @@ describe("bot/callbacks/file-browser-callback-handler - attach branch", () => {
 
   it("stores the file, closes the menu and confirms with a cancel button", async () => {
     const ctx = createContext(`${LS_CALLBACK_ATTACH_PREFIX}${FILE_PATH}`);
+    const deps = createDeps();
 
-    expect(await handleLsCallback(ctx)).toBe(true);
+    expect(await handleLsCallback(ctx, deps)).toBe(true);
 
     expect(promptAttachment.get()).toEqual({
       absolutePath: FILE_PATH,
       worktree: PROJECT_ROOT,
       confirmationMessageId: 43,
     });
-    expect(mocked.clearActiveInlineMenuMock).toHaveBeenCalledWith("ls_attached");
+    expect(mocked.clearActiveInlineMenuMock).toHaveBeenCalledWith("ls_attached", deps);
     expect(ctx.deleteMessage).toHaveBeenCalled();
 
     const [[text, options]] = (ctx.reply as unknown as ReturnType<typeof vi.fn>).mock.calls as [
@@ -82,9 +94,9 @@ describe("bot/callbacks/file-browser-callback-handler - attach branch", () => {
   });
 
   it("enters the waiting-for-prompt mode", async () => {
-    await handleLsCallback(createContext(`${LS_CALLBACK_ATTACH_PREFIX}${FILE_PATH}`));
+    await handleLsCallback(createContext(`${LS_CALLBACK_ATTACH_PREFIX}${FILE_PATH}`), createDeps());
 
-    const state = interactionManager.getSnapshot();
+    const state = container.interactionManager.getSnapshot();
     expect(state).toMatchObject({
       kind: "custom",
       expectedInput: "mixed",
@@ -95,7 +107,7 @@ describe("bot/callbacks/file-browser-callback-handler - attach branch", () => {
   it("rejects a path outside the project root", async () => {
     const ctx = createContext(`${LS_CALLBACK_ATTACH_PREFIX}D:\\Other\\secret.ts`);
 
-    expect(await handleLsCallback(ctx)).toBe(true);
+    expect(await handleLsCallback(ctx, createDeps())).toBe(true);
     expect(promptAttachment.get()).toBeNull();
     expect(ctx.reply).not.toHaveBeenCalled();
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -108,7 +120,7 @@ describe("bot/callbacks/file-browser-callback-handler - attach branch", () => {
     mocked.ensureActiveInlineMenuMock.mockResolvedValue(false);
     const ctx = createContext(`${LS_CALLBACK_ATTACH_PREFIX}${FILE_PATH}`);
 
-    expect(await handleLsCallback(ctx)).toBe(true);
+    expect(await handleLsCallback(ctx, createDeps())).toBe(true);
     expect(promptAttachment.get()).toBeNull();
     expect(ctx.reply).not.toHaveBeenCalled();
   });
@@ -117,7 +129,7 @@ describe("bot/callbacks/file-browser-callback-handler - attach branch", () => {
     mocked.isForegroundBusyMock.mockReturnValue(true);
     const ctx = createContext(`${LS_CALLBACK_ATTACH_PREFIX}${FILE_PATH}`);
 
-    expect(await handleLsCallback(ctx)).toBe(true);
+    expect(await handleLsCallback(ctx, createDeps())).toBe(true);
     expect(promptAttachment.get()).toBeNull();
   });
 });

@@ -1,8 +1,6 @@
 import { Context } from "grammy";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { setCurrentSession } from "../../app/services/session-service.js";
-import { renameManager } from "../../app/managers/rename-manager.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
-import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
 import { logger } from "../../utils/logger.js";
 import { t } from "../../i18n/index.js";
 import { cancelPrompt } from "./feedback.js";
@@ -18,14 +16,19 @@ function getCallbackMessageId(ctx: Context): number | null {
   return typeof messageId === "number" ? messageId : null;
 }
 
-function clearRenameInteraction(reason: string): void {
-  const state = interactionManager.getSnapshot();
+export type RenameCallbackDeps = Pick<
+  AppContainer,
+  "interactionManager" | "pinnedMessageManager" | "renameManager"
+>;
+
+function clearRenameInteraction(deps: RenameCallbackDeps, reason: string): void {
+  const state = deps.interactionManager.getSnapshot();
   if (state?.kind === "rename") {
-    interactionManager.clear(reason);
+    deps.interactionManager.clear(reason);
   }
 }
 
-export async function handleRenameCancel(ctx: Context): Promise<boolean> {
+export async function handleRenameCancel(ctx: Context, deps: RenameCallbackDeps): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || data !== RENAME_CANCEL_CALLBACK) {
     return false;
@@ -33,35 +36,38 @@ export async function handleRenameCancel(ctx: Context): Promise<boolean> {
 
   logger.debug("[RenameHandler] Cancel callback received");
 
-  if (!renameManager.isWaitingForName()) {
-    clearRenameInteraction("rename_cancel_inactive");
+  if (!deps.renameManager.isWaitingForName()) {
+    clearRenameInteraction(deps, "rename_cancel_inactive");
     await ctx.answerCallbackQuery({ text: t("rename.inactive_callback"), show_alert: true });
     return true;
   }
 
-  const interactionState = interactionManager.getSnapshot();
+  const interactionState = deps.interactionManager.getSnapshot();
   if (interactionState?.kind !== "rename") {
-    renameManager.clear();
+    deps.renameManager.clear();
     await ctx.answerCallbackQuery({ text: t("rename.inactive_callback"), show_alert: true });
     return true;
   }
 
   const callbackMessageId = getCallbackMessageId(ctx);
-  if (!renameManager.isActiveMessage(callbackMessageId)) {
+  if (!deps.renameManager.isActiveMessage(callbackMessageId)) {
     await ctx.answerCallbackQuery({ text: t("rename.inactive_callback"), show_alert: true });
     return true;
   }
 
-  renameManager.clear();
-  clearRenameInteraction("rename_cancelled");
+  clearRenameInteraction(deps, "rename_cancelled");
+  deps.renameManager.clear();
 
   await cancelPrompt(ctx, "rename.cancelled");
 
   return true;
 }
 
-export async function handleRenameTextAnswer(ctx: Context): Promise<boolean> {
-  if (!renameManager.isWaitingForName()) {
+export async function handleRenameTextAnswer(
+  ctx: Context,
+  deps: RenameCallbackDeps,
+): Promise<boolean> {
+  if (!deps.renameManager.isWaitingForName()) {
     return false;
   }
 
@@ -74,17 +80,17 @@ export async function handleRenameTextAnswer(ctx: Context): Promise<boolean> {
     return false;
   }
 
-  const interactionState = interactionManager.getSnapshot();
+  const interactionState = deps.interactionManager.getSnapshot();
   if (interactionState?.kind !== "rename") {
-    renameManager.clear();
+    deps.renameManager.clear();
     await ctx.reply(t("rename.inactive"));
     return true;
   }
 
-  const sessionInfo = renameManager.getSessionInfo();
+  const sessionInfo = deps.renameManager.getSessionInfo();
   if (!sessionInfo) {
-    renameManager.clear();
-    clearRenameInteraction("rename_missing_session_info");
+    clearRenameInteraction(deps, "rename_missing_session_info");
+    deps.renameManager.clear();
     // Answer here: returning false would send the new title to OpenCode as a prompt.
     await ctx.reply(t("rename.inactive"));
     return true;
@@ -107,11 +113,11 @@ export async function handleRenameTextAnswer(ctx: Context): Promise<boolean> {
       directory: sessionInfo.directory,
     });
 
-    if (pinnedMessageManager.isInitialized()) {
-      await pinnedMessageManager.onSessionChange(sessionInfo.sessionId, newTitle);
+    if (deps.pinnedMessageManager.isInitialized()) {
+      await deps.pinnedMessageManager.onSessionChange(sessionInfo.sessionId, newTitle);
     }
 
-    const messageId = renameManager.getMessageId();
+    const messageId = deps.renameManager.getMessageId();
     if (messageId && ctx.chat) {
       await ctx.api.deleteMessage(ctx.chat.id, messageId).catch(() => {});
     }
@@ -124,7 +130,7 @@ export async function handleRenameTextAnswer(ctx: Context): Promise<boolean> {
     await ctx.reply(t("rename.error"));
   }
 
-  renameManager.clear();
-  clearRenameInteraction("rename_completed");
+  clearRenameInteraction(deps, "rename_completed");
+  deps.renameManager.clear();
   return true;
 }

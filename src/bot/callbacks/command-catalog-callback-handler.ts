@@ -1,3 +1,6 @@
+import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
+import { questionManager } from "../../app/managers/question-manager.js";
+import { permissionManager } from "../../app/managers/permission-manager.js";
 import type { Bot, Context } from "grammy";
 import { config } from "../../config.js";
 import type { CommandCatalogItem } from "../../app/services/command-catalog-service.js";
@@ -237,8 +240,7 @@ export async function executeCommand(
     bot: deps.bot,
     chatId: ctx.chat.id,
     session,
-    ensureEventSubscription: deps.ensureEventSubscription,
-  });
+    ensureEventSubscription: deps.ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
 
   const sessionIsBusy = await isSessionBusy(session.id, session.directory);
   if (sessionIsBusy) {

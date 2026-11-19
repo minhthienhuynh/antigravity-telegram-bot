@@ -1,9 +1,8 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { clearAllInteractionState } from "../../../src/app/managers/interaction-manager.js";
-import { interactionManager } from "../../../src/app/managers/interaction-manager.js";
-import { questionManager } from "../../../src/app/managers/question-manager.js";
-import { permissionManager } from "../../../src/app/managers/permission-manager.js";
-import { renameManager } from "../../../src/app/managers/rename-manager.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { InteractionManager } from "../../../src/app/managers/interaction-manager.js";
+import { QuestionManager } from "../../../src/app/managers/question-manager.js";
+import { PermissionManager } from "../../../src/app/managers/permission-manager.js";
+import { RenameManager } from "../../../src/app/managers/rename-manager.js";
 import type { Question } from "../../../src/app/types/question.js";
 import type { PermissionRequest } from "../../../src/app/types/permission.js";
 
@@ -25,25 +24,51 @@ const TEST_PERMISSION: PermissionRequest = {
   always: [],
 };
 
+let interactionManager: InteractionManager;
+let questionManager: QuestionManager;
+let permissionManager: PermissionManager;
+let renameManager: RenameManager;
+
+beforeEach(() => {
+  interactionManager = new InteractionManager();
+  questionManager = new QuestionManager(interactionManager);
+  permissionManager = new PermissionManager(interactionManager);
+  renameManager = new RenameManager(interactionManager);
+});
+
 describe("app/managers/interaction-cleanup", () => {
   beforeEach(() => {
-    clearAllInteractionState("test_setup");
+    interactionManager.reset("test_setup");
   });
 
-  it("clears all interaction-related managers", () => {
-    questionManager.startQuestions([TEST_QUESTION], "req-1");
-    permissionManager.startPermission(TEST_PERMISSION, 101);
-    renameManager.startWaiting("session-1", "D:/repo", "Old title");
-    interactionManager.start({
-      kind: "rename",
-      expectedInput: "text",
-      metadata: { sessionId: "session-1" },
-    });
+  afterEach(() => {
+    interactionManager.setOnWaitingRequestReady(null);
+  });
 
-    clearAllInteractionState("test_cleanup");
+  it("clears the slot and the waiting request together", async () => {
+    const listener = vi.fn();
+    interactionManager.setOnWaitingRequestReady(listener);
+    questionManager.startQuestions([TEST_QUESTION], "req-1");
+    interactionManager.waitPermission(TEST_PERMISSION);
+    const generation = interactionManager.getGeneration();
+
+    interactionManager.reset("test_cleanup");
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(questionManager.isActive()).toBe(false);
     expect(permissionManager.isActive()).toBe(false);
+    expect(renameManager.isWaitingForName()).toBe(false);
+    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(interactionManager.getWaitingKind()).toBeNull();
+    expect(interactionManager.getGeneration()).toBe(generation + 1);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("clears a rename flow", () => {
+    renameManager.startWaiting("session-1", "D:/repo", "Old title");
+
+    interactionManager.reset("test_cleanup");
+
     expect(renameManager.isWaitingForName()).toBe(false);
     expect(interactionManager.getSnapshot()).toBeNull();
   });
@@ -55,13 +80,9 @@ describe("app/managers/interaction-cleanup", () => {
       metadata: { menuKind: "model", messageId: 1 },
     });
 
-    clearAllInteractionState("first_cleanup");
+    interactionManager.reset("first_cleanup");
 
-    interactionManager.start({
-      kind: "question",
-      expectedInput: "callback",
-      metadata: { questionIndex: 0 },
-    });
+    questionManager.startQuestions([TEST_QUESTION], "req-2");
 
     expect(interactionManager.getSnapshot()?.kind).toBe("question");
   });

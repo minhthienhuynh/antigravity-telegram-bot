@@ -6,7 +6,7 @@ export interface ForegroundBusySession {
   markedAt: number;
 }
 
-class ForegroundSessionState {
+export class ForegroundSessionState {
   private activeSessions = new Map<string, ForegroundBusySession>();
 
   markBusy(sessionId: string, directory: string): void {
@@ -50,10 +50,6 @@ class ForegroundSessionState {
     this.activeSessions.clear();
   }
 
-  __resetForTests(): void {
-    this.activeSessions.clear();
-  }
-
   __setMarkedAtForTests(sessionId: string, markedAt: number): void {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
@@ -64,4 +60,5 @@ class ForegroundSessionState {
   }
 }
 
+/** Process-wide singleton shared with the app container (single-user bot). */
 export const foregroundSessionState = new ForegroundSessionState();

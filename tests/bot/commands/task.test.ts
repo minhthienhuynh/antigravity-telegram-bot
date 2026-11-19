@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "grammy";
 import { handleTaskTextInput, taskCommand } from "../../../src/bot/commands/task-command.js";
 import { handleTaskCallback } from "../../../src/bot/callbacks/scheduled-task-callback-handler.js";
-import { interactionManager } from "../../../src/app/managers/interaction-manager.js";
-import { taskCreationManager } from "../../../src/app/managers/scheduled-task-creation-manager.js";
 import { t } from "../../../src/i18n/index.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   currentProject: {
@@ -86,12 +86,6 @@ vi.mock("../../../src/app/stores/scheduled-task-store.js", () => ({
   listScheduledTasks: mocked.listScheduledTasksMock,
 }));
 
-vi.mock("../../../src/app/services/scheduled-task-runtime-service.js", () => ({
-  scheduledTaskRuntime: {
-    registerTask: mocked.registerTaskMock,
-  },
-}));
-
 function createCommandContext(): Context {
   return {
     chat: { id: 777 },
@@ -131,10 +125,23 @@ function createCallbackContext(data: string, messageId: number): Context {
   } as unknown as Context;
 }
 
+function createDeps() {
+  return {
+    ...container,
+    scheduledTaskRuntime: { registerTask: mocked.registerTaskMock } as never,
+  };
+}
+
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
+
 describe("bot/commands/task", () => {
   beforeEach(() => {
-    interactionManager.clear("test_setup");
-    taskCreationManager.clear();
+    container.interactionManager.clear("test_setup");
+    container.taskCreationManager.clear();
 
     mocked.currentProject = {
       id: "project-1",
@@ -165,13 +172,13 @@ describe("bot/commands/task", () => {
   it("starts scheduled task creation flow", async () => {
     const ctx = createCommandContext();
 
-    await taskCommand(ctx as never);
+    await taskCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(t("task.prompt.schedule"), {
       reply_markup: expect.any(Object),
     });
-    expect(taskCreationManager.isWaitingForSchedule()).toBe(true);
-    expect(interactionManager.getSnapshot()).toMatchObject({
+    expect(container.taskCreationManager.isWaitingForSchedule()).toBe(true);
+    expect(container.interactionManager.getSnapshot()).toMatchObject({
       kind: "task",
       expectedInput: "text",
       metadata: {
@@ -189,18 +196,18 @@ describe("bot/commands/task", () => {
 
     const ctx = createCommandContext();
 
-    await taskCommand(ctx as never);
+    await taskCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(t("task.limit_reached", { limit: "1" }));
-    expect(taskCreationManager.isActive()).toBe(false);
-    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(container.taskCreationManager.isActive()).toBe(false);
+    expect(container.interactionManager.getSnapshot()).toBeNull();
   });
 
   it("parses schedule and switches flow to prompt input", async () => {
-    await taskCommand(createCommandContext() as never);
+    await taskCommand(createCommandContext() as never, createDeps());
 
     const ctx = createTextContext("every day at 17:00", [201, 202]);
-    const handled = await handleTaskTextInput(ctx);
+    const handled = await handleTaskTextInput(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.parseTaskScheduleMock).toHaveBeenCalledWith(
@@ -219,8 +226,8 @@ describe("bot/commands/task", () => {
     expect(previewCall[0]).toContain(t("task.kind.cron"));
     expect(previewCall[0]).toContain(t("task.prompt.body"));
     expect(previewCall[1]).toEqual(expect.objectContaining({ reply_markup: expect.any(Object) }));
-    expect(taskCreationManager.isWaitingForPrompt()).toBe(true);
-    expect(interactionManager.getSnapshot()).toMatchObject({
+    expect(container.taskCreationManager.isWaitingForPrompt()).toBe(true);
+    expect(container.interactionManager.getSnapshot()).toMatchObject({
       kind: "task",
       expectedInput: "mixed",
       metadata: {
@@ -232,11 +239,11 @@ describe("bot/commands/task", () => {
   });
 
   it("saves scheduled task after receiving prompt text", async () => {
-    await taskCommand(createCommandContext() as never);
-    await handleTaskTextInput(createTextContext("every day at 17:00", [201, 202]));
+    await taskCommand(createCommandContext() as never, createDeps());
+    await handleTaskTextInput(createTextContext("every day at 17:00", [201, 202]), createDeps());
 
     const ctx = createTextContext("Send me a daily summary", [301]);
-    const handled = await handleTaskTextInput(ctx);
+    const handled = await handleTaskTextInput(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.addScheduledTaskMock).toHaveBeenCalledTimes(1);
@@ -272,34 +279,34 @@ describe("bot/commands/task", () => {
     expect(successCall[0]).toContain("openai/gpt-5 (default)");
     expect(successCall[0]).toContain("Every day at 17:00");
     expect(successCall[0]).toContain("Cron: 0 17 * * *");
-    expect(taskCreationManager.isActive()).toBe(false);
-    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(container.taskCreationManager.isActive()).toBe(false);
+    expect(container.interactionManager.getSnapshot()).toBeNull();
   });
 
   it("stops task save when limit is reached before final step", async () => {
-    await taskCommand(createCommandContext() as never);
-    await handleTaskTextInput(createTextContext("every day at 17:00", [201, 202]));
+    await taskCommand(createCommandContext() as never, createDeps());
+    await handleTaskTextInput(createTextContext("every day at 17:00", [201, 202]), createDeps());
 
     mocked.taskLimit = 1;
     mocked.listScheduledTasksMock.mockReturnValue([{ id: "task-1" }]);
 
     const ctx = createTextContext("Send me a daily summary", [301]);
-    const handled = await handleTaskTextInput(ctx);
+    const handled = await handleTaskTextInput(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.addScheduledTaskMock).not.toHaveBeenCalled();
     expect(mocked.registerTaskMock).not.toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenCalledWith(t("task.limit_reached", { limit: "1" }));
-    expect(taskCreationManager.isActive()).toBe(false);
-    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(container.taskCreationManager.isActive()).toBe(false);
+    expect(container.interactionManager.getSnapshot()).toBeNull();
   });
 
   it("restarts schedule step when retry button is pressed", async () => {
-    await taskCommand(createCommandContext() as never);
-    await handleTaskTextInput(createTextContext("every day at 17:00", [201, 202]));
+    await taskCommand(createCommandContext() as never, createDeps());
+    await handleTaskTextInput(createTextContext("every day at 17:00", [201, 202]), createDeps());
 
     const ctx = createCallbackContext("task:retry-schedule", 202);
-    const handled = await handleTaskCallback(ctx);
+    const handled = await handleTaskCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -308,8 +315,8 @@ describe("bot/commands/task", () => {
     expect(ctx.reply).toHaveBeenCalledWith(t("task.prompt.schedule"), {
       reply_markup: expect.any(Object),
     });
-    expect(taskCreationManager.isWaitingForSchedule()).toBe(true);
-    expect(interactionManager.getSnapshot()).toMatchObject({
+    expect(container.taskCreationManager.isWaitingForSchedule()).toBe(true);
+    expect(container.interactionManager.getSnapshot()).toMatchObject({
       kind: "task",
       expectedInput: "text",
       metadata: {
@@ -319,22 +326,22 @@ describe("bot/commands/task", () => {
   });
 
   it("cancels task flow from schedule message", async () => {
-    await taskCommand(createCommandContext() as never);
+    await taskCommand(createCommandContext() as never, createDeps());
 
     const ctx = createCallbackContext("task:cancel", 100);
-    const handled = await handleTaskCallback(ctx);
+    const handled = await handleTaskCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
       text: t("common.cancelled"),
     });
     expect(ctx.reply).not.toHaveBeenCalled();
-    expect(taskCreationManager.isActive()).toBe(false);
-    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(container.taskCreationManager.isActive()).toBe(false);
+    expect(container.interactionManager.getSnapshot()).toBeNull();
   });
 
   it("rejects schedules more frequent than every 5 minutes", async () => {
-    await taskCommand(createCommandContext() as never);
+    await taskCommand(createCommandContext() as never, createDeps());
     mocked.parseTaskScheduleMock.mockResolvedValue({
       kind: "cron",
       cron: "*/2 * * * *",
@@ -344,7 +351,7 @@ describe("bot/commands/task", () => {
     });
 
     const ctx = createTextContext("every 2 minutes", [201, 202]);
-    const handled = await handleTaskTextInput(ctx);
+    const handled = await handleTaskTextInput(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.addScheduledTaskMock).not.toHaveBeenCalled();
@@ -354,6 +361,6 @@ describe("bot/commands/task", () => {
     ];
     expect(errorCall[0]).toContain(t("task.schedule_too_frequent"));
     expect(errorCall[1]).toEqual(expect.objectContaining({ reply_markup: expect.any(Object) }));
-    expect(taskCreationManager.isWaitingForSchedule()).toBe(true);
+    expect(container.taskCreationManager.isWaitingForSchedule()).toBe(true);
   });
 });

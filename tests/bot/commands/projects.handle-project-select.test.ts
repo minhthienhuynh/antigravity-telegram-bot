@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "grammy";
 import { t } from "../../../src/i18n/index.js";
 import { handleProjectSelect } from "../../../src/bot/callbacks/project-callback-handler.js";
-import { foregroundSessionState } from "../../../src/app/managers/foreground-session-state-manager.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   getProjectsMock: vi.fn(),
@@ -20,11 +21,6 @@ vi.mock("../../../src/bot/menus/inline-menu.js", () => ({
   replyWithInlineMenu: vi.fn(),
 }));
 
-vi.mock("../../../src/app/managers/interaction-manager.js", () => ({
-  interactionManager: { clear: vi.fn() },
-  clearAllInteractionState: mocked.clearAllInteractionStateMock,
-}));
-
 function createCallbackContext(data: string): Context {
   return {
     callbackQuery: { data } as Context["callbackQuery"],
@@ -34,9 +30,21 @@ function createCallbackContext(data: string): Context {
   } as unknown as Context;
 }
 
+function createDeps() {
+  return {
+    ...container,
+    resetInteractions: mocked.clearAllInteractionStateMock,
+  };
+}
+
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
+
 describe("bot/commands/projects handleProjectSelect", () => {
   beforeEach(() => {
-    foregroundSessionState.__resetForTests();
     mocked.getProjectsMock.mockReset();
     mocked.ensureActiveInlineMenuMock.mockReset();
     mocked.clearAllInteractionStateMock.mockReset();
@@ -48,7 +56,7 @@ describe("bot/commands/projects handleProjectSelect", () => {
     const pageLoadError = new Error("failed to load page");
     mocked.getProjectsMock.mockRejectedValue(pageLoadError);
 
-    const handled = await handleProjectSelect(ctx);
+    const handled = await handleProjectSelect(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -68,7 +76,7 @@ describe("bot/commands/projects handleProjectSelect", () => {
       },
     ]);
 
-    const handled = await handleProjectSelect(ctx);
+    const handled = await handleProjectSelect(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.clearAllInteractionStateMock).toHaveBeenCalledWith("project_select_error");
@@ -77,10 +85,10 @@ describe("bot/commands/projects handleProjectSelect", () => {
   });
 
   it("blocks project selection callback while foreground session is busy", async () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    container.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
     const ctx = createCallbackContext("project:abc");
-    const handled = await handleProjectSelect(ctx);
+    const handled = await handleProjectSelect(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.getProjectsMock).not.toHaveBeenCalled();
@@ -90,10 +98,10 @@ describe("bot/commands/projects handleProjectSelect", () => {
   });
 
   it("does not block permission callbacks while foreground session is busy", async () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    container.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
     const ctx = createCallbackContext("permission:once");
-    const handled = await handleProjectSelect(ctx);
+    const handled = await handleProjectSelect(ctx, createDeps());
 
     expect(handled).toBe(false);
     expect(ctx.answerCallbackQuery).not.toHaveBeenCalled();
@@ -101,10 +109,10 @@ describe("bot/commands/projects handleProjectSelect", () => {
   });
 
   it("does not block question callbacks while foreground session is busy", async () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    container.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
     const ctx = createCallbackContext("question:select:0:1");
-    const handled = await handleProjectSelect(ctx);
+    const handled = await handleProjectSelect(ctx, createDeps());
 
     expect(handled).toBe(false);
     expect(ctx.answerCallbackQuery).not.toHaveBeenCalled();

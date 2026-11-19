@@ -249,3 +249,8 @@ export function __resetSessionCacheForTests(): void {
 export const __resetSessionDirectoryCacheForTests = __resetSessionCacheForTests;
 
 void persistQueue;
+
+/** Upstream ready-refresh entry point; agy cache sync is local-only. */
+export async function warmupSessionDirectoryCache(): Promise<void> {
+  await syncSessionDirectoryCache({ force: true });
+}

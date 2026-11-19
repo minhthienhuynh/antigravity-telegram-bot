@@ -76,6 +76,18 @@ function getOptionalBooleanEnvVar(key: string, defaultValue: boolean): boolean {
   return defaultValue;
 }
 
+export type OpencodeServerVersion = "v1" | "v2";
+
+const DEFAULT_OPENCODE_API_URLS: Record<OpencodeServerVersion, string> = {
+  v1: "http://localhost:4096",
+  v2: "http://127.0.0.1:49374",
+};
+
+function getOptionalOpencodeServerVersionEnvVar(key: string): OpencodeServerVersion {
+  const normalized = getEnvVar(key, false).trim().toLowerCase();
+  return normalized === "v2" ? "v2" : "v1";
+}
+
 function getOptionalMessageFormatModeEnvVar(
   key: string,
   defaultValue: MessageFormatMode,
@@ -178,6 +190,8 @@ export function buildTelegramConfig(): {
   };
 }
 
+const opencodeServerVersion = getOptionalOpencodeServerVersionEnvVar("OPENCODE_SERVER_VERSION");
+
 export const config = {
   telegram: buildTelegramConfig(),
   antigravity: {
@@ -195,6 +209,19 @@ export const config = {
     printTimeout: getEnvVar("AGY_PRINT_TIMEOUT", false) || "3600s",
     // Default model id when no model is selected via the /model menu.
     defaultModel: getEnvVar("AGY_DEFAULT_MODEL", false) || "gemini-3.8-flash-medium",
+  },
+  opencode: {
+    serverVersion: opencodeServerVersion,
+    apiUrl:
+      getEnvVar("OPENCODE_API_URL", false) || DEFAULT_OPENCODE_API_URLS[opencodeServerVersion],
+    username: getEnvVar("OPENCODE_SERVER_USERNAME", false) || "opencode",
+    password: getEnvVar("OPENCODE_SERVER_PASSWORD", false),
+    autoRestartEnabled: getOptionalBooleanEnvVar("OPENCODE_AUTO_RESTART_ENABLED", false),
+    monitorIntervalSec: getOptionalPositiveIntEnvVar("OPENCODE_MONITOR_INTERVAL_SEC", 300),
+    model: {
+      provider: getEnvVar("OPENCODE_MODEL_PROVIDER", false) || "opencode", // optional: dormant OpenCode backend
+      modelId: getEnvVar("OPENCODE_MODEL_ID", false) || "big-pickle", // optional: dormant OpenCode backend
+    },
   },
   server: {
     logLevel: getEnvVar("LOG_LEVEL", false) || "info",

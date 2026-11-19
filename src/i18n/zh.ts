@@ -1,7 +1,13 @@
 import type { I18nDictionary } from "./en.js";
 
 export const zh: I18nDictionary = {
-  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.description.recent": "查看所有项目的最近会话",
+  "recent.heading": "所有项目的最近会话（用 /recent 刷新）：",
+  "recent.empty": "📭 所有项目中都没有会话。",
+  "recent.running": "运行中",
+  "recent.idle": "空闲",
+  "recent.question": "等待回答",
+  "recent.permission": "等待授权",
   "cmd.description.status": "服务器和会话状态",
   "cmd.description.new": "创建新会话",
   "cmd.description.stop": "停止当前操作",
@@ -19,75 +25,36 @@ export const zh: I18nDictionary = {
   "cmd.description.opencode_start": "启动 Antigravity 服务器",
   "cmd.description.opencode_stop": "停止 Antigravity 服务器",
   "cmd.description.ls": "列出目录内容",
-  "cmd.restart.ack":
-    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
-  "switch.code_needed":
-    "Falta el código: usa /code <código> con el código que te dio Google.",
-  "switch.already_pending":
-    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
-  "switch.working":
-    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
-  "switch.no_url_yet":
-    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
-  "switch.url_intro":
-    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
-  "switch.paste_code_hint":
-    "🔑 Luego pega el código aquí con: /code <código>",
-  "switch.submitting":
-    "⏳ Entregando el código a agy...",
-  "switch.done":
-    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
-  "switch.failed":
-    "❌ El switch falló:",
   "cmd.description.help": "帮助",
-
   "callback.unknown_command": "未知命令",
   "callback.processing_error": "处理错误",
-
   "error.load_agents": "❌ 加载代理列表失败",
   "error.load_models": "❌ 加载模型列表失败",
   "error.load_variants": "❌ 加载变体列表失败",
   "error.context_button": "❌ 处理上下文按钮失败",
   "error.generic": "🔴 出现了一些问题。",
-
   "interaction.blocked.expired": "⚠️ 此交互已过期。请重新开始。",
   "interaction.blocked.expected_callback": "⚠️ 此步骤请使用内联按钮，或点击取消。",
   "interaction.blocked.expected_text": "⚠️ 此步骤请发送一条文本消息。",
   "interaction.blocked.expected_command": "⚠️ 此步骤请发送一条命令。",
   "interaction.blocked.command_not_allowed": "⚠️ 当前步骤不可用此命令。",
   "interaction.blocked.finish_current": "⚠️ 请先完成当前交互（回答或取消），然后再打开其他菜单。",
-
   "inline.blocked.expected_choice": "⚠️ 请使用内联按钮选择一个选项，或点击取消。",
   "inline.blocked.command_not_allowed": "⚠️ 内联菜单激活期间不可用此命令。",
-
   "question.blocked.expected_answer": "⚠️ 请使用按钮、自定义回答或取消来回答当前问题。",
   "question.blocked.command_not_allowed": "⚠️ 在当前问答流程完成之前不可用此命令。",
-
   "inline.button.cancel": "❌ 取消",
   "inline.button.close": "❌ 关闭",
   "inline.inactive_callback": "此菜单已失效",
-
   "common.cancelled": "已取消",
   "common.unknown": "未知",
   "common.unknown_error": "未知错误",
-
   "start.welcome":
     "👋 欢迎使用 Antigravity Telegram Bot！\n\n可用命令：\n/projects — 选择项目\n/sessions — 会话列表\n/new — 新建会话\n/commands — 自定义命令\n/skills — 技能目录\n/task — 定时任务\n/tasklist — 定时任务列表\n/status — 状态\n/help — 帮助\n\n请使用底部按钮选择 Agent、模型和变体。",
   "help.keyboard_hint": "💡 Agent、模型、变体和上下文操作请使用底部键盘按钮。",
   "help.text":
     "📖 **帮助**\n\n/status - 查看服务器状态\n/sessions - 会话列表\n/new - 创建新会话\n/help - 帮助",
-
   "bot.thinking": "💭 思考中...",
-  "bot.prompt_received": "📨 已收到 — 正在准备 agent…",
-  "bot.prompt_dispatched": "⚙️ 已写入 agent 管道 — 开始工作。",
-  "bot.prompt_slow_start": "⏳ agent 仍在启动（冷启动可能较慢）…",
-  "bot.queue_hot_taken": "⚡ 你的消息已直接进入当前 turn (hot takeover)。",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ 工作中",
   "progress.compact.finished_header": "✅ 工作完成",
@@ -102,27 +69,11 @@ export const zh: I18nDictionary = {
   "bot.creating_session": "🔄 正在创建新会话...",
   "bot.create_session_error": "🔴 创建会话失败。请重试 /new，或使用 /status 检查服务器状态。",
   "bot.session_created": "✅ 会话已创建：{title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
-  "cmd.description.compact": "压缩对话上下文",
-  "compact.busy": "⏳ 代理正忙 — 当前任务结束后再试。",
-  "compact.no_session": "还没有可压缩的活动对话。",
-  "compact.started": "🧹 正在压缩：已向代理请求交接摘要…",
-  "compact.auto_started": "🧹 对话已达 {tokens}k tokens — 正在自动压缩…",
-  "compact.done": "✅ 已压缩 — 将在交接上下文的新对话中继续。",
-  "compact.failed": "⚠️ 压缩失败 — 请检查日志；可用 /compact 重试。",
-  "compact.damaged_hint": "🛠 此错误通常意味着对话状态已损坏。我可以压缩它并在新对话中继续。",
-  "compact.button": "🧹 压缩并继续",
   "bot.session_busy": "⏳ 代理正在执行任务。请等待完成，或使用 /abort 中断当前运行。",
   "bot.session_reset_project_mismatch":
     "⚠️ 活动会话与所选项目不匹配，因此已重置。使用 /sessions 选择一个会话，或 /new 创建新会话。",
   "bot.prompt_send_error": "向 Antigravity 发送请求失败。",
   "bot.session_error": "🔴 Antigravity 返回错误：{message}",
-  "bot.retrying": "⚠️ Antigravity 服务不可用 (503) — 正在自动重试… 第 {attempt}/{max} 次尝试，下次约 {seconds} 秒后。",
-  "bot.retry_recovered": "✅ Antigravity 已恢复 — 继续。",
-  "bot.retry_exhausted": "❌ Antigravity 持续不可用 — 重试已用尽。服务恢复后请重新发送消息。",
   "bot.assistant_reply_undelivered":
     "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
   "bot.stale_messages_skipped":
@@ -154,7 +105,6 @@ export const zh: I18nDictionary = {
   "bot.model_no_pdf": "⚠️ 当前模型不支持PDF输入。将仅发送文本。",
   "bot.document_extraction_error": "🔴 文档文本提取失败。",
   "bot.text_file_too_large": "⚠️ 文本文件过大（最大 {maxSizeKb}KB）",
-
   "status.header_running": "🟢 Antigravity 服务器正在运行",
   "status.health.healthy": "健康",
   "status.health.unhealthy": "不健康",
@@ -180,15 +130,12 @@ export const zh: I18nDictionary = {
   "status.session_not_selected": "当前会话：未选择",
   "status.session_hint": "使用 /sessions 选择一个会话，或 /new 创建",
   "status.header_unavailable": "🔴 Antigravity 服务器不可用",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "使用 /opencode_start 启动服务器。",
-
   "tts.off": "🔇 语音回复已关闭。",
   "tts.all": "🔊 已为所有消息启用语音回复。",
   "tts.auto": "🎤 仅为语音消息启用语音回复。",
   "tts.not_configured": "⚠️ 语音回复暂不可用。请先设置 `TTS_API_URL` 和 `TTS_API_KEY`。",
   "tts.failed": "⚠️ 生成语音回复失败。",
-
   "settings.menu.title": "⚙️ 机器人设置\n点按设置项以切换其值：",
   "settings.compact_output.label": "紧凑输出模式",
   "settings.delete_progress_on_finish.label": "完成后删除进度",
@@ -203,8 +150,9 @@ export const zh: I18nDictionary = {
   "settings.prompt_queue.label": "消息队列",
   "settings.value.on": "开启",
   "settings.value.off": "关闭",
+  "settings.prompt_queue.queue": "Queue",
+  "settings.prompt_queue.steer": "Steer",
   "settings.saved": "✅ 设置已保存。",
-
   "projects.empty":
     "📭 未找到项目。\n\n在 Antigravity 中打开一个目录并至少创建一个会话，然后它会出现在这里。",
   "projects.select": "请选择一个项目：",
@@ -217,7 +165,6 @@ export const zh: I18nDictionary = {
   "projects.selected":
     "✅ 已选择项目：{project}\n\n📋 会话已重置。请在此项目中使用 /sessions 或 /new。",
   "projects.select_error": "🔴 选择项目失败。",
-
   "sessions.project_not_selected": "🏗 未选择项目。\n\n请先使用 /projects 选择一个项目。",
   "sessions.empty": "📭 未找到会话。\n\n使用 /new 创建新会话。",
   "sessions.select": "请选择一个会话：",
@@ -232,10 +179,8 @@ export const zh: I18nDictionary = {
   "sessions.selected": "✅ 已选择会话：{title}",
   "sessions.select_error": "🔴 选择会话失败。",
   "sessions.preview.empty": "没有最近消息。",
-  "sessions.preview.title": "最近消息：",
-  "sessions.preview.you": "你：",
-  "sessions.preview.agent": "代理：",
-
+  "sessions.last_input.title": "上次用户输入：",
+  "sessions.last_input.attachment": "附件",
   "messages.project_not_selected": "🏗 未选择项目。\n\n请先使用 /projects 选择项目。",
   "messages.session_not_selected":
     "💬 未选择会话。\n\n请先使用 /sessions 选择会话，或使用 /new 创建会话。",
@@ -257,7 +202,6 @@ export const zh: I18nDictionary = {
   "messages.revert_error": "❌ 无法恢复消息。请重试。",
   "messages.fork_success": "🔀 从消息创建分支：\n\n{text}",
   "messages.fork_error": "❌ 创建分支失败。请重试。",
-
   "attach.project_not_selected": "🏗 未选择项目。\n\n请先使用 /projects 选择一个项目。",
   "attach.session_not_selected": "💬 未选择会话。\n\n请先使用 /sessions 选择一个会话。",
   "attach.session_project_mismatch": "⚠️ 选中的会话与当前项目不匹配。请通过 /sessions 重新选择。",
@@ -269,17 +213,14 @@ export const zh: I18nDictionary = {
   "attach.restored_permissions": "已恢复待处理权限请求：{count}。",
   "attach.disconnect_hint": "如需断开连接，只需切换到其他会话或项目。",
   "attach.error": "🔴 无法连接到当前会话。",
-
   "detach.project_not_selected": "🏗 未选择项目。\n\n请先使用 /projects 选择一个项目。",
   "detach.no_active_session": "ℹ️ 机器人当前未附加到任何会话。",
   "detach.success":
     "✅ 已从会话分离：{title}\n\nAntigravity 会话未停止。如果它仍在运行，将继续独立执行。稍后可通过 /sessions 重新选择它来查看。",
   "detach.error": "🔴 无法从当前会话分离。",
-
   "new.project_not_selected": "🏗 未选择项目。\n\n请先使用 /projects 选择一个项目。",
   "new.created": "✅ 新会话已创建：{title}",
   "new.create_error": "🔴 Antigravity 服务器不可用，或创建会话时发生错误。",
-
   "stop.no_active_session": "🛑 代理尚未启动\n\n使用 /new 创建会话，或通过 /sessions 选择一个。",
   "stop.in_progress": "🛑 已停止事件流，正在发送中止信号...\n\n等待代理停止。",
   "stop.warn_unconfirmed":
@@ -290,7 +231,6 @@ export const zh: I18nDictionary = {
   "stop.warn_timeout": "⚠️ 中止请求超时。\n\n事件流已禁用，请在几秒后重试 /abort。",
   "stop.warn_local_only": "⚠️ 已在本地停止事件流，但服务器端中止失败。",
   "stop.error": "🔴 停止操作失败。\n\n事件流已停止，请再次尝试 /abort。",
-
   "opencode_start.already_running_managed":
     "⚠️ Antigravity 服务器已在运行\n\nPID：{pid}\n运行时间：{seconds} 秒",
   "opencode_start.already_running_external":
@@ -315,14 +255,12 @@ export const zh: I18nDictionary = {
   "opencode_stop.still_running": "停止请求后服务器仍在响应。",
   "opencode_stop.success": "✅ Antigravity 服务器已成功停止",
   "opencode_stop.error": "🔴 停止服务器时发生错误。\n\n请查看应用日志了解详情。",
-
   "agent.changed_message": "✅ Agent 已切换为：{name}",
   "agent.change_error_callback": "切换 Agent 失败",
   "agent.menu.current": "当前 Agent：{name}\n\n请选择 Agent：",
   "agent.menu.select": "请选择 Agent：",
   "agent.menu.empty": "⚠️ 没有可用的代理",
   "agent.menu.error": "🔴 获取代理列表失败",
-
   "model.changed_message": "✅ 模型已切换为：{name}",
   "model.change_error_callback": "切换模型失败",
   "model.menu.empty": "⚠️ 没有可用模型",
@@ -351,7 +289,6 @@ export const zh: I18nDictionary = {
   "model.provider_models.title": "{provider} — 选择模型：",
   "model.provider_models.empty": "⚠️ {provider} 没有可用模型",
   "model.provider_models.page_indicator": "第 {current}/{total} 页",
-
   "variant.model_not_selected_callback": "错误：未选择模型",
   "variant.changed_message": "✅ 变体已切换为：{name}",
   "variant.change_error_callback": "切换变体失败",
@@ -359,16 +296,25 @@ export const zh: I18nDictionary = {
   "variant.menu.empty": "⚠️ 没有可用变体",
   "variant.menu.current": "当前变体：{name}\n\n请选择变体：",
   "variant.menu.error": "🔴 获取变体列表失败",
-
   "context.button.confirm": "✅ 是的，压缩上下文",
+  "context.button.details_compact": "📦 Compact context",
+  "context.button.close": "❌ Close",
+  "context.details.title": "📊 Context details",
+  "context.details.window": "Window: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Token breakdown of the latest assistant message:",
+  "context.details.input": "Input: {count}",
+  "context.details.output": "Output: {count}",
+  "context.details.reasoning": "Reasoning: {count}",
+  "context.details.cache_read": "Cache read: {count}",
+  "context.details.cache_write": "Cache write: {count}",
+  "context.details.cost": "Cost: {cost}",
   "context.no_active_session": "⚠️ 没有活动会话。使用 /new 创建会话",
   "context.confirm_text":
-    '📊 会话 "{title}" 的上下文压缩\n\n这会通过移除历史中的旧消息来减少上下文占用。当前任务不会被中断。\n\n继续？',
+    '📊 会话 "{title}" 的上下文压缩\n\n这会通过移除历史中的旧消息来减少上下文占用。\n\n继续？',
   "context.callback_compacting": "正在压缩上下文...",
   "context.progress": "⏳ 正在压缩上下文...",
   "context.error": "❌ 上下文压缩失败",
   "context.success": "✅ 上下文压缩成功",
-
   "permission.inactive_callback": "权限请求已失效",
   "permission.processing_error_callback": "处理错误",
   "permission.no_active_request_callback": "错误：没有活动请求",
@@ -395,7 +341,6 @@ export const zh: I18nDictionary = {
   "permission.name.task": "任务",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "外部目录",
-
   "question.inactive_callback": "投票已失效",
   "question.processing_error_callback": "处理错误",
   "question.select_one_required_callback": "请至少选择一个选项",
@@ -414,7 +359,6 @@ export const zh: I18nDictionary = {
   "question.summary.title": "✅ 投票已完成！\n\n",
   "question.summary.question": "问题 {index}：\n{question}\n\n",
   "question.summary.answer": "回答：\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} {name} Agent",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -426,9 +370,9 @@ export const zh: I18nDictionary = {
   "queue.media_limit": "⚠️ 队列媒体总大小限制为 {maxSizeMb} MiB。请等待一个项目发送后重试。",
   "queue.removed": "🗑 消息已从队列中移除。",
   "queue.not_found": "该消息已不在队列中。",
+  "queue.steer_added": "📥 Added to the current task ({count}/{max}).",
   "queue.disabled_hint": "可在 /settings 中开启消息队列。",
   "keyboard.updated": "⌨️ 键盘已更新",
-
   "pinned.default_session_title": "新会话",
   "pinned.unknown": "未知",
   "pinned.line.project": "项目: {project}",
@@ -454,13 +398,11 @@ export const zh: I18nDictionary = {
   "pinned.files.title": "文件（{count}）：",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... 还有 {count} 个",
-
   "tool.todo.overflow": "*(还有 {count} 个任务)*",
   "tool.file_header.write":
     "写入文件/路径: {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "编辑文件/路径: {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token": "请输入 Telegram 机器人 token（从 @BotFather 获取）。\n> ",
   "runtime.wizard.ask_language":
     "请选择界面语言。\n输入列表中的语言编号或 locale code。\n按 Enter 保持默认语言：{defaultLocale}\n{options}\n> ",
@@ -476,6 +418,15 @@ export const zh: I18nDictionary = {
     "请输入 Antigravity 服务器用户名（可选）。\n按 Enter 使用默认值：{defaultUsername}\n> ",
   "runtime.wizard.ask_server_password":
     "请输入 Antigravity 服务器密码（可选）。\n按 Enter 保持为空。\n> ",
+  "runtime.wizard.ask_server_version":
+    "Select OpenCode server version:\n1 - OpenCode V1 (1.x, npm package opencode-ai)\n2 - OpenCode V2 (2.x, npm package @opencode/cli)\nPress Enter to use default: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid": "Enter 1 or 2, or press Enter for default.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Enter OpenCode V2 server password (required).\nShow it with: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "The password is required for OpenCode V2. Please try again.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Enter OpenCode server password.\nPress Enter to keep the saved password.\n> ",
   "runtime.wizard.api_url_invalid": "请输入有效 URL（http/https），或按 Enter 使用默认值。\n",
   "runtime.wizard.start": "Antigravity Telegram Bot 设置。\n",
   "runtime.wizard.saved": "配置已保存：\n- {envPath}\n",
@@ -484,7 +435,6 @@ export const zh: I18nDictionary = {
     "交互式向导需要 TTY 终端。请在交互式 shell 中运行 `opencode-telegram config`。",
   "runtime.container.command_unavailable":
     "⚠️ Docker 镜像中无法使用此命令。",
-
   "rename.no_session": "⚠️ 没有活动会话。请先创建或选择一个会话。",
   "rename.prompt": "📝 请输入会话的新标题：\n\n当前：{title}",
   "rename.empty_title": "⚠️ 标题不能为空。",
@@ -496,7 +446,6 @@ export const zh: I18nDictionary = {
   "rename.blocked.expected_name": "⚠️ 请以文本输入新会话名称，或在重命名消息中点击取消。",
   "rename.blocked.command_not_allowed": "⚠️ 重命名等待新名称期间不可用此命令。",
   "rename.button.cancel": "❌ 取消",
-
   "task.prompt.schedule":
     "⏰ 请用自然语言发送任务的时间安排。\n\n示例：\n- 每 5 分钟\n- 每天 17:00\n- 明天 12:00",
   "task.schedule_empty": "⚠️ 时间安排不能为空。",
@@ -526,7 +475,6 @@ export const zh: I18nDictionary = {
   "task.run.error": "🔴 定时任务执行失败: {description}\n\n错误: {error}",
   "task.run.error.interactive_question": "定时任务请求了交互式问题，无法在无人值守时继续。",
   "task.run.error.interactive_permission": "定时任务请求了交互式权限，无法在无人值守时继续。",
-
   "tasklist.empty": "📭 还没有定时任务。",
   "tasklist.select": "请选择一个定时任务：",
   "tasklist.details":
@@ -537,7 +485,6 @@ export const zh: I18nDictionary = {
   "tasklist.deleted_callback": "已删除",
   "tasklist.inactive_callback": "此定时任务菜单已失效",
   "tasklist.load_error": "🔴 无法加载定时任务。",
-
   "commands.select": "请选择一个 Antigravity 命令：",
   "commands.empty": "📭 当前项目没有可用的 Antigravity 命令。",
   "commands.fetch_error": "🔴 加载 Antigravity 命令失败。",
@@ -563,7 +510,6 @@ export const zh: I18nDictionary = {
   "commands.download.size": "大小",
   "commands.download.modified": "修改时间",
   "commands.download.error": "下载文件失败。",
-
   "skills.select": "请选择一个 Antigravity 技能：",
   "skills.empty": "📭 当前项目没有可用的 Antigravity 技能。",
   "skills.fetch_error": "🔴 加载 Antigravity 技能失败。",
@@ -580,7 +526,6 @@ export const zh: I18nDictionary = {
   "skills.button.next_page": "下一页 ➡️",
   "skills.page_empty_callback": "这一页没有技能",
   "skills.page_load_error_callback": "无法加载此页面。请重试。",
-
   "mcps.select": "MCP servers:",
   "mcps.empty": "📭 No MCP servers configured.",
   "mcps.fetch_error": "🔴 Failed to load MCP servers.",
@@ -599,23 +544,19 @@ export const zh: I18nDictionary = {
   "mcps.button.disable": "🔴 Disable",
   "mcps.button.back": "⬅️ Back",
   "mcps.auth_required": "This server requires authorization and cannot be enabled from the bot.",
-
   "cmd.description.rename": "重命名当前会话",
-
   "legacy.models.fetch_error": "🔴 获取模型列表失败。请使用 /status 检查服务器状态。",
   "legacy.models.empty": "📋 没有可用模型。请在 Antigravity 中配置 providers。",
   "legacy.models.header": "📋 可用模型：\n\n",
   "legacy.models.no_provider_models": "  ⚠️ 没有可用模型\n",
   "legacy.models.env_hint": "💡 在 .env 中使用该模型：\n",
   "legacy.models.error": "🔴 加载模型列表时发生错误。",
-
   "stt.recognizing": "🎤 正在识别音频...",
   "stt.recognized": "🎤 识别结果：",
   "stt.not_configured":
     "🎤 语音识别尚未配置。\n\n在 .env 中设置 STT_API_URL 和 STT_API_KEY 以启用。",
   "stt.error": "🔴 识别音频失败：{error}",
   "stt.empty_result": "🎤 音频消息中未检测到语音。",
-
   "cmd.description.open": "通过浏览目录添加项目",
   "worktree.branch_detached": "detached HEAD",
   "worktree.select_with_current": "选择一个 worktree：",
@@ -659,4 +600,54 @@ export const zh: I18nDictionary = {
   "local_command.empty_output": "The command produced no output.",
   "local_command.failed": "Command failed with exit code {exitCode}: {stderr}",
   "local_command.timeout": "The command timed out.",
-};
+  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.restart.ack":
+    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
+  "switch.code_needed":
+    "Falta el código: usa /code <código> con el código que te dio Google.",
+  "switch.already_pending":
+    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
+  "switch.working":
+    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
+  "switch.no_url_yet":
+    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
+  "switch.url_intro":
+    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
+  "switch.paste_code_hint":
+    "🔑 Luego pega el código aquí con: /code <código>",
+  "switch.submitting":
+    "⏳ Entregando el código a agy...",
+  "switch.done":
+    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
+  "switch.failed":
+    "❌ El switch falló:",
+  "bot.prompt_received": "📨 已收到 — 正在准备 agent…",
+  "bot.prompt_dispatched": "⚙️ 已写入 agent 管道 — 开始工作。",
+  "bot.prompt_slow_start": "⏳ agent 仍在启动（冷启动可能较慢）…",
+  "bot.queue_hot_taken": "⚡ 你的消息已直接进入当前 turn (hot takeover)。",
+  "bot.prompt_taken_in_flight":
+    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
+  "cmd.description.compact": "压缩对话上下文",
+  "compact.busy": "⏳ 代理正忙 — 当前任务结束后再试。",
+  "compact.no_session": "还没有可压缩的活动对话。",
+  "compact.started": "🧹 正在压缩：已向代理请求交接摘要…",
+  "compact.auto_started": "🧹 对话已达 {tokens}k tokens — 正在自动压缩…",
+  "compact.done": "✅ 已压缩 — 将在交接上下文的新对话中继续。",
+  "compact.failed": "⚠️ 压缩失败 — 请检查日志；可用 /compact 重试。",
+  "compact.damaged_hint": "🛠 此错误通常意味着对话状态已损坏。我可以压缩它并在新对话中继续。",
+  "compact.button": "🧹 压缩并继续",
+  "bot.retrying": "⚠️ Antigravity 服务不可用 (503) — 正在自动重试… 第 {attempt}/{max} 次尝试，下次约 {seconds} 秒后。",
+  "bot.retry_recovered": "✅ Antigravity 已恢复 — 继续。",
+  "bot.retry_exhausted": "❌ Antigravity 持续不可用 — 重试已用尽。服务恢复后请重新发送消息。",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "最近消息：",
+  "sessions.preview.you": "你：",
+  "sessions.preview.agent": "代理：",};

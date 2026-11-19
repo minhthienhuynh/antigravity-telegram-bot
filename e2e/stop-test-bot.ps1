@@ -1,4 +1,4 @@
-# Stops the test bot and the OpenCode server it started.
+# Stops the test bot, the OpenCode server it started and the stand's proxies.
 #
 # Deliberately narrow: it only touches processes that provably belong to the
 # test setup.
@@ -9,6 +9,8 @@
 #     a different home, so it is not matched.
 #   - Fault proxy: the node process named in .tmp/e2e/fault-proxy/proxy.pid,
 #     only if its command line runs fault-proxy.mjs.
+#   - Forward proxy: the node process named in .tmp/e2e/forward-proxy/proxy.pid,
+#     only if its command line runs forward-proxy.mjs.
 #
 # Usage:
 #   .\e2e\stop-test-bot.ps1
@@ -23,6 +25,7 @@ $testHome = Join-Path $projectRoot ".tmp\e2e\home"
 $logsDir = Join-Path $testHome "logs"
 $sourceEnv = Join-Path $PSScriptRoot ".env"
 $proxyPidFile = Join-Path $projectRoot ".tmp\e2e\fault-proxy\proxy.pid"
+$forwardPidFile = Join-Path $projectRoot ".tmp\e2e\forward-proxy\proxy.pid"
 
 # --- OpenCode -------------------------------------------------------------
 
@@ -83,28 +86,33 @@ if ($stopped -eq 0) {
     Write-Host "  no running test bot found"
 }
 
-# --- Fault proxy ----------------------------------------------------------
+# --- Fault proxy and forward proxy ----------------------------------------
 
-$proxyStopped = $false
-if (Test-Path $proxyPidFile) {
-    $proxyPid = [int](Get-Content $proxyPidFile -Raw).Trim()
-    $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$proxyPid" -ErrorAction SilentlyContinue
-    if ($proc -and $proc.Name -eq "node.exe" -and $proc.CommandLine -like "*fault-proxy.mjs*") {
-        Write-Host "  stopping fault proxy: PID $proxyPid"
-        try {
-            Stop-Process -Id $proxyPid -Force -ErrorAction Stop
-            $proxyStopped = $true
-            Write-Host "  stopped"
-        } catch {
-            Write-Warning "  failed to stop PID ${proxyPid}: $($_.Exception.Message)"
+function Stop-TestProxy([string]$pidFile, [string]$scriptName, [string]$label) {
+    $proxyStopped = $false
+    if (Test-Path $pidFile) {
+        $proxyPid = [int](Get-Content $pidFile -Raw).Trim()
+        $proc = Get-CimInstance Win32_Process -Filter "ProcessId=$proxyPid" -ErrorAction SilentlyContinue
+        if ($proc -and $proc.Name -eq "node.exe" -and $proc.CommandLine -like "*$scriptName*") {
+            Write-Host "  stopping ${label}: PID $proxyPid"
+            try {
+                Stop-Process -Id $proxyPid -Force -ErrorAction Stop
+                $proxyStopped = $true
+                Write-Host "  stopped"
+            } catch {
+                Write-Warning "  failed to stop PID ${proxyPid}: $($_.Exception.Message)"
+            }
         }
+        Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
     }
-    Remove-Item $proxyPidFile -Force -ErrorAction SilentlyContinue
+
+    if (-not $proxyStopped) {
+        Write-Host "  no $label running"
+    }
 }
 
-if (-not $proxyStopped) {
-    Write-Host "  no fault proxy running"
-}
+Stop-TestProxy $proxyPidFile "fault-proxy.mjs" "fault proxy"
+Stop-TestProxy $forwardPidFile "forward-proxy.mjs" "forward proxy"
 
 # --- Result ---------------------------------------------------------------
 

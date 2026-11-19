@@ -3,12 +3,8 @@ import { Bot, type Context } from "grammy";
 import type { RichBlock, Update, UserFromGetMe } from "grammy/types";
 import { config } from "../../src/config.js";
 import { t } from "../../src/i18n/index.js";
-import { foregroundSessionState } from "../../src/app/managers/foreground-session-state-manager.js";
-import { interactionManager } from "../../src/app/managers/interaction-manager.js";
 import { promptQueue } from "../../src/app/managers/prompt-queue-manager.js";
-import { questionManager } from "../../src/app/managers/question-manager.js";
-import { renameManager } from "../../src/app/managers/rename-manager.js";
-import { taskCreationManager } from "../../src/app/managers/scheduled-task-creation-manager.js";
+import type { AppContainer } from "../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   abortCurrentOperation: vi.fn().mockResolvedValue(undefined),
@@ -19,7 +15,7 @@ const mocked = vi.hoisted(() => ({
   handleRenameTextAnswer: vi.fn(),
   handleCatalogTextArguments: vi.fn(),
   statusCommand: vi.fn(),
-  getPromptQueueEnabled: vi.fn(),
+  getPromptQueueMode: vi.fn(),
 }));
 
 vi.mock("../../src/bot/commands/abort-command.js", async (importOriginal) => {
@@ -61,14 +57,16 @@ vi.mock("../../src/app/stores/settings-store.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/app/stores/settings-store.js")>();
   return {
     ...actual,
-    getPromptQueueEnabled: mocked.getPromptQueueEnabled,
+    getPromptQueueMode: mocked.getPromptQueueMode,
   };
 });
 
+import { initializePromptQueueDispatch } from "../../src/bot/handlers/prompt-queue-dispatch.js";
 import { normalizeRichMessage } from "../../src/bot/handlers/rich-message-handler.js";
 import { interactionGuardMiddleware } from "../../src/bot/middleware/interaction-guard.js";
 import { registerCommandRouter } from "../../src/bot/routers/command-router.js";
 import { registerMessageRouter } from "../../src/bot/routers/message-router.js";
+import { createTestAppContainer } from "../helpers/app-container.js";
 
 const BOT_INFO: UserFromGetMe = {
   id: 1,
@@ -104,15 +102,16 @@ function createRoutingBot(): RoutingBot {
     return stubResponse as never;
   });
   bot.on("message:rich_message", normalizeRichMessage);
-  bot.use(interactionGuardMiddleware);
-  registerCommandRouter(bot, {
-    ensureEventSubscription: vi.fn(),
-    clearRuntimeState: vi.fn(),
-  });
-  registerMessageRouter(bot, {
+  const routedContainer: AppContainer = {
+    ...container,
     ensureEventSubscription: vi.fn(),
     setTelegramContext: vi.fn(),
-  });
+    resetRuntimeStreams: vi.fn(),
+  };
+  initializePromptQueueDispatch({ ...routedContainer, bot });
+  bot.use((ctx, next) => interactionGuardMiddleware(ctx, next, routedContainer));
+  registerCommandRouter(bot, { container: routedContainer });
+  registerMessageRouter(bot, { container: routedContainer });
   return { bot, replies };
 }
 
@@ -133,6 +132,12 @@ function richUpdate(blocks: RichBlock[]): Update {
   } as Update;
 }
 
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
+
 describe("bot/rich-message-routing", () => {
   beforeEach(() => {
     mocked.queuePromptForMerging.mockReset();
@@ -142,13 +147,8 @@ describe("bot/rich-message-routing", () => {
     mocked.handleRenameTextAnswer.mockReset().mockResolvedValue(false);
     mocked.handleCatalogTextArguments.mockReset().mockResolvedValue(false);
     mocked.statusCommand.mockReset().mockResolvedValue(undefined);
-    mocked.getPromptQueueEnabled.mockReset().mockReturnValue(false);
-    foregroundSessionState.__resetForTests();
-    interactionManager.clear("test_setup");
+    mocked.getPromptQueueMode.mockReset().mockReturnValue("off");
     promptQueue.__resetForTests();
-    questionManager.clear();
-    renameManager.clear();
-    taskCreationManager.clear();
   });
 
   it("routes a converted rich sentence as an ordinary prompt", async () => {
@@ -190,10 +190,12 @@ describe("bot/rich-message-routing", () => {
   });
 
   it("keeps an active question from falling through to a prompt", async () => {
-    questionManager.startQuestions(
+    container.questionManager.startQuestions(
       [{ header: "Q", question: "?", options: [] }],
       "req-1",
     );
+    // A text answer is accepted once the user picked "custom answer".
+    container.interactionManager.transition({ expectedInput: "mixed" });
     const { bot } = createRoutingBot();
 
     await bot.handleUpdate(richUpdate([{ type: "paragraph", text: "an answer" }]));
@@ -259,8 +261,8 @@ describe("bot/rich-message-routing", () => {
   });
 
   it("queues a photo-only rich prompt while busy without downloading", async () => {
-    mocked.getPromptQueueEnabled.mockReturnValue(true);
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    mocked.getPromptQueueMode.mockReturnValue("queue");
+    container.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
     const { bot } = createRoutingBot();
 
     await bot.handleUpdate(
@@ -291,7 +293,7 @@ describe("bot/rich-message-routing", () => {
   });
 
   it("refuses a rich prompt when the queue is disabled", async () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    container.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
     const { bot, replies } = createRoutingBot();
 
     await bot.handleUpdate(richUpdate([{ type: "paragraph", text: "later" }]));

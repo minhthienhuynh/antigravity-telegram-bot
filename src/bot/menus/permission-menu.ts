@@ -1,11 +1,16 @@
 import { Context, InlineKeyboard } from "grammy";
-import { permissionManager } from "../../app/managers/permission-manager.js";
-import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { logger } from "../../utils/logger.js";
 import type { PermissionRequest } from "../../app/types/permission.js";
 import type { I18nKey } from "../../i18n/en.js";
 import { t } from "../../i18n/index.js";
+
+export type PermissionInteractionDeps = Pick<AppContainer, "interactionManager">;
+
+export type PermissionMenuDeps = Pick<
+  AppContainer,
+  "interactionManager" | "permissionManager" | "summaryAggregator"
+>;
 
 // Permission type display names
 const PERMISSION_NAME_KEYS: Record<string, I18nKey> = {
@@ -39,18 +44,24 @@ const PERMISSION_EMOJIS: Record<string, string> = {
   external_directory: "📁",
 };
 
-export function clearPermissionInteraction(reason: string): void {
-  const state = interactionManager.getSnapshot();
+export function clearPermissionInteraction(
+  reason: string,
+  deps: PermissionInteractionDeps,
+): void {
+  const state = deps.interactionManager.getSnapshot();
   if (state?.kind === "permission") {
-    interactionManager.clear(reason);
+    deps.interactionManager.clear(reason);
   }
 }
 
-export function syncPermissionInteractionState(metadata: Record<string, unknown> = {}): void {
-  const pendingCount = permissionManager.getPendingCount();
+export function syncPermissionInteractionState(
+  deps: Pick<AppContainer, "interactionManager" | "permissionManager">,
+  metadata: Record<string, unknown> = {},
+): void {
+  const pendingCount = deps.permissionManager.getPendingCount();
 
   if (pendingCount === 0) {
-    clearPermissionInteraction("permission_no_pending_requests");
+    clearPermissionInteraction("permission_no_pending_requests", deps);
     return;
   }
 
@@ -59,17 +70,8 @@ export function syncPermissionInteractionState(metadata: Record<string, unknown>
     ...metadata,
   };
 
-  const state = interactionManager.getSnapshot();
-  if (state?.kind === "permission") {
-    interactionManager.transition({
-      expectedInput: "callback",
-      metadata: nextMetadata,
-    });
-    return;
-  }
-
-  interactionManager.start({
-    kind: "permission",
+  // Pending prompts exist only while the slot holds permissions.
+  deps.interactionManager.transition({
     expectedInput: "callback",
     metadata: nextMetadata,
   });
@@ -82,14 +84,13 @@ export async function showPermissionRequest(
   bot: Context["api"],
   chatId: number,
   request: PermissionRequest,
-  generation: number = permissionManager.getGeneration(),
+  deps: PermissionMenuDeps,
+  generation: number = deps.permissionManager.getGeneration(),
 ): Promise<void> {
+  const { interactionManager, permissionManager, summaryAggregator } = deps;
   logger.debug(`[PermissionHandler] Showing permission request: ${request.permission}`);
 
-  if (
-    generation !== permissionManager.getGeneration() ||
-    permissionManager.isResolved(request.id)
-  ) {
+  if (permissionManager.getDropReason(request, generation)) {
     logger.debug(`[PermissionHandler] Skipping stale or already resolved request: ${request.id}`);
     return;
   }
@@ -109,7 +110,7 @@ export async function showPermissionRequest(
         logger.warn("[PermissionHandler] Failed to update grouped permission message:", err);
       });
 
-    syncPermissionInteractionState({
+    syncPermissionInteractionState(deps, {
       requestID: request.id,
       messageId: grouped.messageId,
       deduplicated: true,
@@ -128,14 +129,20 @@ export async function showPermissionRequest(
     });
 
     logger.debug(`[PermissionHandler] Message sent, messageId=${message.message_id}`);
-    if (!permissionManager.startPermission(request, message.message_id, generation)) {
+    const result = permissionManager.startPermission(request, message.message_id, generation);
+    if (result !== "started") {
+      if (result === "question_active") {
+        // A poll took the slot while this prompt was being sent: it waits for the poll.
+        interactionManager.waitPermission(request);
+      }
+
       await bot.deleteMessage(chatId, message.message_id).catch((err) => {
-        logger.warn(`[PermissionHandler] Failed to delete stale permission message:`, err);
+        logger.warn(`[PermissionHandler] Failed to delete unregistered permission message:`, err);
       });
       return;
     }
 
-    syncPermissionInteractionState({
+    syncPermissionInteractionState(deps, {
       requestID: request.id,
       messageId: message.message_id,
     });

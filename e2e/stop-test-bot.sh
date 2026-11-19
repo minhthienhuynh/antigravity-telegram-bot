@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stops the test bot and the OpenCode server it started.
+# Stops the test bot, the OpenCode server it started and the stand's proxies.
 #
 # POSIX counterpart of stop-test-bot.ps1. Deliberately narrow: it only touches
 # processes that provably belong to the test setup.
@@ -10,6 +10,8 @@
 #     a different home, so it is not matched.
 #   - Fault proxy: the node process named in .tmp/e2e/fault-proxy/proxy.pid,
 #     only if its command line runs fault-proxy.mjs.
+#   - Forward proxy: the node process named in .tmp/e2e/forward-proxy/proxy.pid,
+#     only if its command line runs forward-proxy.mjs.
 #
 # Usage:
 #   ./e2e/stop-test-bot.sh
@@ -33,6 +35,7 @@ test_home="$project_root/.tmp/e2e/home"
 logs_dir="$test_home/logs"
 source_env="$script_dir/.env"
 proxy_pid_file="$project_root/.tmp/e2e/fault-proxy/proxy.pid"
+forward_pid_file="$project_root/.tmp/e2e/forward-proxy/proxy.pid"
 
 # --- OpenCode -------------------------------------------------------------
 
@@ -96,26 +99,33 @@ fi
 
 [ "$stopped" -eq 0 ] && echo "  no running test bot found"
 
-# --- Fault proxy ----------------------------------------------------------
+# --- Fault proxy and forward proxy ----------------------------------------
 
-proxy_stopped=0
-if [ -f "$proxy_pid_file" ]; then
-  proxy_pid="$(tr -d '[:space:]' < "$proxy_pid_file")"
-  if [ -n "$proxy_pid" ] && kill -0 "$proxy_pid" 2>/dev/null; then
-    args="$(ps -p "$proxy_pid" -o args= 2>/dev/null || true)"
-    case "$args" in
-      *fault-proxy.mjs*)
-        echo "  stopping fault proxy: PID $proxy_pid"
-        kill "$proxy_pid" 2>/dev/null || true
-        proxy_stopped=1
-        echo "  stopped"
-        ;;
-    esac
+# Usage: stop_test_proxy <pid file> <script name> <label>
+stop_test_proxy() {
+  local proxy_stopped=0 proxy_pid args
+  if [ -f "$1" ]; then
+    proxy_pid="$(tr -d '[:space:]' < "$1")"
+    if [ -n "$proxy_pid" ] && kill -0 "$proxy_pid" 2>/dev/null; then
+      args="$(ps -p "$proxy_pid" -o args= 2>/dev/null || true)"
+      case "$args" in
+        *"$2"*)
+          echo "  stopping $3: PID $proxy_pid"
+          kill "$proxy_pid" 2>/dev/null || true
+          proxy_stopped=1
+          echo "  stopped"
+          ;;
+      esac
+    fi
+    rm -f "$1"
   fi
-  rm -f "$proxy_pid_file"
-fi
 
-[ "$proxy_stopped" -eq 0 ] && echo "  no fault proxy running"
+  [ "$proxy_stopped" -eq 0 ] && echo "  no $3 running"
+  return 0
+}
+
+stop_test_proxy "$proxy_pid_file" fault-proxy.mjs "fault proxy"
+stop_test_proxy "$forward_pid_file" forward-proxy.mjs "forward proxy"
 
 # --- Result ---------------------------------------------------------------
 

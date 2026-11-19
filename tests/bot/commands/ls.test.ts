@@ -44,14 +44,6 @@ vi.mock("../../../src/bot/menus/inline-menu.js", () => ({
   clearActiveInlineMenu: mocked.clearActiveInlineMenuMock,
 }));
 
-vi.mock("../../../src/app/managers/interaction-manager.js", () => ({
-  interactionManager: {
-    start: mocked.interactionStartMock,
-    getSnapshot: vi.fn(() => null),
-    clear: mocked.interactionClearMock,
-  },
-}));
-
 vi.mock("../../../src/bot/messages/send-downloaded-file.js", () => ({
   sendDownloadedFile: mocked.sendDownloadedFileMock,
 }));
@@ -71,6 +63,7 @@ import {
   handleLsCallback,
 } from "../../../src/bot/callbacks/file-browser-callback-handler.js";
 import { clearLsPathIndex } from "../../../src/bot/menus/file-browser-menu.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
 
 function createCommandContext(): Context {
   return {
@@ -95,6 +88,16 @@ function createCallbackContext(data: string, messageId: number = 77): Context {
     reply: vi.fn().mockResolvedValue(undefined),
     api: {},
   } as unknown as Context;
+}
+
+function createDeps() {
+  return createTestAppContainer({
+    interactionManager: {
+      start: mocked.interactionStartMock,
+      getSnapshot: vi.fn(() => null),
+      clear: mocked.interactionClearMock,
+    } as never,
+  });
 }
 
 describe("bot/commands/ls", () => {
@@ -134,7 +137,7 @@ describe("bot/commands/ls", () => {
     vi.stubEnv("OPENCODE_TELEGRAM_CONTAINER", "1");
     const ctx = createCommandContext();
 
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(t("runtime.container.command_unavailable"));
     expect(mocked.readdirMock).not.toHaveBeenCalled();
@@ -143,7 +146,7 @@ describe("bot/commands/ls", () => {
   it("opens an inline browser for the current project", async () => {
     const ctx = createCommandContext();
 
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(mocked.readdirMock).toHaveBeenCalledWith("/repo/project", { withFileTypes: true });
     expect(ctx.reply).toHaveBeenCalledWith(
@@ -163,7 +166,7 @@ describe("bot/commands/ls", () => {
     mocked.readdirMock.mockResolvedValue([]);
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(expect.stringContaining(t("ls.total", { count: 0 })), {
       parse_mode: "HTML",
@@ -175,7 +178,7 @@ describe("bot/commands/ls", () => {
     mocked.getCurrentProjectMock.mockReturnValue(undefined);
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(mocked.readdirMock).not.toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenCalledWith(t("bot.project_not_selected"));
@@ -185,7 +188,7 @@ describe("bot/commands/ls", () => {
     mocked.isForegroundBusyMock.mockReturnValue(true);
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(mocked.replyBusyBlockedMock).toHaveBeenCalledWith(ctx);
     expect(mocked.readdirMock).not.toHaveBeenCalled();
@@ -199,7 +202,7 @@ describe("bot/commands/ls", () => {
       reply: vi.fn().mockResolvedValue({ message_id: 77 }),
     } as unknown as Context;
 
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(mocked.readdirMock).toHaveBeenCalledWith("/repo/project/docs", { withFileTypes: true });
     expect(ctx.reply).toHaveBeenCalledWith(
@@ -216,7 +219,7 @@ describe("bot/commands/ls", () => {
       reply: vi.fn().mockResolvedValue({ message_id: 77 }),
     } as unknown as Context;
 
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(mocked.readdirMock).not.toHaveBeenCalled();
     expect(ctx.reply).toHaveBeenCalledWith(`❌ ${t("ls.access_denied")}`);
@@ -226,7 +229,7 @@ describe("bot/commands/ls", () => {
     mocked.readdirMock.mockRejectedValue(new Error("Permission denied"));
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     expect(ctx.reply).toHaveBeenCalledWith(`❌ ${t("ls.scan_error")}: Permission denied`);
   });
@@ -240,7 +243,7 @@ describe("bot/commands/ls", () => {
     ]);
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     const keyboard = (ctx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const labels = keyboard.inline_keyboard.slice(0, 4).map((row: Array<{ text: string }>) => row[0]?.text);
@@ -250,7 +253,7 @@ describe("bot/commands/ls", () => {
 
   it("navigates into a directory when tapping its button", async () => {
     const commandCtx = createCommandContext();
-    await lsCommand(commandCtx as never);
+    await lsCommand(commandCtx as never, createDeps());
 
     const keyboard = (commandCtx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const callbackData = keyboard.inline_keyboard[0][0].callback_data as string;
@@ -258,7 +261,7 @@ describe("bot/commands/ls", () => {
     mocked.readdirMock.mockResolvedValue([{ name: "nested.txt", isDirectory: () => false }]);
 
     const callbackCtx = createCallbackContext(callbackData);
-    const handled = await handleLsCallback(callbackCtx);
+    const handled = await handleLsCallback(callbackCtx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.readdirMock).toHaveBeenLastCalledWith("/repo/project/docs", { withFileTypes: true });
@@ -267,13 +270,13 @@ describe("bot/commands/ls", () => {
 
   it("shows file details when tapping a file", async () => {
     const commandCtx = createCommandContext();
-    await lsCommand(commandCtx as never);
+    await lsCommand(commandCtx as never, createDeps());
 
     const keyboard = (commandCtx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const callbackData = keyboard.inline_keyboard[1][0].callback_data as string;
 
     const callbackCtx = createCallbackContext(callbackData);
-    const handled = await handleLsCallback(callbackCtx);
+    const handled = await handleLsCallback(callbackCtx, createDeps());
 
     expect(handled).toBe(true);
     expect(callbackCtx.editMessageText).toHaveBeenCalledWith(
@@ -289,20 +292,20 @@ describe("bot/commands/ls", () => {
 
   it("downloads from file details view and ends the interaction", async () => {
     const callbackCtx = createCallbackContext("ls:download:/repo/project/README.md");
-    const handled = await handleLsCallback(callbackCtx);
+    const handled = await handleLsCallback(callbackCtx, createDeps());
 
     expect(handled).toBe(true);
     expect(callbackCtx.answerCallbackQuery).toHaveBeenCalledWith({ text: t("commands.download.downloading") });
     expect(mocked.sendDownloadedFileMock).toHaveBeenCalledWith(callbackCtx, "/repo/project/README.md", {
       announce: false,
     });
-    expect(mocked.clearActiveInlineMenuMock).toHaveBeenCalledWith("ls_downloaded");
+    expect(mocked.clearActiveInlineMenuMock).toHaveBeenCalledWith("ls_downloaded", expect.anything());
     expect(callbackCtx.deleteMessage).toHaveBeenCalled();
   });
 
   it("returns to the file list from file details back button", async () => {
     const callbackCtx = createCallbackContext("ls:back:/repo/project|0");
-    const handled = await handleLsCallback(callbackCtx);
+    const handled = await handleLsCallback(callbackCtx, createDeps());
 
     expect(handled).toBe(true);
     expect(callbackCtx.editMessageText).toHaveBeenCalledWith(
@@ -320,7 +323,7 @@ describe("bot/commands/ls", () => {
     );
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     const keyboard = (ctx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const flatButtons = keyboard.inline_keyboard.flat();
@@ -337,7 +340,7 @@ describe("bot/commands/ls", () => {
     );
 
     const commandCtx = createCommandContext();
-    await lsCommand(commandCtx as never);
+    await lsCommand(commandCtx as never, createDeps());
 
     const keyboard = (commandCtx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const flatButtons = keyboard.inline_keyboard.flat();
@@ -346,7 +349,7 @@ describe("bot/commands/ls", () => {
     expect(nextButton?.callback_data).toBeDefined();
 
     const callbackCtx = createCallbackContext(nextButton?.callback_data as string);
-    const handled = await handleLsCallback(callbackCtx);
+    const handled = await handleLsCallback(callbackCtx, createDeps());
 
     expect(handled).toBe(true);
     expect(callbackCtx.editMessageText).toHaveBeenCalledWith(
@@ -359,7 +362,7 @@ describe("bot/commands/ls", () => {
     mocked.isForegroundBusyMock.mockReturnValue(true);
 
     const ctx = createCallbackContext("ls:nav:/repo/project/docs");
-    const handled = await handleLsCallback(ctx);
+    const handled = await handleLsCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(mocked.replyBusyBlockedMock).toHaveBeenCalledWith(ctx);
@@ -370,7 +373,7 @@ describe("bot/commands/ls", () => {
     mocked.ensureActiveInlineMenuMock.mockResolvedValue(false);
 
     const ctx = createCallbackContext("ls:nav:/repo/project/docs");
-    const handled = await handleLsCallback(ctx);
+    const handled = await handleLsCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.editMessageText).not.toHaveBeenCalled();
@@ -379,7 +382,7 @@ describe("bot/commands/ls", () => {
 
   it("denies navigation outside the current project", async () => {
     const ctx = createCallbackContext("ls:nav:/etc");
-    const handled = await handleLsCallback(ctx);
+    const handled = await handleLsCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -391,7 +394,7 @@ describe("bot/commands/ls", () => {
 
   it("denies pagination outside the current project", async () => {
     const ctx = createCallbackContext("ls:pg:/etc|1");
-    const handled = await handleLsCallback(ctx);
+    const handled = await handleLsCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -403,7 +406,7 @@ describe("bot/commands/ls", () => {
 
   it("denies file details outside the current project", async () => {
     const ctx = createCallbackContext("ls:file:/etc/passwd|0");
-    const handled = await handleLsCallback(ctx);
+    const handled = await handleLsCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -415,7 +418,7 @@ describe("bot/commands/ls", () => {
 
   it("denies download outside the current project", async () => {
     const ctx = createCallbackContext("ls:download:/etc/passwd");
-    const handled = await handleLsCallback(ctx);
+    const handled = await handleLsCallback(ctx, createDeps());
 
     expect(handled).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
@@ -435,7 +438,7 @@ describe("bot/commands/ls", () => {
       reply: vi.fn().mockResolvedValue({ message_id: 77 }),
     } as unknown as Context;
 
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     const keyboard = (ctx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const flatButtons = keyboard.inline_keyboard.flat();
@@ -450,7 +453,7 @@ describe("bot/commands/ls", () => {
     mocked.readdirMock.mockResolvedValue([{ name: "README.md", isDirectory: () => false }]);
 
     const ctx = createCommandContext();
-    await lsCommand(ctx as never);
+    await lsCommand(ctx as never, createDeps());
 
     const keyboard = (ctx.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.reply_markup;
     const flatButtons = keyboard.inline_keyboard.flat();
@@ -466,10 +469,10 @@ describe("bot/commands/ls", () => {
       reply: vi.fn().mockResolvedValue({ message_id: 77 }),
     } as unknown as Context;
 
-    await lsCommand(firstCtx as never);
+    await lsCommand(firstCtx as never, createDeps());
 
     const secondCtx = createCommandContext();
-    await lsCommand(secondCtx as never);
+    await lsCommand(secondCtx as never, createDeps());
 
     expect(mocked.readdirMock).toHaveBeenLastCalledWith("/repo/project/docs", { withFileTypes: true });
   });
@@ -478,7 +481,7 @@ describe("bot/commands/ls", () => {
     mocked.getCurrentProjectMock.mockReturnValueOnce(undefined);
 
     const firstCtx = createCommandContext();
-    await lsCommand(firstCtx as never);
+    await lsCommand(firstCtx as never, createDeps());
 
     mocked.getCurrentProjectMock.mockReturnValue({
       id: "project-1",
@@ -487,7 +490,7 @@ describe("bot/commands/ls", () => {
     });
 
     const secondCtx = createCommandContext();
-    await lsCommand(secondCtx as never);
+    await lsCommand(secondCtx as never, createDeps());
 
     expect(mocked.readdirMock).toHaveBeenLastCalledWith("/repo/project", { withFileTypes: true });
   });

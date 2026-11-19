@@ -1,13 +1,11 @@
 import type { Bot, Context } from "grammy";
-import {
-  clearInteractionErrorState,
-  type InteractionErrorScope,
-} from "../../app/managers/interaction-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
+import type { InteractionErrorScope } from "../../app/managers/interaction-manager.js";
 import { t } from "../../i18n/index.js";
 import { logger } from "../../utils/logger.js";
 import { handleAgentSelect } from "./agent-selection-callback-handler.js";
 import { handleCommandsCallback } from "./command-catalog-callback-handler.js";
-import { handleCompactConfirm } from "./context-control-callback-handler.js";
+import { handleCompactConfirm, handleCompactDetails } from "./context-control-callback-handler.js";
 import { handleLsCallback, handleOpenCallback } from "./file-browser-callback-handler.js";
 import { handleInlineMenuCancel } from "./inline-menu-cancel-callback-handler.js";
 import { handleMcpsCallback } from "./mcp-catalog-callback-handler.js";
@@ -17,6 +15,7 @@ import { handlePermissionCallback } from "./permission-callback-handler.js";
 import { handleProjectSelect } from "./project-callback-handler.js";
 import { handlePromptAttachmentCancel } from "./prompt-attachment-callback-handler.js";
 import { handleQuestionCallback } from "./question-callback-handler.js";
+import { handleRecentSelect } from "./recent-callback-handler.js";
 import { handleRenameCancel } from "./rename-callback-handler.js";
 import { handleSettingsCallback } from "./settings-callback-handler.js";
 import {
@@ -41,8 +40,7 @@ interface CallbackRoute {
 }
 
 interface CallbackRouterDeps {
-  ensureEventSubscription: (directory: string) => Promise<void>;
-  setTelegramContext: (bot: Bot<Context>, chatId: number) => void;
+  container: AppContainer;
 }
 
 function parseCallbackPrefix(data: string): string | null {
@@ -55,52 +53,58 @@ function parseCallbackPrefix(data: string): string | null {
 }
 
 export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDeps): void {
+  const { container } = deps;
+  const botDeps = { ...container, bot };
   const routes = new Map<string, CallbackRoute>([
     [
       "agent",
-      { name: "agent", handlers: [handleAgentSelect], errorScope: "interaction" },
+      {
+        name: "agent",
+        handlers: [(ctx) => handleAgentSelect(ctx, container)],
+        errorScope: "interaction",
+      },
     ],
     [
       "attach",
-      { name: "attach", handlers: [handlePromptAttachmentCancel], errorScope: "interaction" },
+      {
+        name: "attach",
+        handlers: [(ctx) => handlePromptAttachmentCancel(ctx, container)],
+        errorScope: "interaction",
+      },
     ],
     [
       "commands",
       {
         name: "commands",
-        handlers: [
-          (ctx) =>
-            handleCommandsCallback(ctx, {
-              bot,
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleCommandsCallback(ctx, botDeps)],
         errorScope: "interaction",
       },
     ],
     [
       "compact",
-      { name: "compact", handlers: [handleCompactConfirm], errorScope: "interaction" },
+      { name: "compact", handlers: [(ctx) => handleCompactDetails(ctx, container), (ctx) => handleCompactConfirm(ctx, container)], errorScope: "interaction" },
     ],
     [
       "ls",
-      { name: "ls", handlers: [handleLsCallback], errorScope: "interaction" },
+      {
+        name: "ls",
+        handlers: [(ctx) => handleLsCallback(ctx, container)],
+        errorScope: "interaction",
+      },
     ],
     [
       "mcps",
-      { name: "mcps", handlers: [handleMcpsCallback], errorScope: "interaction" },
+      {
+        name: "mcps",
+        handlers: [(ctx) => handleMcpsCallback(ctx, container)],
+        errorScope: "interaction",
+      },
     ],
     [
       "messages",
       {
         name: "messages",
-        handlers: [
-          (ctx) =>
-            handleMessagesCallback(ctx, {
-              bot,
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleMessagesCallback(ctx, botDeps)],
         errorScope: "interaction",
       },
     ],
@@ -108,7 +112,12 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
       "model",
       {
         name: "model",
-        handlers: [handleModelSelect],
+        handlers: [
+          (ctx) => handleModelSearchCallback(ctx, container),
+          (ctx) => handleModelSearchResults(ctx, container),
+          (ctx) => handleModelProvidersCallback(ctx, container),
+          (ctx) => handleModelSelect(ctx, container),
+        ],
         errorScope: "interaction",
       },
     ],
@@ -116,29 +125,23 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
       "open",
       {
         name: "open",
-        handlers: [
-          (ctx) =>
-            handleOpenCallback(ctx, {
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleOpenCallback(ctx, container)],
         errorScope: "interaction",
       },
     ],
     [
       "permission",
-      { name: "permission", handlers: [handlePermissionCallback], errorScope: "permission" },
+      {
+        name: "permission",
+        handlers: [(ctx) => handlePermissionCallback(ctx, container)],
+        errorScope: "permission",
+      },
     ],
     [
       "project",
       {
         name: "project",
-        handlers: [
-          (ctx) =>
-            handleProjectSelect(ctx, {
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleProjectSelect(ctx, container)],
         errorScope: "interaction",
       },
     ],
@@ -146,77 +149,83 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
       "projects",
       {
         name: "projects",
-        handlers: [
-          (ctx) =>
-            handleProjectSelect(ctx, {
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleProjectSelect(ctx, container)],
         errorScope: "interaction",
       },
     ],
     [
       "question",
-      { name: "question", handlers: [handleQuestionCallback], errorScope: "question" },
+      {
+        name: "question",
+        handlers: [(ctx) => handleQuestionCallback(ctx, container)],
+        errorScope: "question",
+      },
+    ],
+    [
+      "recent",
+      { name: "recent", handlers: [(ctx) => handleRecentSelect(ctx, botDeps)], errorScope: "interaction" },
     ],
     [
       "rename",
-      { name: "rename", handlers: [handleRenameCancel], errorScope: "rename" },
+      {
+        name: "rename",
+        handlers: [(ctx) => handleRenameCancel(ctx, container)],
+        errorScope: "rename",
+      },
     ],
     [
       "session",
       {
         name: "session",
-        handlers: [
-          (ctx) =>
-            handleSessionSelect(ctx, {
-              bot,
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleSessionSelect(ctx, botDeps)],
         errorScope: "interaction",
       },
     ],
     [
       "settings",
-      { name: "settings", handlers: [handleSettingsCallback], errorScope: "none" },
+      {
+        name: "settings",
+        handlers: [(ctx) => handleSettingsCallback(ctx, container)],
+        errorScope: "none",
+      },
     ],
     [
       "skills",
       {
         name: "skills",
-        handlers: [
-          (ctx) =>
-            handleSkillsCallback(ctx, {
-              bot,
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleSkillsCallback(ctx, botDeps)],
         errorScope: "interaction",
       },
     ],
     [
       "task",
-      { name: "task", handlers: [handleTaskCallback], errorScope: "taskCreation" },
+      {
+        name: "task",
+        handlers: [(ctx) => handleTaskCallback(ctx, container)],
+        errorScope: "taskCreation",
+      },
     ],
     [
       "tasklist",
-      { name: "tasklist", handlers: [handleTaskListCallback], errorScope: "interaction" },
+      {
+        name: "tasklist",
+        handlers: [(ctx) => handleTaskListCallback(ctx, container)],
+        errorScope: "interaction",
+      },
     ],
     [
       "variant",
-      { name: "variant", handlers: [handleVariantSelect], errorScope: "interaction" },
+      {
+        name: "variant",
+        handlers: [(ctx) => handleVariantSelect(ctx, container)],
+        errorScope: "interaction",
+      },
     ],
     [
       "worktree",
       {
         name: "worktree",
-        handlers: [
-          (ctx) =>
-            handleWorktreeCallback(ctx, {
-              ensureEventSubscription: deps.ensureEventSubscription,
-            }),
-        ],
+        handlers: [(ctx) => handleWorktreeCallback(ctx, container)],
         errorScope: "interaction",
       },
     ],
@@ -228,23 +237,20 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
     logger.debug(`[Bot] Callback context: from=${ctx.from?.id}, chat=${ctx.chat?.id}`);
 
     if (ctx.chat) {
-      deps.setTelegramContext(bot, ctx.chat.id);
+      container.setTelegramContext(bot, ctx.chat.id);
     }
 
     let errorScope: InteractionErrorScope = "interaction";
 
     try {
       // Pre-hooks run before prefix dispatch.
-      const handledBackgroundSession = await handleBackgroundSessionOpen(ctx, {
-        bot,
-        ensureEventSubscription: deps.ensureEventSubscription,
-      });
+      const handledBackgroundSession = await handleBackgroundSessionOpen(ctx, botDeps);
       if (handledBackgroundSession) {
         logger.debug(`[Bot] Callback handled: data=${data}, handler=backgroundSession`);
         return;
       }
 
-      const handledInlineCancel = await handleInlineMenuCancel(ctx);
+      const handledInlineCancel = await handleInlineMenuCancel(ctx, container);
       if (handledInlineCancel) {
         clearOpenPathIndex();
         clearLsPathIndex();
@@ -273,7 +279,7 @@ export function registerCallbackRouter(bot: Bot<Context>, deps: CallbackRouterDe
       await ctx.answerCallbackQuery({ text: t("callback.unknown_command") });
     } catch (err) {
       logger.error("[Bot] Error handling callback:", err);
-      clearInteractionErrorState(errorScope, "callback_handler_error");
+      container.resetInteractionError(errorScope, "callback_handler_error");
       await ctx.answerCallbackQuery({ text: t("callback.processing_error") }).catch(() => {});
     }
   });

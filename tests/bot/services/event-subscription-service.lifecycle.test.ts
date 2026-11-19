@@ -7,6 +7,8 @@ import type { Event } from "@opencode-ai/sdk/v2";
 import { setRuntimeMode } from "../../../src/runtime/mode.js";
 import { resetSingletonState } from "../../helpers/reset-singleton-state.js";
 import { defined } from "../../helpers/defined.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   subscribeToEvents: vi.fn(),
@@ -178,14 +180,15 @@ function hasActiveStream(sessionId: string): boolean {
   return mocked.reconciliationStreamer.current?.hasActiveStream(sessionId) ?? false;
 }
 
-/** The raw SSE handler the service passed to subscribeToEvents. */
+/** Feeds raw events to the handler the service passed to subscribeToEvents. */
 function getEventDispatcher(): (event: unknown) => void {
   const subscription = mocked.subscribeToEvents.mock.calls.at(-1);
   if (!subscription) {
     throw new Error("subscribeToEvents was never called");
   }
 
-  return subscription[1] as (event: unknown) => void;
+  const handler = subscription[1] as (envelope: { directory: string; event: unknown }) => void;
+  return (event) => handler({ directory: "D:/repo", event });
 }
 
 function emitExternalUserMessage(aggregator: Aggregator, text: string): void {
@@ -225,6 +228,7 @@ function emitSessionError(aggregator: Aggregator, message: string): void {
 describe("bot/services/event-subscription-service lifecycle", () => {
   let tempHome: string;
   let activeService: { cleanup(reason: string): void } | null = null;
+  let activeContainer: AppContainer;
 
   beforeEach(async () => {
     vi.stubEnv("TELEGRAM_BOT_TOKEN", "test-telegram-token");
@@ -244,27 +248,12 @@ describe("bot/services/event-subscription-service lifecycle", () => {
     mocked.subscribeToEvents.mockResolvedValue(undefined);
     mocked.reconciliationStreamer.current = null;
 
-    const [
-      settingsStore,
-      { foregroundSessionState },
-      { assistantRunState },
-      { attachManager },
-      abortSuppression,
-      { externalUserInputSuppressionManager },
-    ] = await Promise.all([
+    const [settingsStore, abortSuppression] = await Promise.all([
       import("../../../src/app/stores/settings-store.js"),
-      import("../../../src/app/managers/foreground-session-state-manager.js"),
-      import("../../../src/app/managers/assistant-run-state-manager.js"),
-      import("../../../src/app/managers/attach-manager.js"),
       import("../../../src/app/managers/abort-suppression-manager.js"),
-      import("../../../src/app/managers/external-input-suppression-manager.js"),
     ]);
     settingsStore.__resetSettingsForTests();
-    foregroundSessionState.__resetForTests();
-    assistantRunState.__resetForTests();
-    attachManager.__resetForTests();
     abortSuppression.__resetUserAbortErrorSuppressionForTests();
-    externalUserInputSuppressionManager.__resetForTests();
     await resetSingletonState();
   });
 
@@ -299,17 +288,15 @@ describe("bot/services/event-subscription-service lifecycle", () => {
   }> {
     const [
       { createEventSubscriptionService },
-      { summaryAggregator },
       sessionService,
       settingsStore,
-      { assistantRunState },
     ] = await Promise.all([
       import("../../../src/bot/services/event-subscription-service.js"),
-      import("../../../src/app/managers/summary-aggregation-manager.js"),
       import("../../../src/app/services/session-service.js"),
       import("../../../src/app/stores/settings-store.js"),
-      import("../../../src/app/managers/assistant-run-state-manager.js"),
     ]);
+    activeContainer = createTestAppContainer();
+    const { summaryAggregator, assistantRunState } = activeContainer;
 
     sessionService.setCurrentSession({
       id: "session-1",
@@ -323,7 +310,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
     settingsStore.setShowAssistantRunFooter(options.showAssistantRunFooter ?? false);
 
     const { bot, api } = createFakeBot();
-    const service = createEventSubscriptionService();
+    const service = createEventSubscriptionService(activeContainer);
     activeService = service;
     service.clearRuntimeState("test_setup");
     if (options.startAssistantRun) {
@@ -345,10 +332,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
   describe("assistant completion without a usable target", () => {
     it("clears the run and idles the session when the Telegram context is gone", async () => {
       const { api, summaryAggregator, service } = await setupService({ startAssistantRun: true });
-      const [{ foregroundSessionState }, { assistantRunState }] = await Promise.all([
-        import("../../../src/app/managers/foreground-session-state-manager.js"),
-        import("../../../src/app/managers/assistant-run-state-manager.js"),
-      ]);
+      const { foregroundSessionState, assistantRunState } = activeContainer;
       foregroundSessionState.markBusy("session-1", "D:/repo");
 
       emitAssistantTextPart(summaryAggregator, "Answer");
@@ -372,17 +356,8 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("drops the response when the session changed while the agent was answering", async () => {
       const { api, summaryAggregator } = await setupService({ startAssistantRun: true });
-      const [
-        sessionService,
-        { foregroundSessionState },
-        { assistantRunState },
-        { scheduledTaskRuntime },
-      ] = await Promise.all([
-        import("../../../src/app/services/session-service.js"),
-        import("../../../src/app/managers/foreground-session-state-manager.js"),
-        import("../../../src/app/managers/assistant-run-state-manager.js"),
-        import("../../../src/app/services/scheduled-task-runtime-service.js"),
-      ]);
+      const sessionService = await import("../../../src/app/services/session-service.js");
+      const { foregroundSessionState, assistantRunState, scheduledTaskRuntime } = activeContainer;
       foregroundSessionState.markBusy("session-1", "D:/repo");
       const flushSpy = vi.spyOn(scheduledTaskRuntime, "flushDeferredDeliveries");
 
@@ -466,15 +441,53 @@ describe("bot/services/event-subscription-service lifecycle", () => {
       expect(api.sendMessage.mock.calls.at(-1)?.[1]).toContain("test-provider/test-model");
     }, 30_000);
 
+    it("leaves an incomplete run on idle and sends one footer after it completes", async () => {
+      const { api, summaryAggregator } = await setupService({
+        startAssistantRun: true,
+        showAssistantRunFooter: true,
+      });
+      const { assistantRunState, foregroundSessionState } = activeContainer;
+      foregroundSessionState.markBusy("session-1", "D:/repo");
+
+      emitSessionIdle(summaryAggregator);
+      await vi.waitFor(
+        () => {
+          expect(foregroundSessionState.isBusy()).toBe(false);
+        },
+        { timeout: STREAM_WAIT_TIMEOUT_MS },
+      );
+
+      expect(findFooterCalls(api)).toHaveLength(0);
+      expect(assistantRunState.isResponseCompleted("session-1")).toBe(false);
+
+      assistantRunState.markResponseCompleted("session-1", {
+        agent: "test-agent",
+        providerID: "test-provider",
+        modelID: "test-model",
+      });
+      expect(assistantRunState.isResponseCompleted("session-1")).toBe(true);
+
+      emitSessionIdle(summaryAggregator);
+      await vi.waitFor(
+        () => {
+          expect(findFooterCalls(api)).toHaveLength(1);
+        },
+        { timeout: STREAM_WAIT_TIMEOUT_MS },
+      );
+
+      emitSessionIdle(summaryAggregator);
+      await settle();
+
+      expect(findFooterCalls(api)).toHaveLength(1);
+    }, 30_000);
+
     it("skips the footer for a session that went idle after losing focus", async () => {
       const { api, summaryAggregator } = await setupService({
         startAssistantRun: true,
         showAssistantRunFooter: true,
       });
-      const [sessionService, { foregroundSessionState }] = await Promise.all([
-        import("../../../src/app/services/session-service.js"),
-        import("../../../src/app/managers/foreground-session-state-manager.js"),
-      ]);
+      const sessionService = await import("../../../src/app/services/session-service.js");
+      const { foregroundSessionState } = activeContainer;
       foregroundSessionState.markBusy("session-1", "D:/repo");
 
       emitAssistantTextPart(summaryAggregator, "Answer");
@@ -557,8 +570,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
   describe("runtime state teardown", () => {
     it("clearRuntimeState drops active assistant streams and runs", async () => {
       const { summaryAggregator, service } = await setupService({ startAssistantRun: true });
-      const { assistantRunState } =
-        await import("../../../src/app/managers/assistant-run-state-manager.js");
+      const { assistantRunState } = activeContainer;
 
       emitAssistantTextPart(summaryAggregator, "Answer");
       await settle();
@@ -572,8 +584,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("clearRuntimeState can be invoked without a method receiver", async () => {
       const { summaryAggregator, service } = await setupService({ startAssistantRun: true });
-      const { assistantRunState } =
-        await import("../../../src/app/managers/assistant-run-state-manager.js");
+      const { assistantRunState } = activeContainer;
 
       emitAssistantTextPart(summaryAggregator, "Answer");
       await settle();
@@ -660,12 +671,12 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
       getEventDispatcher()({ type: "server.heartbeat", properties: {} });
 
-      expect(mocked.reconcileBusyState).toHaveBeenCalledWith("D:/repo");
+      expect(mocked.reconcileBusyState).toHaveBeenCalledWith("D:/repo", expect.anything());
     });
 
     it("marks the attached session busy while the agent is working", async () => {
       await setupService();
-      const { attachManager } = await import("../../../src/app/managers/attach-manager.js");
+      const { attachManager } = activeContainer;
       const dispatch = getEventDispatcher();
 
       for (const event of busyEvents) {
@@ -679,7 +690,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("leaves the attached session idle for events that report no work", async () => {
       await setupService();
-      const { attachManager } = await import("../../../src/app/managers/attach-manager.js");
+      const { attachManager } = activeContainer;
       const dispatch = getEventDispatcher();
 
       for (const event of idleEvents) {
@@ -693,7 +704,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("ignores progress events belonging to another session", async () => {
       await setupService();
-      const { attachManager } = await import("../../../src/app/managers/attach-manager.js");
+      const { attachManager } = activeContainer;
       attachManager.attach("session-9", "D:/repo");
 
       getEventDispatcher()({
@@ -756,10 +767,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
   describe("session errors and retries", () => {
     it("reports the session error and releases the run", async () => {
       const { api, summaryAggregator } = await setupService({ startAssistantRun: true });
-      const [{ foregroundSessionState }, { assistantRunState }] = await Promise.all([
-        import("../../../src/app/managers/foreground-session-state-manager.js"),
-        import("../../../src/app/managers/assistant-run-state-manager.js"),
-      ]);
+      const { foregroundSessionState, assistantRunState } = activeContainer;
       foregroundSessionState.markBusy("session-1", "D:/repo");
 
       emitSessionError(summaryAggregator, "provider exploded");
@@ -774,10 +782,8 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("stays silent for the error that follows a user-requested abort", async () => {
       const { api, summaryAggregator } = await setupService();
-      const [{ markUserAbortRequested }, { foregroundSessionState }] = await Promise.all([
-        import("../../../src/app/managers/abort-suppression-manager.js"),
-        import("../../../src/app/managers/foreground-session-state-manager.js"),
-      ]);
+      const { markUserAbortRequested } = await import("../../../src/app/managers/abort-suppression-manager.js");
+      const { foregroundSessionState } = activeContainer;
       foregroundSessionState.markBusy("session-1", "D:/repo");
       markUserAbortRequested("session-1");
 
@@ -823,12 +829,10 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("releases the session when the final answer cannot be delivered", async () => {
       const { api, summaryAggregator } = await setupService({ startAssistantRun: true });
-      const [{ foregroundSessionState }, { assistantRunState }, { telegramOutageNoticeService }] =
-        await Promise.all([
-          import("../../../src/app/managers/foreground-session-state-manager.js"),
-          import("../../../src/app/managers/assistant-run-state-manager.js"),
-          import("../../../src/app/services/telegram-outage-notice-service.js"),
-        ]);
+      const { foregroundSessionState, assistantRunState } = activeContainer;
+      const { telegramOutageNoticeService } = await import(
+        "../../../src/app/services/telegram-outage-notice-service.js"
+      );
       foregroundSessionState.markBusy("session-1", "D:/repo");
       const clearSpy = vi.spyOn(summaryAggregator as unknown as { clear(): void }, "clear");
       const markSpy = vi.spyOn(telegramOutageNoticeService, "markAssistantReplyUndelivered");
@@ -898,8 +902,7 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
     it("stays silent about input the bot itself sent", async () => {
       const { api, summaryAggregator } = await setupService();
-      const { externalUserInputSuppressionManager } =
-        await import("../../../src/app/managers/external-input-suppression-manager.js");
+      const { externalUserInputSuppressionManager } = activeContainer;
       externalUserInputSuppressionManager.register("session-1", "sent from Telegram");
 
       emitExternalUserMessage(summaryAggregator, "sent from Telegram");
@@ -907,5 +910,79 @@ describe("bot/services/event-subscription-service lifecycle", () => {
 
       expect(api.sendMessage).not.toHaveBeenCalled();
     });
+  });
+
+  describe("prompt picked up from the OpenCode V2 inbox", () => {
+    async function mirrorInboxPrompt(delivery: "steer" | "queue"): Promise<void> {
+      const { promptQueue } = await import("../../../src/app/managers/prompt-queue-manager.js");
+      promptQueue.confirmReservation(promptQueue.reserve()!, {
+        displayText: "photo caption",
+        inbox: { sessionId: "session-1", inboxId: "user-message-1", delivery },
+      });
+    }
+
+    it("drops the button and quotes a steered prompt inside the running run", async () => {
+      const { api, summaryAggregator } = await setupService({
+        startAssistantRun: true,
+        showAssistantRunFooter: true,
+      });
+      await mirrorInboxPrompt("steer");
+      const { promptQueue } = await import("../../../src/app/managers/prompt-queue-manager.js");
+
+      emitExternalUserMessage(summaryAggregator, "See attached file");
+      await vi.waitFor(
+        () => {
+          expect(collectSentTexts(api).some((text) => text.includes("photo caption"))).toBe(true);
+        },
+        { timeout: STREAM_WAIT_TIMEOUT_MS },
+      );
+
+      expect(promptQueue.size()).toBe(0);
+      expect(collectSentTexts(api).some((text) => text.includes("See attached file"))).toBe(false);
+      expect(findFooterCalls(api)).toHaveLength(0);
+      expect(activeContainer.assistantRunState.hasRun("session-1")).toBe(true);
+    }, 30_000);
+
+    it("closes the answered run with its footer and opens a new one for a queued prompt", async () => {
+      const { api, summaryAggregator } = await setupService({
+        startAssistantRun: true,
+        showAssistantRunFooter: true,
+      });
+      await mirrorInboxPrompt("queue");
+      const { assistantRunState } = activeContainer;
+      assistantRunState.markResponseCompleted("session-1", {
+        agent: "test-agent",
+        providerID: "test-provider",
+        modelID: "test-model",
+      });
+
+      emitExternalUserMessage(summaryAggregator, "Next task");
+      await vi.waitFor(
+        () => {
+          expect(collectSentTexts(api).some((text) => text.includes("photo caption"))).toBe(true);
+        },
+        { timeout: STREAM_WAIT_TIMEOUT_MS },
+      );
+
+      expect(findFooterCalls(api)).toHaveLength(1);
+      expect(assistantRunState.hasRun("session-1")).toBe(true);
+      expect(assistantRunState.isResponseCompleted("session-1")).toBe(false);
+      expect(activeContainer.foregroundSessionState.isBusy()).toBe(true);
+    }, 30_000);
+
+    it("remembers a user message that matches no waiting prompt", async () => {
+      const { api, summaryAggregator } = await setupService();
+      const { promptQueue } = await import("../../../src/app/managers/prompt-queue-manager.js");
+
+      emitExternalUserMessage(summaryAggregator, "From the CLI");
+      await vi.waitFor(
+        () => {
+          expect(collectSentTexts(api).some((text) => text.includes("From the CLI"))).toBe(true);
+        },
+        { timeout: STREAM_WAIT_TIMEOUT_MS },
+      );
+
+      expect(promptQueue.wasInboxIdDelivered("user-message-1")).toBe(true);
+    }, 30_000);
   });
 });

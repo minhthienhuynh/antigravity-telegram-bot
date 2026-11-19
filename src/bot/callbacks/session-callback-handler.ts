@@ -1,9 +1,15 @@
+import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
+import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
+import { questionManager } from "../../app/managers/question-manager.js";
+import { permissionManager } from "../../app/managers/permission-manager.js";
+import { attachManager } from "../../app/managers/attach-manager.js";
 import type { Bot, Context } from "grammy";
 import { getStoredModel } from "../../app/services/model-selection-service.js";
 import { setCurrentSession } from "../../app/services/session-service.js";
 import type { SessionInfo } from "../../app/types/session.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
-import { clearAllInteractionState, interactionManager } from "../../app/managers/interaction-manager.js";
+import { interactionManager } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { keyboardManager } from "../keyboards/keyboard-manager.js";
 import { appendInlineMenuCancelButton, ensureActiveInlineMenu } from "../menus/inline-menu.js";
 import { isForegroundBusy } from "../../app/services/run-control-service.js";
@@ -92,8 +98,7 @@ export async function selectSessionById(
       bot: deps.bot,
       chatId: ctx.chat!.id,
       session: sessionInfo,
-      ensureEventSubscription: deps.ensureEventSubscription,
-    });
+      ensureEventSubscription: deps.ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
   } catch (err) {
     if (loadingMessageId) {
       try {

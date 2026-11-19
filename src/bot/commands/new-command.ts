@@ -1,9 +1,15 @@
+import { pinnedMessageManager } from "../pinned/pinned-message-manager.js";
+import { interactionManager } from "../../app/managers/interaction-manager.js";
+import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
+import { questionManager } from "../../app/managers/question-manager.js";
+import { permissionManager } from "../../app/managers/permission-manager.js";
+import { attachManager } from "../../app/managers/attach-manager.js";
 import type { Bot } from "grammy";
 import { CommandContext, Context } from "grammy";
 import { setCurrentSession, clearSession } from "../../app/services/session-service.js";
 import type { SessionInfo } from "../../app/types/session.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
-import { clearAllInteractionState } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { keyboardManager } from "../keyboards/keyboard-manager.js";
 import { getStoredAgent, resolveProjectAgent } from "../../app/services/agent-selection-service.js";
 import { getStoredModel } from "../../app/services/model-selection-service.js";
@@ -58,8 +64,7 @@ export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandD
       bot: deps.bot,
       chatId: ctx.chat.id,
       session: sessionInfo,
-      ensureEventSubscription: deps.ensureEventSubscription,
-    });
+      ensureEventSubscription: deps.ensureEventSubscription, attachManager, permissionManager, questionManager, summaryAggregator, interactionManager });
 
     // Get current state for keyboard
     const currentAgent = await resolveProjectAgent(getStoredAgent());

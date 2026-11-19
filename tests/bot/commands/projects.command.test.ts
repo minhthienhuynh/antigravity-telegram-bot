@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "grammy";
 import { projectsCommand } from "../../../src/bot/commands/projects-command.js";
-import { foregroundSessionState } from "../../../src/app/managers/foreground-session-state-manager.js";
 import { t } from "../../../src/i18n/index.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   currentProject: null as { id: string; worktree: string; name?: string } | null,
@@ -35,25 +36,6 @@ vi.mock("../../../src/app/services/session-service.js", () => ({
   clearSession: vi.fn(),
 }));
 
-vi.mock("../../../src/app/managers/summary-aggregation-manager.js", () => ({
-  summaryAggregator: { clear: vi.fn() },
-}));
-
-vi.mock("../../../src/bot/pinned/pinned-message-manager.js", () => ({
-  pinnedMessageManager: {
-    clear: vi.fn().mockResolvedValue(undefined),
-    refreshContextLimit: vi.fn().mockResolvedValue(undefined),
-    getContextLimit: vi.fn(() => 0),
-  },
-}));
-
-vi.mock("../../../src/bot/keyboards/keyboard-manager.js", () => ({
-  keyboardManager: {
-    initialize: vi.fn(),
-    updateContext: vi.fn(),
-  },
-}));
-
 vi.mock("../../../src/app/services/agent-selection-service.js", () => ({
   getStoredAgent: vi.fn(() => "build"),
 }));
@@ -64,11 +46,6 @@ vi.mock("../../../src/app/services/model-selection-service.js", () => ({
 
 vi.mock("../../../src/app/services/variant-selection-service.js", () => ({
   formatVariantForButton: vi.fn(() => "Default"),
-}));
-
-vi.mock("../../../src/app/managers/interaction-manager.js", () => ({
-  interactionManager: { clear: vi.fn() },
-  clearAllInteractionState: vi.fn(),
 }));
 
 vi.mock("../../../src/bot/keyboards/main-reply-keyboard.js", () => ({
@@ -88,9 +65,14 @@ function createContext(): Context {
   } as unknown as Context;
 }
 
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
+
 describe("bot/commands/projects command", () => {
   beforeEach(() => {
-    foregroundSessionState.__resetForTests();
     mocked.currentProject = null;
     mocked.syncSessionDirectoryCacheMock.mockReset();
     mocked.getProjectsMock.mockReset();
@@ -99,10 +81,10 @@ describe("bot/commands/projects command", () => {
   });
 
   it("blocks projects command while foreground session is busy", async () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    container.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
     const ctx = createContext();
-    await projectsCommand(ctx as never);
+    await projectsCommand(ctx as never, container);
 
     expect(mocked.syncSessionDirectoryCacheMock).not.toHaveBeenCalled();
     expect(mocked.getProjectsMock).not.toHaveBeenCalled();
@@ -129,7 +111,7 @@ describe("bot/commands/projects command", () => {
     });
 
     const ctx = createContext();
-    await projectsCommand(ctx as never);
+    await projectsCommand(ctx as never, container);
 
     const keyboard = mocked.replyWithInlineMenuMock.mock.calls[0]?.[1]?.keyboard as {
       inline_keyboard: Array<Array<{ text: string }>>;
