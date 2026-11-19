@@ -24,11 +24,19 @@ function createEmptyState(): PermissionState {
 export class PermissionManager {
   private resolvedRequestIDs = new Set<string>();
   private resolvedGeneration = 0;
+  // agy owns the pending-permission state independently of the interaction slot:
+  // a different interaction (e.g. rename) taking the slot must not drop pending
+  // permissions. Explicit clear() resets it.
+  private ownedState: PermissionState | null = null;
 
-  constructor(private readonly interactionManager: InteractionManager) {}
+  constructor(private readonly interactionManager: InteractionManager) {
+    this.interactionManager.setPermissionClearedHook?.(() => {
+      this.ownedState = null;
+    });
+  }
 
   private get state(): PermissionState | null {
-    return this.interactionManager.getPayload?.("permission") ?? null;
+    return this.ownedState;
   }
 
   /**
@@ -96,6 +104,7 @@ export class PermissionManager {
     let state = this.state;
     if (!state) {
       state = createEmptyState();
+      this.ownedState = state;
       this.interactionManager.start({
         kind: "permission",
         expectedInput: "callback",
@@ -356,6 +365,7 @@ export class PermissionManager {
       `[PermissionManager] Clearing permission state: pending=${this.getPendingCount()}`,
     );
 
+    this.ownedState = null;
     // Bump first, so a poll released by this clear carries the new generation.
     this.interactionManager.bumpGeneration();
     this.interactionManager.clearKind?.("permission", "permission_cleared");

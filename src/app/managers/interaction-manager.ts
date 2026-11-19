@@ -206,6 +206,9 @@ export class InteractionManager {
    */
   clear(reason: InteractionClearReason = "manual"): void {
     const clearedKind = this.drop(reason);
+    if (clearedKind === "permission") {
+      this.onPermissionCleared?.();
+    }
     if (!clearedKind || !isAgentRequestKind(clearedKind) || !this.waiting) {
       return;
     }
@@ -247,7 +250,10 @@ export class InteractionManager {
 
     this.waiting = null;
     this.bumpGeneration();
-    this.drop(reason);
+    const droppedKind = this.drop(reason);
+    if (droppedKind === "permission") {
+      this.onPermissionCleared?.();
+    }
 
     const message =
       `[InteractionCleanup] Cleared state: reason=${reason}, ` +
@@ -362,6 +368,13 @@ export class InteractionManager {
 
   setOnWaitingRequestReady(listener: WaitingAgentRequestListener | null): void {
     this.onWaitingRequestReady = listener;
+  }
+
+  /** Notified when a permission interaction is explicitly cleared (not replaced). */
+  private onPermissionCleared: (() => void) | null = null;
+
+  setPermissionClearedHook(hook: () => void): void {
+    this.onPermissionCleared = hook;
   }
 
   private drop(reason: InteractionClearReason): InteractionState["kind"] | null {
