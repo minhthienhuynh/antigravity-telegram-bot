@@ -197,6 +197,9 @@ beforeEach(() => {
 
 describe("bot/handlers/prompt", () => {
   beforeEach(() => {
+    // Process-wide singletons: clear busy flags left by earlier tests.
+    container.foregroundSessionState.__resetForTests?.();
+    container.attachManager.__resetForTests?.();
     container.attachManager.attach("session-1", "D:\\Projects\\Repo");
     mocked.currentProject = { id: "project-1", worktree: "D:\\Projects\\Repo" };
     mocked.currentSession = {

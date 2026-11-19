@@ -88,10 +88,13 @@ export async function showPermissionRequest(
   deps: PermissionMenuDeps = permissionMenuDeps,
   generation: number = deps.permissionManager?.getGeneration() ?? 0,
 ): Promise<void> {
-  const { interactionManager, permissionManager, summaryAggregator } = deps;
+  const { interactionManager, permissionManager, summaryAggregator } = {
+    ...permissionMenuDeps,
+    ...deps,
+  };
   logger.debug(`[PermissionHandler] Showing permission request: ${request.permission}`);
 
-  if (permissionManager.getDropReason(request, generation)) {
+  if (permissionManager.getDropReason?.(request, generation)) {
     logger.debug(`[PermissionHandler] Skipping stale or already resolved request: ${request.id}`);
     return;
   }

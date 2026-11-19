@@ -1,3 +1,5 @@
+import type { ExternalUserInputSuppressionManager } from "../../app/managers/external-input-suppression-manager.js";
+import type { InteractionManager } from "../../app/managers/interaction-manager.js";
 import type { KeyboardManager } from "../keyboards/keyboard-manager.js";
 import type { AssistantRunState } from "../../app/managers/assistant-run-state-manager.js";
 import type { ForegroundSessionState } from "../../app/managers/foreground-session-state-manager.js";
@@ -120,6 +122,8 @@ export interface ProcessPromptDeps {
   foregroundSessionState?: ForegroundSessionState;
   assistantRunState?: AssistantRunState;
   keyboardManager?: KeyboardManager;
+  interactionManager?: InteractionManager;
+  externalUserInputSuppressionManager?: ExternalUserInputSuppressionManager;
   downloadFile?: (
     api: Context["api"],
     fileId: string,
@@ -160,18 +164,21 @@ async function retireAttachmentConfirmation(
  */
 export async function processUserPrompt(
   ctx: Context,
-  input: IncomingPrompt,
+  input: IncomingPrompt | string,
   deps: ProcessPromptDeps,
   options: ProcessPromptOptions = {},
 ): Promise<boolean> {
+  // Callers either pass a rich prompt or a plain string (agy era).
+  const incomingPrompt: IncomingPrompt =
+    typeof input === "string" ? { text: input, fileParts: [], photos: [] } : input;
   const { bot, ensureEventSubscription } = deps;
   const responseMode =
     options.responseMode ?? (getTtsMode() === "all" ? "text_and_tts" : "text_only");
 
   if (
-    input.text.trim().length === 0 &&
-    input.fileParts.length === 0 &&
-    input.photos.length === 0 &&
+    incomingPrompt.text.trim().length === 0 &&
+    incomingPrompt.fileParts.length === 0 &&
+    incomingPrompt.photos.length === 0 &&
     !promptAttachment.get()
   ) {
     return false;
@@ -252,7 +259,7 @@ export async function processUserPrompt(
   try {
     const currentAgent = await resolveProjectAgent(getStoredAgent());
     const storedModel = (deps.getStoredModel ?? getStoredModel)();
-    const preparedInput = await prepareTelegramPhotos(ctx, input, deps, storedModel);
+    const preparedInput = await prepareTelegramPhotos(ctx, incomingPrompt, deps, storedModel);
     if (!preparedInput) {
       return false;
     }
@@ -285,7 +292,7 @@ export async function processUserPrompt(
       // interaction on any failure but knows nothing about the attachment, which would leave
       // it behind to be picked up silently by an unrelated later prompt.
       promptAttachment.clear("consumed");
-      interactionManager.clear("attachment_consumed");
+      (deps.interactionManager ?? interactionManager).clear("attachment_consumed");
       await retireAttachmentConfirmation(ctx, pendingAttachment.confirmationMessageId);
     }
 
@@ -344,7 +351,10 @@ export async function processUserPrompt(
     setPromptResponseMode(currentSession.id, responseMode);
 
     if (promptText.length > 0) {
-      externalUserInputSuppressionManager.register(currentSession.id, promptText);
+      (deps.externalUserInputSuppressionManager ?? externalUserInputSuppressionManager).register(
+        currentSession.id,
+        promptText,
+      );
     }
 
     // agy: the prompt goes into the stream-json pipe. The assistant reply

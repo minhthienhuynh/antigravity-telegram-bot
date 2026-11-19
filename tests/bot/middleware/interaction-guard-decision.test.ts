@@ -55,6 +55,9 @@ beforeEach(() => {
 describe("interaction guard", () => {
   beforeEach(() => {
     deps.interactionManager.clear("test_setup");
+    // Managers are process-wide singletons; a busy flag must not leak between tests.
+    deps.foregroundSessionState.__resetForTests?.();
+    deps.attachManager.__resetForTests?.();
   });
 
   it("allows input when there is no active interaction", () => {
@@ -94,7 +97,7 @@ describe("interaction guard", () => {
   });
 
   it("busy + path message: classified as text so the in-flight lane takes it", () => {
-    foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
+    deps.foregroundSessionState.markBusy("session-1", "D:\\Projects\\Repo");
 
     const decision = resolveInteractionGuardDecision(
       createContext({ text: "/home/bazzite/Imágenes/logo.png este es el logo" }),

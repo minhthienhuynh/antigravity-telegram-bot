@@ -51,6 +51,11 @@ vi.mock("../../src/opencode/auto-restart.js", () => ({
     start: mocked.autoRestartStartMock,
     stop: mocked.autoRestartStopMock,
   },
+  // containerDeps instantiates the dormant service for the shared bundle.
+  OpencodeAutoRestartService: class {
+    start = mocked.autoRestartStartMock;
+    stop = mocked.autoRestartStopMock;
+  },
 }));
 
 vi.mock("../../src/opencode/ready-refresh.js", () => ({

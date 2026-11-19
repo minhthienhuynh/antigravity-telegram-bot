@@ -901,7 +901,7 @@ describe("bot/streaming/response-streamer", () => {
     await streamer.seal("s1", "block-1", "test_seal");
 
     expect(sendPart).toHaveBeenCalledTimes(1);
-    expect(sendPart).toHaveBeenCalledWith(plainPart("block one"), undefined);
+    expect(sendPart).toHaveBeenCalledWith(plainPart("block one"), undefined, "s1");
     expect(editPart).not.toHaveBeenCalled();
     expect(streamer.hasActiveStream("s1")).toBe(false);
 
