@@ -9,6 +9,7 @@ const mocked = vi.hoisted(() => ({
 
 vi.mock("node:child_process", () => ({
   execFile: mocked.execFileMock,
+  exec: vi.fn(),
 }));
 
 vi.mock("node:fs/promises", () => ({

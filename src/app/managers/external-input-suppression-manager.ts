@@ -66,6 +66,10 @@ export class ExternalUserInputSuppressionManager {
       this.entriesBySession.set(sessionId, activeEntries);
     }
   }
+  __resetForTests(): void {
+    this.clearAll();
+  }
+
 }
 
 /** Process-wide singleton shared with the app container (single-user bot). */

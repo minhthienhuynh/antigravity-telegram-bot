@@ -30,10 +30,17 @@ export async function renameCommand(
       currentSession.title,
     );
     deps.renameManager.setMessageId(message.message_id);
-    deps.interactionManager.transition({
+    deps.interactionManager.start({
+      kind: "rename",
       expectedInput: "text",
       metadata: {
         sessionId: currentSession.id,
+        messageId: message.message_id,
+      },
+      payload: {
+        sessionId: currentSession.id,
+        sessionDirectory: currentSession.directory,
+        currentTitle: currentSession.title,
         messageId: message.message_id,
       },
     });

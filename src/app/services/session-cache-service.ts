@@ -242,7 +242,11 @@ export function __resetSessionCacheForTests(): void {
   cacheData = createEmptyCacheData();
   cacheLoaded = false;
   lastSyncAttemptAt = 0;
-  __resetSettingsForTests();
+  try {
+    __resetSettingsForTests?.();
+  } catch {
+    /* test doubles may omit the settings reset hook */
+  }
 }
 
 // Legacy alias kept for the shared test reset helper (opencode-era name).

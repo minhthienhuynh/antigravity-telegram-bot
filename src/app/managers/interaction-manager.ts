@@ -100,6 +100,14 @@ export class InteractionManager {
     const now = Date.now();
     let expiresAt: number | null = null;
 
+    // Legacy callers that only pass metadata keep the payload of an active
+    // interaction of the same kind instead of wiping it.
+    const previous = this.state;
+    const explicitPayload = (options as { payload?: unknown }).payload;
+    const payload =
+      explicitPayload ??
+      (previous && previous.kind === options.kind ? (previous as { payload?: unknown }).payload : undefined);
+
     if (this.state) {
       this.drop("state_replaced");
     }
@@ -111,11 +119,12 @@ export class InteractionManager {
 
     const nextState: ActiveInteraction = {
       ...rest,
+      ...(payload !== undefined ? { payload } : {}),
       allowedCommands: normalizeAllowedCommands(options.allowedCommands),
       metadata: options.metadata ? { ...options.metadata } : {},
       createdAt: now,
       expiresAt,
-    };
+    } as ActiveInteraction;
 
     this.state = nextState;
 

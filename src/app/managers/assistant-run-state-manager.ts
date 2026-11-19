@@ -106,6 +106,11 @@ export class AssistantRunState {
     logger.debug(`[AssistantRunState] Cleared all runs: count=${this.runs.size}, reason=${reason}`);
     this.runs.clear();
   }
+  __resetForTests(): void {
+    resetAllStreamThrottles();
+    this.runs.clear();
+  }
+
 }
 
 /** Process-wide singleton shared with the app container (single-user bot). */

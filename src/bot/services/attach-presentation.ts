@@ -1,3 +1,4 @@
+import { attachPresentationFactoryDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { PermissionRequest } from "../../app/types/permission.js";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type { AttachPresentationDeps } from "../../app/services/attach-service.js";
@@ -9,7 +10,7 @@ type AttachPresentationFactoryDeps = Pick<AppContainer, "keyboardManager" | "pin
   QuestionMenuDeps;
 
 export function createAttachPresentation(
-  deps: AttachPresentationFactoryDeps,
+  deps: AttachPresentationFactoryDeps = attachPresentationFactoryDeps,
 ): AttachPresentationDeps {
   const { keyboardManager, pinnedMessageManager } = deps;
 
