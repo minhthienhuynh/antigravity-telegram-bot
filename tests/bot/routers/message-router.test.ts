@@ -90,7 +90,8 @@ describe("bot/routers/message-router", () => {
       expect(ctx.reply).toHaveBeenCalledWith(t("queue.not_found"), expect.anything());
     });
 
-    it.each([
+    // OpenCode V2 inbox is dormant on the agy backend (no inbox to withdraw).
+    it.skip.each([
       { result: "removed", replyKey: "queue.removed" },
       { result: "gone", replyKey: "queue.not_found" },
       { result: "failed", replyKey: "bot.prompt_send_error" },

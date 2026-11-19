@@ -7,7 +7,7 @@ export class RenameManager {
   constructor(private readonly interactionManager: InteractionManager) {}
 
   private get state(): RenameState | null {
-    return this.interactionManager.getPayload("rename");
+    return this.interactionManager.getPayload?.("rename") ?? null;
   }
 
   startWaiting(sessionId: string, directory: string, currentTitle: string): void {

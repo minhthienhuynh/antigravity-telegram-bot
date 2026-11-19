@@ -28,7 +28,7 @@ export class PermissionManager {
   constructor(private readonly interactionManager: InteractionManager) {}
 
   private get state(): PermissionState | null {
-    return this.interactionManager.getPayload("permission");
+    return this.interactionManager.getPayload?.("permission") ?? null;
   }
 
   /**

@@ -75,6 +75,9 @@ beforeEach(() => {
 
 describe("bot/commands/projects command", () => {
   beforeEach(() => {
+    // Managers are process-wide singletons shared with the container.
+    container.foregroundSessionState.__resetForTests?.();
+    container.attachManager.__resetForTests?.();
     mocked.currentProject = null;
     mocked.syncSessionDirectoryCacheMock.mockReset();
     mocked.getProjectsMock.mockReset();

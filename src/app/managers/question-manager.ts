@@ -7,7 +7,7 @@ export class QuestionManager {
   constructor(private readonly interactionManager: InteractionManager) {}
 
   private get state(): QuestionState | null {
-    return this.interactionManager.getPayload("question");
+    return this.interactionManager.getPayload?.("question") ?? null;
   }
 
   /** Snapshot of the active poll (upstream interaction payload). */

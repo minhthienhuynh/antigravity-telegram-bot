@@ -102,7 +102,7 @@ describe("bot/commands/abort (agy)", () => {
     expect(mocked.stopEventListeningMock).toHaveBeenCalled(); // interruptActiveTurn aliased in mock
     expect(mocked.markIdleMock).toHaveBeenCalledWith("session-1");
     expect(mocked.clearRunMock).toHaveBeenCalledWith("session-1", "abort_confirmed");
-    expect(mocked.markAttachedSessionIdleMock).toHaveBeenCalledWith("session-1");
+    expect(mocked.markAttachedSessionIdleMock).toHaveBeenCalledWith("session-1", expect.anything());
     expect(mocked.clearPromptResponseModeMock).toHaveBeenCalledWith("session-1");
     expect(ctx.reply).toHaveBeenCalledWith("stop.success");
   });

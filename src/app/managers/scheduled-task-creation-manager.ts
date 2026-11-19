@@ -16,7 +16,7 @@ export class TaskCreationManager {
   constructor(private readonly interactionManager: InteractionManager) {}
 
   private get state(): TaskCreationState | null {
-    return this.interactionManager.getPayload("task");
+    return this.interactionManager.getPayload?.("task") ?? null;
   }
 
   private update(changes: Partial<TaskCreationState>): TaskCreationState | null {
