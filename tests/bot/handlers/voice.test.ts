@@ -13,6 +13,7 @@ const mocked = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getTtsMode: mocked.getTtsModeMock,
   getPromptQueueMode: mocked.getPromptQueueModeMock,

@@ -7,6 +7,7 @@ import { questionManager } from "../managers/question-manager.js";
 import { summaryAggregator } from "../managers/summary-aggregation-manager.js";
 import { assistantRunState } from "../managers/assistant-run-state-manager.js";
 import { keyboardManager } from "../../bot/keyboards/keyboard-manager.js";
+import { renameManager } from "../managers/rename-manager.js";
 import { pinnedMessageManager } from "../../bot/pinned/pinned-message-manager.js";
 import { scheduledTaskRuntime } from "../services/scheduled-task-runtime-service.js";
 
@@ -17,6 +18,7 @@ export const detachDeps = { attachManager, resetAggregator: () => summaryAggrega
 export const inlineMenuDeps = { interactionManager };
 export const permissionMenuDeps = { interactionManager, permissionManager, summaryAggregator };
 export const questionMenuDeps = { interactionManager, questionManager };
+export const renameDeps = { interactionManager, renameManager, pinnedMessageManager };
 export const abortDeps = { assistantRunState, attachManager, foregroundSessionState, resetInteractions: clearAllInteractionState };
 export const attachPresentationFactoryDeps = { keyboardManager, pinnedMessageManager, ...permissionMenuDeps, ...questionMenuDeps };
 export const attachSessionDeps = { attachManager, permissionManager, questionManager, summaryAggregator, interactionManager };

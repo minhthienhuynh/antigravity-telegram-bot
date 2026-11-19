@@ -85,6 +85,10 @@ export class AttachManager {
     logger.info(`[Attach] Marked attached session idle: session=${sessionId}`);
     return true;
   }
+  __resetForTests(): void {
+    this.state = null;
+  }
+
 }
 
 /** Process-wide singleton shared with the app container (single-user bot). */

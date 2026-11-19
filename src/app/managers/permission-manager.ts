@@ -358,7 +358,7 @@ export class PermissionManager {
 
     // Bump first, so a poll released by this clear carries the new generation.
     this.interactionManager.bumpGeneration();
-    this.interactionManager.clearKind("permission", "permission_cleared");
+    this.interactionManager.clearKind?.("permission", "permission_cleared");
   }
 }
 

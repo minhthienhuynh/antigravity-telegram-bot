@@ -1,3 +1,4 @@
+import { busyDeps, busyReconcileDeps } from "../bootstrap/singleton-deps.js";
 import type { AppContainer } from "../bootstrap/app-container.js";
 import { logger } from "../../utils/logger.js";
 import {
@@ -9,7 +10,7 @@ export type ForegroundBusyDeps = Pick<AppContainer, "attachManager" | "foregroun
 
 export type RunControlDeps = ForegroundBusyDeps & BusyReconciliationDeps;
 
-export function isForegroundBusy(deps: ForegroundBusyDeps): boolean {
+export function isForegroundBusy(deps: ForegroundBusyDeps = busyDeps): boolean {
   return deps.foregroundSessionState.isBusy() || deps.attachManager.isBusy();
 }
 
@@ -28,7 +29,7 @@ function getBusyDirectories(deps: ForegroundBusyDeps): string[] {
   return [...directories];
 }
 
-export async function reconcileForegroundBusyState(deps: RunControlDeps): Promise<void> {
+export async function reconcileForegroundBusyState(deps: RunControlDeps = busyReconcileDeps): Promise<void> {
   if (!isForegroundBusy(deps)) {
     return;
   }

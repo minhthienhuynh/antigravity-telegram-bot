@@ -1,3 +1,4 @@
+import { permissionMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Context, InlineKeyboard } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { logger } from "../../utils/logger.js";
@@ -46,7 +47,7 @@ const PERMISSION_EMOJIS: Record<string, string> = {
 
 export function clearPermissionInteraction(
   reason: string,
-  deps: PermissionInteractionDeps,
+  deps: PermissionInteractionDeps = permissionMenuDeps,
 ): void {
   const state = deps.interactionManager.getSnapshot();
   if (state?.kind === "permission") {
@@ -84,8 +85,8 @@ export async function showPermissionRequest(
   bot: Context["api"],
   chatId: number,
   request: PermissionRequest,
-  deps: PermissionMenuDeps,
-  generation: number = deps.permissionManager.getGeneration(),
+  deps: PermissionMenuDeps = permissionMenuDeps,
+  generation: number = deps.permissionManager?.getGeneration() ?? 0,
 ): Promise<void> {
   const { interactionManager, permissionManager, summaryAggregator } = deps;
   logger.debug(`[PermissionHandler] Showing permission request: ${request.permission}`);

@@ -136,7 +136,7 @@ export class TaskCreationManager {
     }
 
     logger.debug("[TaskCreationManager] Clearing task creation state");
-    this.interactionManager.clearKind("task", "task_creation_cleared");
+    this.interactionManager.clearKind?.("task", "task_creation_cleared");
   }
 }
 

@@ -1,3 +1,4 @@
+import { renameDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { setCurrentSession } from "../../app/services/session-service.js";
@@ -28,7 +29,7 @@ function clearRenameInteraction(deps: RenameCallbackDeps, reason: string): void 
   }
 }
 
-export async function handleRenameCancel(ctx: Context, deps: RenameCallbackDeps): Promise<boolean> {
+export async function handleRenameCancel(ctx: Context, deps: RenameCallbackDeps = renameDeps): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || data !== RENAME_CANCEL_CALLBACK) {
     return false;
@@ -65,7 +66,7 @@ export async function handleRenameCancel(ctx: Context, deps: RenameCallbackDeps)
 
 export async function handleRenameTextAnswer(
   ctx: Context,
-  deps: RenameCallbackDeps,
+  deps: RenameCallbackDeps = renameDeps,
 ): Promise<boolean> {
   if (!deps.renameManager.isWaitingForName()) {
     return false;

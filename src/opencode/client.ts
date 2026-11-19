@@ -9,10 +9,10 @@ import {
 const PROBE_TIMEOUT_MS = 5000;
 
 const getAuth = () => {
-  if (!config.opencode.password) {
+  if (!config.opencode?.password) {
     return undefined;
   }
-  const credentials = `${config.opencode.username}:${config.opencode.password}`;
+  const credentials = `${config.opencode?.username}:${config.opencode?.password}`;
   return `Basic ${Buffer.from(credentials).toString("base64")}`;
 };
 
@@ -23,18 +23,18 @@ const authHeaders = (): Record<string, string> | undefined => {
 
 /** The API version the bot was configured for; there is no detection or switching. */
 export const opencodeServerVersion: OpencodeServerVersion =
-  config.opencode.serverVersion === "v2" ? "v2" : "v1";
+  config.opencode?.serverVersion === "v2" ? "v2" : "v1";
 
 function createClient() {
   const headers = authHeaders();
   if (opencodeServerVersion === "v2") {
     return createV2OpencodeClient({
-      baseUrl: config.opencode.apiUrl,
+      baseUrl: config.opencode?.apiUrl ?? "http://127.0.0.1:4096",
       ...(headers ? { headers } : {}),
     });
   }
   return createOpencodeClient({
-    baseUrl: config.opencode.apiUrl,
+    baseUrl: config.opencode?.apiUrl ?? "http://127.0.0.1:4096",
     headers,
   });
 }

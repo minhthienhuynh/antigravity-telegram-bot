@@ -269,11 +269,11 @@ export class QuestionManager {
 
   cancel(): void {
     logger.info("[QuestionManager] Poll cancelled");
-    this.interactionManager.clearKind("question", "question_cancelled");
+    this.interactionManager.clearKind?.("question", "question_cancelled");
   }
 
   clear(): void {
-    this.interactionManager.clearKind("question", "question_cleared");
+    this.interactionManager.clearKind?.("question", "question_cleared");
   }
 
   getAllAnswers(): QuestionAnswer[] {

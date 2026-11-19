@@ -1,3 +1,4 @@
+import { inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Context, InlineKeyboard } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type { InteractionMetadata, InteractionState } from "../../app/types/interaction.js";
@@ -105,7 +106,7 @@ export function appendInlineMenuCancelButton(
 export async function replyWithInlineMenu(
   ctx: Context,
   options: InlineMenuReplyOptions,
-  deps: InlineMenuDeps,
+  deps: InlineMenuDeps = inlineMenuDeps,
 ): Promise<number> {
   const keyboard = appendInlineMenuCancelButton(
     options.keyboard,
@@ -145,7 +146,7 @@ export async function replyWithInlineMenu(
 export async function ensureActiveInlineMenu(
   ctx: Context,
   menuKind: InlineMenuKind,
-  deps: InlineMenuDeps,
+  deps: InlineMenuDeps = inlineMenuDeps,
 ): Promise<boolean> {
   const activeMetadata = getActiveInlineMenuMetadata(deps.interactionManager.getSnapshot());
   const callbackMessageId = getCallbackMessageId(ctx);
@@ -171,7 +172,7 @@ export async function ensureActiveInlineMenu(
   return false;
 }
 
-export function clearActiveInlineMenu(reason: string, deps: InlineMenuDeps): void {
+export function clearActiveInlineMenu(reason: string, deps: InlineMenuDeps = inlineMenuDeps): void {
   const state = deps.interactionManager.getSnapshot();
   if (state?.kind === "inline") {
     deps.interactionManager.clear(reason);

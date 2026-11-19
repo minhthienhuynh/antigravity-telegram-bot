@@ -64,6 +64,7 @@ vi.mock("../../../src/opencode/client.js", async (importOriginal) => {
 });
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCompactOutputMode: mocked.getCompactOutputModeMock,
   setCompactOutputMode: mocked.setCompactOutputModeMock,

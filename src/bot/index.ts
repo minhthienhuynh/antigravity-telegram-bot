@@ -91,7 +91,15 @@ function isTelegramApiErrorResponse(response: unknown): response is TelegramApiE
 
 import { registerAccountMenuHandlers } from "./menus/account-menu.js";
 
-export function createBot(localCommandRegistry = LocalCommandRegistry.empty()): Bot<Context> {
+export function createBot(
+  localCommandRegistryOrContainer?: LocalCommandRegistry | object,
+): Bot<Context> {
+  // Tolerate the upstream createBot(container, registry) call shape: the agy
+  // backend has no per-container state, so only a real registry is used.
+  const localCommandRegistry =
+    localCommandRegistryOrContainer instanceof LocalCommandRegistry
+      ? localCommandRegistryOrContainer
+      : LocalCommandRegistry.empty();
   // createBotSync already registers the account-menu handlers; registering
   // them a second time made every keyboard tap run twice.
   return createBotSync(localCommandRegistry);

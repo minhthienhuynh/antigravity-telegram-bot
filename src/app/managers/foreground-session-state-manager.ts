@@ -58,6 +58,10 @@ export class ForegroundSessionState {
 
     this.activeSessions.set(sessionId, { ...session, markedAt });
   }
+  __resetForTests(): void {
+    this.activeSessions.clear();
+  }
+
 }
 
 /** Process-wide singleton shared with the app container (single-user bot). */

@@ -63,6 +63,8 @@ vi.mock("../../../src/antigravity/model-list.js", () => ({
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentModel: getCurrentModelMock,
   setCurrentModel: setCurrentModelMock,

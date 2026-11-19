@@ -32,6 +32,8 @@ vi.mock("../../../src/app/services/session-service.js", () => ({
   getCurrentSession: mocked.getCurrentSession,
 }));
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   getCurrentProject: mocked.getCurrentProject,
   getPinnedMessageId: mocked.getPinnedMessageId,
   setPinnedMessageId: mocked.setPinnedMessageId,

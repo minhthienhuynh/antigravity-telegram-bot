@@ -58,7 +58,7 @@ export class RenameManager {
 
   clear(): void {
     logger.debug("[RenameManager] Clearing rename state");
-    this.interactionManager.clearKind("rename", "rename_cleared");
+    this.interactionManager.clearKind?.("rename", "rename_cleared");
   }
 }
 

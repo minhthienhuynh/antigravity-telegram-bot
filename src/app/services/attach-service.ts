@@ -1,3 +1,4 @@
+import { busyDeps, detachDeps } from "../bootstrap/singleton-deps.js";
 import type { Bot, Context } from "grammy";
 import { opencodeClient } from "../../opencode/client.js";
 import type { AppContainer } from "../bootstrap/app-container.js";
@@ -310,7 +311,7 @@ export async function restorePendingInteractionsAfterReconnect(
   );
 }
 
-export function detachAttachedSession(reason: string, deps: DetachSessionDeps): void {
+export function detachAttachedSession(reason: string, deps: DetachSessionDeps = detachDeps): void {
   if (!deps.attachManager.isAttached()) {
     return;
   }
@@ -327,7 +328,7 @@ export function detachAttachedSession(reason: string, deps: DetachSessionDeps): 
 
 export async function markAttachedSessionBusy(
   sessionId: string,
-  deps: AttachStateDeps,
+  deps: AttachStateDeps = busyDeps,
 ): Promise<void> {
   if (!deps.attachManager.markBusy(sessionId)) {
     return;
@@ -338,7 +339,7 @@ export async function markAttachedSessionBusy(
 
 export async function markAttachedSessionIdle(
   sessionId: string,
-  deps: AttachStateDeps,
+  deps: AttachStateDeps = busyDeps,
 ): Promise<void> {
   if (!deps.attachManager.markIdle(sessionId)) {
     return;

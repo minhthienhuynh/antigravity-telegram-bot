@@ -59,6 +59,8 @@ vi.mock("../../src/opencode/ready-refresh.js", () => ({
 }));
 
 vi.mock("../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   flushSettings: mocked.flushSettingsMock,
   loadSettings: mocked.loadSettingsMock,

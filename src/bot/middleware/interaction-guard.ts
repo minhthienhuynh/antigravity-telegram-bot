@@ -1,3 +1,4 @@
+import { busyReconcileDeps, inlineMenuDeps, permissionMenuDeps, questionMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context, NextFunction } from "grammy";
 import { config } from "../../config.js";
 import { sendPromptToActiveProcess } from "../../antigravity/events.js";
@@ -20,7 +21,7 @@ import {
 import { logger } from "../../utils/logger.js";
 import { t } from "../../i18n/index.js";
 import { getIncomingPrompt } from "../handlers/rich-message-handler.js";
-import type { LocalCommandRegistry } from "../../app/services/local-command-registry.js";
+import { LocalCommandRegistry } from "../../app/services/local-command-registry.js";
 
 export interface InteractionGuardDeps extends InteractionGuardDecisionDeps, RunControlDeps {
   localCommandRegistry?: LocalCommandRegistry;
@@ -131,8 +132,16 @@ function getQueuedPhotoMediaBytes(input: ReturnType<typeof getIncomingPrompt>): 
 export async function interactionGuardMiddleware(
   ctx: Context,
   next: NextFunction,
-  deps: InteractionGuardDeps,
+  depsIn?: Partial<InteractionGuardDeps>,
 ): Promise<void> {
+  const deps: InteractionGuardDeps = {
+    ...busyReconcileDeps,
+    ...questionMenuDeps,
+    ...permissionMenuDeps,
+    ...inlineMenuDeps,
+    localCommandRegistry: LocalCommandRegistry.empty(),
+    ...depsIn,
+  };
   let decision = resolveInteractionGuardDecision(ctx, deps, deps.localCommandRegistry);
 
   if (!decision.allow && decision.busy) {
