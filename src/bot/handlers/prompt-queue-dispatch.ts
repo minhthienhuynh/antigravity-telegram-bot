@@ -1,4 +1,4 @@
-import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
+import { busyDeps, containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import {
   MAX_QUEUED_PROMPTS,
@@ -53,7 +53,7 @@ function isBusy(): boolean {
 function isPromptQueueEnabled(): boolean {
   // agy (v1) uses the released on/off flag; the steer mode only applies to
   // the dormant OpenCode V2 backend.
-  return getPromptQueueEnabled() || getPromptQueueMode() === "steer";
+  return getPromptQueueEnabled() || getPromptQueueMode() !== "off";
 }
 
 /** On OpenCode V2 busy-time prompts wait in the session inbox, not in the bot. */
@@ -95,12 +95,13 @@ export function canQueueMediaPrompt(ctx: Context): boolean {
  * Returns false when queueing does not apply, so the caller keeps its old behaviour.
  */
 export async function tryEnqueuePrompt(ctx: Context, input: QueuedPromptInput): Promise<boolean> {
-  if (!promptDeps || !isPromptQueueEnabled() || !ctx.chat || !isQueueablePrompt(input)) {
+  const deps = promptDeps ?? containerDeps;
+  if (!isPromptQueueEnabled() || !ctx.chat || !isQueueablePrompt(input)) {
     return false;
   }
 
   if (usesOpencodeInbox()) {
-    await sendPromptToInbox(ctx, input, promptDeps);
+    await sendPromptToInbox(ctx, input, deps);
     return true;
   }
 
@@ -326,7 +327,7 @@ export async function dispatchNextQueuedPrompt(): Promise<void> {
 }
 
 async function replyWithKeyboard(ctx: Context, text: string): Promise<void> {
-  const keyboard = promptDeps?.keyboardManager?.getKeyboard();
+  const keyboard = (promptDeps ?? containerDeps).keyboardManager?.getKeyboard();
   await ctx.reply(text, keyboard ? { reply_markup: keyboard } : {}).catch((err) => {
     logger.error("[PromptQueue] Failed to send queue reply:", err);
   });
