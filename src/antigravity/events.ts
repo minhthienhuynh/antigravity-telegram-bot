@@ -954,25 +954,16 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
   malformedRetryAttempt = 0;
   suppressNextTurnError = false;
   if (activeProcess && activeProcess.isRunning()) {
-    // A `new-<ts>` placeholder session must never hot-write into a live
-    // process spawned for a previous conversation: no init event fires in
-    // that path, so the placeholder is never promoted to the real
-    // conversation id — the turn's closing session.idle then never matches
-    // the tracked session id and the attached busy latch sticks until a full
-    // bot restart. Spawn a fresh process instead: its init event reports the
-    // new conversation id and rebinds all state from the first turn.
-    if (getCurrentSession()?.id.startsWith("new-")) {
-      const staleProc = activeProcess;
-      activeProcess = null;
-      currentSessionId = "";
-      staleProc.removeAllListeners();
-      logger.info(
-        "[AgyEvents] placeholder session with a live process — terminating stale process before respawning",
-      );
-      await staleProc.kill().catch((err) => {
-        logger.warn("[AgyEvents] error terminating stale process", err);
-      });
-    } else {
+    const foregroundId = getCurrentSession()?.id ?? "";
+    const isPlaceholder = foregroundId.startsWith("new-");
+    const foregroundUuid = isPlaceholder ? "" : foregroundId.replace(/^agy-session-/, "");
+    const liveUuid = currentSessionId.replace(/^agy-session-/, "");
+    // Reuse the live process only for a follow-up turn in the SAME conversation.
+    // A /new placeholder or a session switch (/sessions, /recent) means the live
+    // process is running a different thread: reusing it would send the prompt to
+    // the wrong conversation and mismatch the delivery session id (silent reply),
+    // and a placeholder never gets promoted without a fresh init.
+    if (!isPlaceholder && foregroundUuid && liveUuid && foregroundUuid === liveUuid) {
       const effectiveModel = activeProcess.getModelId();
       const storedNow = getStoredModel()?.modelID;
       if (storedNow && effectiveModel !== storedNow) {
@@ -988,19 +979,36 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
       await activeProcess.sendPrompt(text);
       return;
     }
+    // Placeholder or a different conversation: recycle the stale process so the
+    // prompt spawns/resumes the foreground conversation instead of hijacking the
+    // old thread.
+    const staleProc = activeProcess;
+    activeProcess = null;
+    currentSessionId = "";
+    staleProc.removeAllListeners();
+    logger.info(
+      "[AgyEvents] stale live process for a placeholder/different conversation — recycling before respawn",
+    );
+    await staleProc.kill().catch((err) => {
+      logger.warn("[AgyEvents] error terminating stale process", err);
+    });
   }
 
   if (!eventCallback) {
     throw new Error("Cannot send a prompt without an active event subscription");
   }
 
-  // Resume the current conversation when the foreground session is a real
-  // agy conversation (`agy-session-<uuid>`); a fresh spawn would otherwise
-  // start a new conversation every turn.
+  // Resume the foreground conversation when it is a real agy conversation
+  // (`agy-session-<uuid>` or a bare uuid from /sessions); a /new placeholder
+  // spawns a brand-new conversation.
   const spawnOptions: AntigravityProcessOptions = {};
   const current = getCurrentSession();
-  if (current?.id.startsWith("agy-session-")) {
-    spawnOptions.conversationId = current.id.slice("agy-session-".length);
+  const currentUuid =
+    current && !current.id.startsWith("new-")
+      ? current.id.replace(/^agy-session-/, "")
+      : "";
+  if (currentUuid) {
+    spawnOptions.conversationId = currentUuid;
   }
   // Pass the user-selected model so agy runs with it (otherwise agy falls
   // back to its own stored model, which may mismatch the bot’s footer).
