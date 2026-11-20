@@ -31,6 +31,24 @@ class ForegroundSessionState {
     );
   }
 
+  /**
+   * Move a busy entry to a new runtime id (placeholder -> real conversation
+   * id) so the closing session.idle — which carries the real id — releases it.
+   */
+  rebindSessionId(oldId: string, newId: string): boolean {
+    const entry = this.activeSessions.get(oldId);
+    if (!entry || oldId === newId) {
+      return false;
+    }
+
+    this.activeSessions.delete(oldId);
+    this.activeSessions.set(newId, { ...entry, sessionId: newId });
+    logger.info(
+      `[ScheduledTaskForeground] Rebound busy session: session=${oldId} -> ${newId}, count=${this.activeSessions.size}`,
+    );
+    return true;
+  }
+
   getBusySessions(): ForegroundBusySession[] {
     return Array.from(this.activeSessions.values(), (session) => ({ ...session }));
   }

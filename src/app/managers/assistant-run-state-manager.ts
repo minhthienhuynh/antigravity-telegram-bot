@@ -89,6 +89,23 @@ class AssistantRunState {
     logger.debug(`[AssistantRunState] Cleared run: session=${sessionId}, reason=${reason}`);
   }
 
+  /**
+   * Move an in-flight run to a new runtime id (placeholder -> real
+   * conversation id) so result/idle handling and the stale-latch fallback
+   * keep matching the run that is actually streaming.
+   */
+  rebindSessionId(oldId: string, newId: string): boolean {
+    const run = this.runs.get(oldId);
+    if (!run || oldId === newId) {
+      return false;
+    }
+
+    this.runs.delete(oldId);
+    this.runs.set(newId, { ...run, sessionId: newId });
+    logger.info(`[AssistantRunState] Rebound run: session=${oldId} -> ${newId}`);
+    return true;
+  }
+
   clearAll(reason: string): void {
     resetAllStreamThrottles();
     if (this.runs.size === 0) {

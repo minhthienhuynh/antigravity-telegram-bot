@@ -34,6 +34,7 @@ import {
   markAttachedSessionIdle,
 } from "../../app/services/attach-service.js";
 import { externalUserInputSuppressionManager } from "../../app/managers/external-input-suppression-manager.js";
+import { setPromptResponseModeRebinder } from "../../app/services/session-runtime-rebind-service.js";
 import { promptAttachment } from "../../app/managers/prompt-attachment-manager.js";
 import { resolvePendingAttachment } from "../../app/services/prompt-attachment-service.js";
 import {
@@ -51,6 +52,17 @@ import type { IncomingPrompt } from "../../app/types/prompt.js";
 let botInstance: Bot<Context> | null = null;
 let chatIdInstance: number | null = null;
 const promptResponseModes = new Map<string, PromptResponseMode>();
+
+// Follow session-id rebinds (placeholder -> real conversation id) so the
+// response mode chosen for a turn survives the id migration at init.
+setPromptResponseModeRebinder((oldId, newId) => {
+  const mode = promptResponseModes.get(oldId);
+  if (!mode) {
+    return;
+  }
+  promptResponseModes.delete(oldId);
+  promptResponseModes.set(newId, mode);
+});
 
 export type PromptResponseMode = "text_only" | "text_and_tts";
 
@@ -370,9 +382,8 @@ export async function processUserPrompt(
       onSuccess: () => {
         logger.info("[Bot] agy prompt written to pipe");
         promptDispatched = true;
-        // Visible dispatch confirmation — suppressed after detach, mirroring
-        // the error path's detach semantics.
-        if (attachManager.isAttachedSession(currentSession.id) && ctx.chat) {
+        const targetSessionId = getCurrentSession()?.id ?? currentSession.id;
+        if (attachManager.isAttachedSession(targetSessionId) && ctx.chat) {
           const botForAck = getPromptBotInstance();
           if (botForAck) {
             void botForAck.api
@@ -382,24 +393,42 @@ export async function processUserPrompt(
         }
       },
       onError: (error) => {
-        foregroundSessionState.markIdle(currentSession.id);
-        void markAttachedSessionIdle(currentSession.id);
-        assistantRunState.clearRun(currentSession.id, "agy_prompt_background_error");
-        clearPromptResponseMode(currentSession.id);
+        const targetSessionId = getCurrentSession()?.id ?? currentSession.id;
+        const sessionIdsToClear =
+          targetSessionId === currentSession.id
+            ? [targetSessionId]
+            : [targetSessionId, currentSession.id];
+
+        for (const id of sessionIdsToClear) {
+          foregroundSessionState.markIdle(id);
+          void markAttachedSessionIdle(id);
+          assistantRunState.clearRun(id, "agy_prompt_background_error");
+          clearPromptResponseMode(id);
+        }
+
         const details = formatErrorDetails(error, 6000);
         logger.error("[Bot] agy prompt background task failed", promptErrorLogContext);
         logger.error("[Bot] agy prompt background failure details:", details);
-        if (attachManager.isAttachedSession(currentSession.id)) {
+        if (
+          attachManager.isAttachedSession(targetSessionId) ||
+          attachManager.isAttachedSession(currentSession.id)
+        ) {
           void bot.api.sendMessage(ctx.chat!.id, t("bot.prompt_send_error")).catch(() => {});
         }
       },
     });
     return true;
   } catch (err) {
-    if (currentSession) {
-      foregroundSessionState.markIdle(currentSession.id);
-      await markAttachedSessionIdle(currentSession.id);
-      assistantRunState.clearRun(currentSession.id, "session_prompt_handler_error");
+    const targetSessionId = getCurrentSession()?.id ?? currentSession?.id;
+    if (targetSessionId) {
+      foregroundSessionState.markIdle(targetSessionId);
+      await markAttachedSessionIdle(targetSessionId);
+      assistantRunState.clearRun(targetSessionId, "session_prompt_handler_error");
+      if (currentSession && targetSessionId !== currentSession.id) {
+        foregroundSessionState.markIdle(currentSession.id);
+        await markAttachedSessionIdle(currentSession.id);
+        assistantRunState.clearRun(currentSession.id, "session_prompt_handler_error");
+      }
     }
     logger.error("Error in prompt handler:", err);
     if (interactionManager.getSnapshot()) {

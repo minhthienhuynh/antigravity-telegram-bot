@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { logger } from "../utils/logger.js";
 
 /**
@@ -28,16 +29,34 @@ export interface AntigravityConversation {
   title: string;
   preview: string;
   lastModified: Date;
+  /** Absolute filesystem paths of the workspaces agy recorded for this conversation. */
+  workspaces: string[];
+  /** Non-null for subagent/child conversations spawned by a parent turn. */
+  parentConversationId: string | null;
 }
 
 function conversationsDir(): string {
   return path.join(os.homedir(), ".gemini", "antigravity-cli", "conversations");
 }
 
-interface SummaryRow {
+interface ConversationMetadataRow {
   conversation_id: string;
   title: string | null;
   preview: string | null;
+  workspace_uris: string | null;
+  parent_conversation_id: string | null;
+}
+
+export interface ConversationWorkspaceInfo {
+  workspaces: string[];
+  parentConversationId: string | null;
+}
+
+interface ConversationMetadata {
+  title: string;
+  preview: string;
+  workspaces: string[];
+  parentConversationId: string | null;
 }
 
 // TODO(v2): gen_metadata in the per-conversation .db is a protobuf blob without a
@@ -48,20 +67,20 @@ function conversationTitleFallback(conversationId: string): string {
   return `Conversation ${conversationId.slice(0, 8)}`;
 }
 
-function conversationTitleFromSummaries(
-  summaries: Map<string, SummaryRow>,
+function deriveConversationTitle(
+  title: string | null | undefined,
+  preview: string | null | undefined,
   conversationId: string,
 ): string {
-  const row = summaries.get(conversationId);
-  const title = row?.title?.trim();
-  if (title) {
-    return title;
+  const trimmedTitle = title?.trim();
+  if (trimmedTitle) {
+    return trimmedTitle;
   }
 
-  const preview = row?.preview?.trim();
-  if (preview) {
+  const trimmedPreview = preview?.trim();
+  if (trimmedPreview) {
     // Truncate long first prompts into a readable title.
-    return preview.length > 60 ? `${preview.slice(0, 57)}...` : preview;
+    return trimmedPreview.length > 60 ? `${trimmedPreview.slice(0, 57)}...` : trimmedPreview;
   }
 
   return conversationTitleFallback(conversationId);
@@ -97,8 +116,8 @@ export function listConversationFiles(): { id: string; mtimeMs: number }[] {
   return files.sort((a, b) => b.mtimeMs - a.mtimeMs);
 }
 
-function loadSummaryIndex(): Map<string, SummaryRow> {
-  const summaries = new Map<string, SummaryRow>();
+function loadConversationMetadataIndex(): Map<string, ConversationMetadata> {
+  const index = new Map<string, ConversationMetadata>();
   const summaryDbPath = path.join(
     os.homedir(),
     ".gemini",
@@ -108,19 +127,30 @@ function loadSummaryIndex(): Map<string, SummaryRow> {
 
   try {
     if (!fs.existsSync(summaryDbPath)) {
-      return summaries;
+      return index;
     }
     const db = new Database(summaryDbPath, { readonly: true, fileMustExist: true });
     try {
       const rows = db
         .prepare(
-          "SELECT conversation_id, title, preview FROM conversation_summaries WHERE title != '' OR preview != ''",
+          "SELECT conversation_id, title, preview, workspace_uris, parent_conversation_id FROM conversation_summaries",
         )
-        .all() as SummaryRow[];
+        .all() as ConversationMetadataRow[];
+
       for (const row of rows) {
-        if (row && typeof row.conversation_id === "string") {
-          summaries.set(row.conversation_id, row);
+        if (!row || typeof row.conversation_id !== "string") {
+          continue;
         }
+        const preview = row.preview?.trim() ?? "";
+        index.set(row.conversation_id, {
+          title: deriveConversationTitle(row.title, row.preview, row.conversation_id),
+          preview,
+          workspaces: parseWorkspaceUris(row.workspace_uris),
+          parentConversationId:
+            typeof row.parent_conversation_id === "string" && row.parent_conversation_id.length > 0
+              ? row.parent_conversation_id
+              : null,
+        });
       }
     } finally {
       db.close();
@@ -129,7 +159,47 @@ function loadSummaryIndex(): Map<string, SummaryRow> {
     logger.warn("[SessionStore] Cannot read conversation summaries DB:", error);
   }
 
-  return summaries;
+  return index;
+}
+
+/**
+ * Parse agy's `workspace_uris` JSON column (e.g. `["file:///home/ubuntu/projects"]`)
+ * into absolute filesystem paths.
+ *
+ * Non-file URI schemes (e.g. `ssh://`, `vscode-remote://`), relative paths, and
+ * malformed entries are discarded so they cannot falsely match local directories.
+ */
+export function parseWorkspaceUris(urisJson: string | null): string[] {
+  if (!urisJson) {
+    return [];
+  }
+  try {
+    const parsed: unknown = JSON.parse(urisJson);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    const out: string[] = [];
+    for (const entry of parsed) {
+      if (typeof entry !== "string" || entry.length === 0) {
+        continue;
+      }
+      if (entry.startsWith("file://")) {
+        try {
+          const resolvedPath = fileURLToPath(entry);
+          if (path.isAbsolute(resolvedPath) || path.win32.isAbsolute(resolvedPath)) {
+            out.push(resolvedPath);
+          }
+        } catch {
+          // Discard unparseable file:// URLs.
+        }
+      } else if (path.isAbsolute(entry) || path.win32.isAbsolute(entry)) {
+        out.push(entry);
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -145,14 +215,17 @@ export async function listConversations(limit?: number | null): Promise<Antigrav
 }
 
 function buildConversationList(): AntigravityConversation[] {
-  const summaries = loadSummaryIndex();
+  const metadataIndex = loadConversationMetadataIndex();
   return listConversationFiles().map((file) => {
     const lastModified = new Date(file.mtimeMs);
+    const meta = metadataIndex.get(file.id);
     return {
       id: file.id,
-      title: conversationTitleFromSummaries(summaries, file.id),
-      preview: summaries.get(file.id)?.preview?.trim() ?? "",
+      title: meta?.title ?? conversationTitleFallback(file.id),
+      preview: meta?.preview ?? "",
       lastModified,
+      workspaces: meta?.workspaces ?? [],
+      parentConversationId: meta?.parentConversationId ?? null,
     };
   });
 }
@@ -192,9 +265,9 @@ export function conversationExists(id: string): boolean {
 
 /**
  * Real conversation title from the agy summaries DB (falls back to the
- * short-id label). Cached index is rebuilt when the summaries file changes.
+ * short-id label).
  */
 export function getConversationTitle(conversationId: string): string {
-  const summaries = loadSummaryIndex();
-  return conversationTitleFromSummaries(summaries, conversationId);
+  const meta = loadConversationMetadataIndex().get(conversationId);
+  return meta?.title ?? conversationTitleFallback(conversationId);
 }

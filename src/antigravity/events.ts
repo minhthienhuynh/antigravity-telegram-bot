@@ -11,6 +11,7 @@ import {
 } from "./agent-process.js";
 import { config } from "../config.js";
 import { getCurrentSession, promotePlaceholderSession, syncSessionToRuntimeId } from "../app/services/session-service.js";
+import { rebindSessionRuntimeId } from "../app/services/session-runtime-rebind-service.js";
 import { getConversationTitle } from "./session-store.js";
 import { getStoredModel } from "../app/services/model-selection-service.js";
 import { logger } from "../utils/logger.js";
@@ -167,16 +168,35 @@ function emitBotEvent(type: string, properties: Record<string, unknown>): void {
   }
 }
 
-function handleInit(event: AgyInitEvent): void {
+function handleInit(event: AgyInitEvent, sourceProc?: AntigravityProcess): void {
+  if (sourceProc && sourceProc !== activeProcess) {
+    logger.warn("[AgyEvents] dropping stale init event from replaced process");
+    return;
+  }
   currentSessionId = shortId("session", event.conversationId || String(Date.now()));
   // Follow the runtime: promote the /new placeholder AND realign a stale
   // stored id whenever the spawned conversation differs, so foreground
   // event matching works and /sessions lists the live thread.
+  const storedIdBefore = getCurrentSession()?.id ?? null;
   const realTitle = event.conversationId
     ? getConversationTitle(event.conversationId)
     : undefined;
   promotePlaceholderSession(currentSessionId, realTitle);
   syncSessionToRuntimeId(currentSessionId, realTitle);
+  // Promotion/realign changed the stored id: migrate every id-keyed runtime
+  // state (attach latch, foreground busy, assistant run, echo suppression,
+  // aggregator) to the runtime id — otherwise this turn's closing
+  // session.idle carries the real id, never matches the tracked placeholder,
+  // and the attached busy latch sticks until a full bot restart.
+  const storedIdAfter = getCurrentSession()?.id ?? null;
+  if (
+    storedIdBefore &&
+    storedIdAfter &&
+    storedIdBefore !== storedIdAfter &&
+    storedIdAfter === currentSessionId
+  ) {
+    rebindSessionRuntimeId(storedIdBefore, storedIdAfter);
+  }
 
   emitBotEvent("session.created", {
     sessionID: currentSessionId,
@@ -317,7 +337,10 @@ function startStallWatchdog(): void {
 }
 
 // One step_update maps to one bot event. The user_input echo is ignored.
-function handleStep(event: AgyStepEvent): void {
+function handleStep(event: AgyStepEvent, sourceProc?: AntigravityProcess): void {
+  if (sourceProc && sourceProc !== activeProcess) {
+    return;
+  }
   if (event.stepType === "user_input") {
     return;
   }
@@ -686,10 +709,10 @@ function wireProcess(proc: AntigravityProcess): void {
   lastProcess = proc;
   startStallWatchdog();
   proc.on("init", (event: AgyInitEvent) => {
-    handleInit(event);
+    handleInit(event, proc);
   });
   proc.on("step", (event: AgyStepEvent) => {
-    handleStep(event);
+    handleStep(event, proc);
   });
   proc.on("result", (event: AgyResultEvent) => {
     handleResult(event, proc);
@@ -700,10 +723,9 @@ function wireProcess(proc: AntigravityProcess): void {
     if (wasActive) {
       activeProcess = null;
     }
-    // Only emit idle when the process that died was the live one — an exit
-    // from an already-replaced process must not shut down the new turn.
-    if (wasActive && currentSessionId && eventCallback) {
-      emitBotEvent("session.idle", { sessionID: currentSessionId });
+    const effectiveSessionId = currentSessionId || getCurrentSession()?.id;
+    if (wasActive && effectiveSessionId && eventCallback) {
+      emitBotEvent("session.idle", { sessionID: effectiveSessionId });
     }
   });
   proc.on("error", (error) => {
@@ -922,15 +944,15 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
   suppressNextTurnError = false;
   if (activeProcess && activeProcess.isRunning()) {
     const foregroundId = getCurrentSession()?.id ?? "";
-    const foregroundUuid = foregroundId.startsWith("new-")
-      ? ""
-      : foregroundId.replace(/^agy-session-/, "");
+    const isPlaceholder = foregroundId.startsWith("new-");
+    const foregroundUuid = isPlaceholder ? "" : foregroundId.replace(/^agy-session-/, "");
     const liveUuid = currentSessionId.replace(/^agy-session-/, "");
     // Reuse the live process only for a follow-up turn in the SAME conversation.
     // A /new placeholder or a session switch (/sessions, /recent) means the live
     // process is running a different thread: reusing it would send the prompt to
-    // the wrong conversation and mismatch the delivery session id (silent reply).
-    if (foregroundUuid && liveUuid && foregroundUuid === liveUuid) {
+    // the wrong conversation and mismatch the delivery session id (silent reply),
+    // and a placeholder never gets promoted without a fresh init.
+    if (!isPlaceholder && foregroundUuid && liveUuid && foregroundUuid === liveUuid) {
       const effectiveModel = activeProcess.getModelId();
       const storedNow = getStoredModel()?.modelID;
       if (storedNow && effectiveModel !== storedNow) {
@@ -946,15 +968,19 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
       await activeProcess.sendPrompt(text);
       return;
     }
-    // Stale live process (placeholder or a different conversation): replace it so
-    // the prompt spawns/resumes the foreground conversation instead of hijacking
-    // the old thread.
-    logger.info(
-      "[AgyEvents] foreground session differs from the live agy conversation — recycling process",
-    );
-    const stale = activeProcess;
+    // Placeholder or a different conversation: recycle the stale process so the
+    // prompt spawns/resumes the foreground conversation instead of hijacking the
+    // old thread.
+    const staleProc = activeProcess;
     activeProcess = null;
-    void stale.kill().catch(() => undefined);
+    currentSessionId = "";
+    staleProc.removeAllListeners();
+    logger.info(
+      "[AgyEvents] stale live process for a placeholder/different conversation — recycling before respawn",
+    );
+    await staleProc.kill().catch((err) => {
+      logger.warn("[AgyEvents] error terminating stale process", err);
+    });
   }
 
   if (!eventCallback) {
