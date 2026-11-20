@@ -45,6 +45,7 @@ function makeFakeChild() {
 
 import {
   subscribeToEvents,
+  sendPromptToActiveProcess,
   stopEventListening,
   __resetAgyEventsForTests,
 } from "../../../src/antigravity/events.js";
@@ -100,5 +101,35 @@ describe("result reconciles a /new placeholder (follow-up turn, no init)", () =>
       "agy-session-6c34a899-ede8-412e-b7fc-914061d09732",
     );
     expect(idle?.properties.sessionID).toBe("agy-session-6c34a899-ede8-412e-b7fc-914061d09732");
+  });
+
+  it("recycles a stale live process when the foreground conversation switched", async () => {
+    setCurrentSession({ id: "agy-session-aaaa", title: "A", directory: "/tmp/proj" });
+    const childA = makeFakeChild();
+    spawnMock.mockImplementation(() => childA);
+    await subscribeToEvents("/tmp/proj", () => {});
+    await flush(1);
+    (childA.stdout as unknown as EventEmitter).emit(
+      "data",
+      JSON.stringify({
+        event: "init",
+        conversation_id: "aaaa",
+        init: { cwd: "/tmp/proj", tools: [], permission_mode: "default" },
+      }) + "\n",
+    );
+    await flush(10);
+
+    // User selects a different conversation (/sessions): foreground now B.
+    setCurrentSession({ id: "agy-session-bbbb", title: "B", directory: "/tmp/proj" });
+    const childB = makeFakeChild();
+    spawnMock.mockImplementation(() => childB);
+    await sendPromptToActiveProcess("continue B", "/tmp/proj");
+    await flush(10);
+
+    // A fresh process was spawned resuming B, not a follow-up written into A.
+    const lastArgs = spawnMock.mock.calls.at(-1)?.[1] as string[];
+    expect(lastArgs).toContain("--conversation=bbbb");
+    expect((childB.stdin as { writes: string[] }).writes.join("")).toContain("continue B");
+    expect((childA.stdin as { writes: string[] }).writes.join("")).not.toContain("continue B");
   });
 });
