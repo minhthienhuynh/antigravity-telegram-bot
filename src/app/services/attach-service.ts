@@ -83,6 +83,20 @@ async function syncPinnedAttachState(deps: AttachStateDeps): Promise<void> {
   await attachPresentation.syncAttachState(attached !== null, attached?.busy ?? false);
 }
 
+/**
+ * agy has no OpenCode server: the SDK throws on its text/html response instead
+ * of returning `{ error }`. Normalise a throw into `{ error }` so the attach
+ * restore steps fail soft (keep the session, skip the API-backed restore) rather
+ * than aborting the whole startup restore.
+ */
+async function opencodeCall<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    return { error } as T;
+  }
+}
+
 async function restorePendingQuestion(
   deps: AttachRestoreDeps,
   bot: Bot<Context>,
@@ -90,9 +104,11 @@ async function restorePendingQuestion(
   sessionId: string,
   directory: string,
 ): Promise<boolean> {
-  const { data, error } = (await opencodeClient.question.list({
-    directory,
-  }) ?? {});
+  const { data, error } = (await opencodeCall(() =>
+    opencodeClient.question.list({
+      directory,
+    }),
+  ) ?? {});
 
   if (error || !data) {
     if (isExpectedOpencodeUnavailableError(error)) {
@@ -122,9 +138,11 @@ async function restorePendingPermissions(
   questionActive: boolean,
   isAlreadyTracked: (request: PermissionRequest) => boolean = () => false,
 ): Promise<number> {
-  const { data, error } = (await opencodeClient.permission.list({
-    directory,
-  }) ?? {});
+  const { data, error } = (await opencodeCall(() =>
+    opencodeClient.permission.list({
+      directory,
+    }),
+  ) ?? {});
 
   if (error || !data) {
     if (isExpectedOpencodeUnavailableError(error)) {
@@ -256,10 +274,12 @@ async function dropSavedSessionIfMissing(
   session: SessionInfo,
   deps: Pick<AppContainer, "pinnedMessageManager">,
 ): Promise<boolean> {
-  const { error } = (await opencodeClient.session.get({
-    sessionID: session.id,
-    directory: session.directory,
-  }) ?? {});
+  const { error } = (await opencodeCall(() =>
+    opencodeClient.session.get({
+      sessionID: session.id,
+      directory: session.directory,
+    }),
+  ) ?? {});
   if (!isOpencodeNotFoundError(error)) {
     return false;
   }

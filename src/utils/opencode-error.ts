@@ -21,7 +21,9 @@ export function isExpectedOpencodeUnavailableError(error: unknown): boolean {
     normalized.includes("econnrefused") ||
     normalized.includes("econnreset") ||
     normalized.includes("enotfound") ||
-    normalized.includes("connectex")
+    normalized.includes("connectex") ||
+    normalized.includes("not supported by this version") ||
+    normalized.includes("text/html")
   );
 }
 
