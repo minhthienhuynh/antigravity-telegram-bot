@@ -1,16 +1,17 @@
-import type { GlobalSession } from "@opencode-ai/sdk/v2";
+import os from "node:os";
+import { listConversations } from "../../antigravity/session-store.js";
 import { opencodeClient } from "../../opencode/client.js";
-import { getCurrentSession } from "../stores/settings-store.js";
+import { getCurrentProject, getCurrentSession } from "../stores/settings-store.js";
+import { isForegroundBusy } from "./run-control-service.js";
 
 export type RecentStatus = "question" | "permission" | "running" | "idle";
-type RecentSessionInfo = Pick<GlobalSession, "id" | "directory" | "title" | "time">;
+type RecentSessionInfo = {
+  id: string;
+  directory: string;
+  title: string;
+  time: { created: number; updated: number };
+};
 export type RecentSession = { session: RecentSessionInfo; status: RecentStatus };
-
-async function loadGlobalSessions(limit: number): Promise<GlobalSession[]> {
-  const { data, error } = await opencodeClient.experimental.session.list({ roots: true, limit });
-  if (error || !data) throw error || new Error("No sessions received from OpenCode");
-  return data;
-}
 
 export async function resolveSessionParentChain(
   sessionId: string,
@@ -31,51 +32,27 @@ export async function resolveSessionParentChain(
 }
 
 export async function loadRecentSessions(limit: number): Promise<RecentSession[]> {
-  const sessions: RecentSessionInfo[] = await loadGlobalSessions(limit);
+  // agy keeps every conversation in one global CLI directory and exposes no
+  // OpenCode server registry, so /recent lists the same conversations as
+  // /sessions (newest first). The current project is a display label; status
+  // comes from the bot's own foreground state (no global run/question API).
+  const conversations = (await listConversations()).sort(
+    (a, b) => b.lastModified.getTime() - a.lastModified.getTime(),
+  );
   const attached = getCurrentSession();
-  if (attached && !sessions.some((session) => session.id === attached.id) && sessions.length > 0) {
-    const { data, error } = await opencodeClient.session.get({
-      sessionID: attached.id,
-      directory: attached.directory,
-    });
-    if (!error && data && !data.parentID) {
-      sessions.splice(limit - 1, 1, data);
-    }
-  }
-  sessions.sort((a, b) => b.time.updated - a.time.updated);
-  const byDirectory = new Map<string, RecentSessionInfo[]>();
-  for (const session of sessions) {
-    const group = byDirectory.get(session.directory) ?? [];
-    group.push(session);
-    byDirectory.set(session.directory, group);
-  }
-
-  const statuses = new Map<string, RecentStatus>();
-  await Promise.all([...byDirectory].map(async ([directory, group]) => {
-    const [statusResult, questionResult, permissionResult] = await Promise.all([
-      opencodeClient.session.status({ directory }),
-      opencodeClient.question.list({ directory }),
-      opencodeClient.permission.list({ directory }),
-    ]);
-    if (statusResult.error || !statusResult.data) throw statusResult.error || new Error("No status received");
-    if (questionResult.error || !questionResult.data) throw questionResult.error || new Error("No questions received");
-    if (permissionResult.error || !permissionResult.data) throw permissionResult.error || new Error("No permissions received");
-
-    const roots = new Set(group.map((session) => session.id));
-    const questions = new Set(questionResult.data.map((request) => request.sessionID));
-    const permissions = new Set<string>();
-    for (const request of permissionResult.data) {
-      const chain = await resolveSessionParentChain(request.sessionID, directory, roots);
-      if (chain) permissions.add(chain.root);
-    }
-    for (const session of group) {
-      const run = statusResult.data[session.id]?.type;
-      statuses.set(session.id, questions.has(session.id)
-        ? "question"
-        : permissions.has(session.id)
-          ? "permission"
-          : run === "busy" || run === "retry" ? "running" : "idle");
-    }
+  const directory =
+    getCurrentProject()?.worktree ?? attached?.directory ?? os.homedir();
+  const busy = isForegroundBusy();
+  return conversations.slice(0, limit).map((conversation) => ({
+    session: {
+      id: conversation.id,
+      directory,
+      title: conversation.title,
+      time: {
+        created: conversation.lastModified.getTime(),
+        updated: conversation.lastModified.getTime(),
+      },
+    },
+    status: attached?.id === conversation.id && busy ? ("running" as const) : ("idle" as const),
   }));
-  return sessions.map((session) => ({ session, status: statuses.get(session.id) ?? "idle" }));
 }

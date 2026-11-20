@@ -1,6 +1,6 @@
 import type { Context } from "grammy";
 import type { AppContainer } from "../../app/bootstrap/app-container.js";
-import { opencodeClient } from "../../opencode/client.js";
+import { conversationExists } from "../../antigravity/session-store.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
 import { switchToProject } from "../../app/services/project-switch-service.js";
 import { isForegroundBusy } from "../../app/services/run-control-service.js";
@@ -37,13 +37,14 @@ export async function handleRecentSelect(ctx: Context, deps: RecentSelectDeps): 
   }
 
   try {
-    const { data: session, error } = await opencodeClient.session.get({ sessionID: sessionId, directory });
-    if (error || !session || session.directory !== directory || session.parentID) {
+    // agy conversations are global CLI files; validate existence locally rather
+    // than querying an OpenCode server (which agy does not run).
+    if (!conversationExists(sessionId)) {
       await ctx.answerCallbackQuery({ text: t("inline.inactive_callback"), show_alert: true });
       return true;
     }
     if (getCurrentProject()?.worktree !== directory) {
-      const project = { id: session.projectID, worktree: directory, name: directory };
+      const project = { id: `agy-${directory}`, worktree: directory, name: directory };
       await switchToProject(ctx, project, "recent_project_switched", {
         ...deps,
         presentation: createProjectSwitchPresentation(deps),

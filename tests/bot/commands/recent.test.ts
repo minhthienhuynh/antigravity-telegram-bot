@@ -6,11 +6,11 @@ import { handleRecentSelect } from "../../../src/bot/callbacks/recent-callback-h
 import { startInteractionForTest } from "../../helpers/interaction.js";
 
 const mocked = vi.hoisted(() => ({
-  rows: vi.fn(), get: vi.fn(), switch: vi.fn(), select: vi.fn(),
+  rows: vi.fn(), exists: vi.fn(), switch: vi.fn(), select: vi.fn(),
   currentProject: null as { worktree: string } | null,
 }));
 vi.mock("../../../src/app/services/recent-sessions-service.js", () => ({ loadRecentSessions: mocked.rows }));
-vi.mock("../../../src/opencode/client.js", () => ({ opencodeClient: { session: { get: mocked.get } } }));
+vi.mock("../../../src/antigravity/session-store.js", () => ({ conversationExists: mocked.exists }));
 vi.mock("../../../src/app/services/project-switch-service.js", () => ({ switchToProject: mocked.switch }));
 vi.mock("../../../src/app/stores/settings-store.js", () => ({ getCurrentProject: () => mocked.currentProject }));
 vi.mock("../../../src/bot/callbacks/session-callback-handler.js", () => ({ selectSessionById: mocked.select }));
@@ -27,7 +27,7 @@ function context(data?: string): Context {
 
 describe("/recent and picker", () => {
   beforeEach(() => {
-    mocked.rows.mockReset(); mocked.get.mockReset();
+    mocked.rows.mockReset(); mocked.exists.mockReset();
     mocked.switch.mockReset(); mocked.select.mockReset();
     mocked.currentProject = null;
   });
@@ -51,10 +51,10 @@ describe("/recent and picker", () => {
       kind: "inline", expectedInput: "callback",
       metadata: { menuKind: "recent", messageId: 20, sessionIds: ["s1"], directories: ["/linked"] },
     });
-    mocked.get.mockResolvedValue({ data: { id: "s1", projectID: "project", directory: "/linked", time: { updated: 10 } }, error: null });
+    mocked.exists.mockReturnValue(true);
     const ctx = context("recent:0");
     expect(await handleRecentSelect(ctx, { ...deps, bot: {} } as never)).toBe(true);
-    expect(mocked.switch).toHaveBeenCalledWith(ctx, { id: "project", worktree: "/linked", name: "/linked" }, "recent_project_switched", expect.anything());
+    expect(mocked.switch).toHaveBeenCalledWith(ctx, { id: "agy-/linked", worktree: "/linked", name: "/linked" }, "recent_project_switched", expect.anything());
     expect(mocked.select).toHaveBeenCalledWith(ctx, expect.anything(), "s1", expect.objectContaining({ postSelectAction: "preview" }));
   });
 
@@ -64,7 +64,7 @@ describe("/recent and picker", () => {
       kind: "inline", expectedInput: "callback",
       metadata: { menuKind: "recent", messageId: 20, sessionIds: ["s1"], directories: ["/gone"] },
     });
-    mocked.get.mockResolvedValue({ data: null, error: new Error("gone") });
+    mocked.exists.mockReturnValue(false);
     const ctx = context("recent:0");
     await handleRecentSelect(ctx, { ...deps, bot: {} } as never);
     expect(mocked.switch).not.toHaveBeenCalled();
