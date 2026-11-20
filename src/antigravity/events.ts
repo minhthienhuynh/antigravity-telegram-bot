@@ -418,6 +418,17 @@ function handleResult(event: AgyResultEvent, sourceProc?: AntigravityProcess): v
   logger.info(
     `[AgyEvents] result: status=${event.status} turns=${event.numTurns ?? "?"} respLen=${(event.response ?? "").length}`,
   );
+  // Reconcile the foreground session with the conversation that actually ran.
+  // A follow-up turn on a live agy process emits no fresh `init`, so a /new
+  // placeholder ("new-…") would never be promoted: the delivery events below
+  // would carry the live process's session id, mismatch the stored placeholder
+  // and get dropped (no reply delivered, busy latch stuck). Realign here too.
+  if (event.conversationId) {
+    currentSessionId = shortId("session", event.conversationId);
+    const realTitle = getConversationTitle(event.conversationId);
+    promotePlaceholderSession(currentSessionId, realTitle);
+    syncSessionToRuntimeId(currentSessionId, realTitle);
+  }
   // agy writes the human-readable title into conversation_summaries.db after a
   // turn; refresh the stored session title so the pinned dashboard shows the
   // real name instead of the short-id fallback on the next render.
