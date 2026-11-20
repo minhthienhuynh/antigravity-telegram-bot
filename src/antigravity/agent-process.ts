@@ -55,6 +55,7 @@ export interface AgyStepEvent {
 export interface AgyResultEvent {
   kind: "result";
   status: "SUCCESS" | "ERROR";
+  conversationId?: string;
   response?: string;
   error?: string;
   durationSeconds?: number;
@@ -380,6 +381,7 @@ export function mapRawMessage(message: unknown): AgyEvent | null {
 
   if (raw.event === "result" && isRecord(raw.result)) {
     const result = raw.result as {
+      conversation_id?: unknown;
       status?: unknown;
       response?: unknown;
       error?: unknown;
@@ -394,6 +396,7 @@ export function mapRawMessage(message: unknown): AgyEvent | null {
     const resultEvent: AgyResultEvent = {
       kind: "result",
       status: result.status,
+      ...(typeof result.conversation_id === "string" ? { conversationId: result.conversation_id } : {}),
       ...(typeof result.response === "string" ? { response: result.response } : {}),
       ...(typeof result.error === "string" && result.error ? { error: result.error } : {}),
       ...(typeof result.duration_seconds === "number" ? { durationSeconds: result.duration_seconds } : {}),
