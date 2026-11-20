@@ -123,6 +123,10 @@ export const zh: I18nDictionary = {
   "bot.retrying": "⚠️ Antigravity 服务不可用 (503) — 正在自动重试… 第 {attempt}/{max} 次尝试，下次约 {seconds} 秒后。",
   "bot.retry_recovered": "✅ Antigravity 已恢复 — 继续。",
   "bot.retry_exhausted": "❌ Antigravity 持续不可用 — 重试已用尽。服务恢复后请重新发送消息。",
+  "bot.assistant_reply_undelivered":
+    "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
+  "bot.stale_messages_skipped":
+    "⚠️ Some messages were skipped while Telegram was unreachable. Please send them again.",
   "bot.session_retry": "🔁 {message}\n\n提供方在重复重试时持续返回同一错误。使用 /abort 可停止。",
   "bot.external_user_input": "外部用户输入",
   "background.session_fallback": "会话 {id}",
