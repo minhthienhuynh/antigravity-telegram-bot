@@ -14,7 +14,23 @@ const mocked = vi.hoisted(() => ({
   mcpStatusMock: vi.fn(),
   mcpConnectMock: vi.fn(),
   mcpDisconnectMock: vi.fn(),
+  mcpConfigRaw: JSON.stringify({ mcpServers: {} }),
 }));
+
+vi.mock("node:fs", async (importOriginal) => {
+  const orig = (await importOriginal()) as Record<string, unknown> & { default?: Record<string, unknown> };
+  const readFileSync = (p: unknown, ...rest: unknown[]) => {
+    if (String(p).endsWith("mcp_config.json")) {
+      return mocked.mcpConfigRaw;
+    }
+    return (orig.readFileSync as (...a: unknown[]) => unknown)(p, ...rest);
+  };
+  return {
+    ...orig,
+    readFileSync,
+    default: { ...(orig.default ?? orig), readFileSync },
+  };
+});
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
   __resetSettingsForTests: vi.fn(),
@@ -77,6 +93,7 @@ describe("bot/commands/mcps", () => {
     mocked.mcpStatusMock.mockReset();
     mocked.mcpConnectMock.mockReset();
     mocked.mcpDisconnectMock.mockReset();
+    mocked.mcpConfigRaw = JSON.stringify({ mcpServers: {} });
   });
 
   it("shows empty message when no project is selected", async () => {
@@ -110,6 +127,29 @@ describe("bot/commands/mcps", () => {
     await mcpsCommand(ctx as never);
 
     expect(ctx.reply).toHaveBeenCalledWith(t("mcps.empty"));
+  });
+
+  it("lists configured servers read from mcp_config.json (read-only)", async () => {
+    mocked.mcpConfigRaw = JSON.stringify({
+      mcpServers: {
+        github: { command: "/usr/bin/github-mcp-server", args: ["stdio"], env: { TOKEN: "secret" } },
+        omniroute: { url: "http://127.0.0.1:20128/api/mcp/stream?token=secret", headers: { Authorization: "secret" } },
+      },
+    });
+    const ctx = createCommandContext(104);
+    await mcpsCommand(ctx as never);
+    const [text, options] = defined((ctx.reply as ReturnType<typeof vi.fn>).mock.calls[0]) as [
+      string,
+      { reply_markup: { inline_keyboard: Array<Array<{ text: string; callback_data?: string }>> } },
+    ];
+    expect(text).toBe(t("mcps.select"));
+    const labels = options.reply_markup.inline_keyboard.flat().map((b) => b.text);
+    expect(labels.some((l) => l.includes("github"))).toBe(true);
+    expect(labels.some((l) => l.includes("omniroute"))).toBe(true);
+    const state = interactionManager.getSnapshot();
+    const servers = state?.metadata.servers as Array<{ status: { status: string }; endpoint?: string }>;
+    expect(servers.every((s) => s.status.status === "configured")).toBe(true);
+    expect(servers.find((s) => s.endpoint?.includes("20128"))?.endpoint).not.toContain("secret");
   });
 
   
