@@ -1,16 +1,23 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { logger } from "../../utils/logger.js";
 import { isRecord } from "../../utils/type-guards.js";
 
 /**
  * MCP catalog for agy.
  *
- * agy has no MCP status API in v1; the catalog is always empty. Parsing helpers
- * are kept because the catalog callback handler unit-tests them.
+ * agy exposes no live MCP status API in v1, so the catalog lists the servers
+ * configured in the CLI config file with a static "configured" status (no live
+ * connection claim, no toggle). Parsing helpers are kept because the catalog
+ * callback handler unit-tests them.
  */
 
 export interface McpCatalogServerItem {
   name: string;
   status: { status: string; error?: string | undefined };
+  transport?: "stdio" | "http" | undefined;
+  endpoint?: string | undefined;
 }
 
 const MCP_STATUS_NAMES = [
@@ -19,6 +26,7 @@ const MCP_STATUS_NAMES = [
   "failed",
   "needs_auth",
   "needs_client_registration",
+  "configured",
 ] as const;
 
 function isMcpStatusName(value: unknown): value is (typeof MCP_STATUS_NAMES)[number] {
@@ -104,7 +112,46 @@ export function parseMcpCatalogServers(value: unknown): McpCatalogServerItem[] |
 }
 
 export async function loadMcpCatalog(_projectDirectory: string): Promise<McpCatalogServerItem[]> {
-  return [];
+  // agy has no live MCP status API: list the servers configured in the CLI
+  // config file. Only names/transport/endpoint are read — env and header values
+  // (tokens) never enter the catalog.
+  const configPath = path.join(os.homedir(), ".gemini", "config", "mcp_config.json");
+  let raw: string;
+  try {
+    raw = fs.readFileSync(configPath, "utf-8");
+  } catch {
+    return [];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    logger.warn("[McpCatalog] Cannot parse mcp_config.json:", error);
+    return [];
+  }
+
+  if (!isRecord(parsed) || !isRecord(parsed.mcpServers)) {
+    return [];
+  }
+
+  const servers: McpCatalogServerItem[] = [];
+  for (const [name, cfg] of Object.entries(parsed.mcpServers)) {
+    if (!isRecord(cfg)) {
+      continue;
+    }
+    const item: McpCatalogServerItem = { name, status: { status: "configured" } };
+    if (typeof cfg.command === "string") {
+      item.transport = "stdio";
+      item.endpoint = cfg.command;
+    } else if (typeof cfg.url === "string") {
+      item.transport = "http";
+      // Strip any query string so a token embedded in the URL is not shown.
+      item.endpoint = cfg.url.split("?")[0];
+    }
+    servers.push(item);
+  }
+  return servers;
 }
 
 export async function toggleMcpCatalogServer(

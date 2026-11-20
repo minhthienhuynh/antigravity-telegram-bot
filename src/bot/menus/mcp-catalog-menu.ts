@@ -22,6 +22,8 @@ function getStatusLabel(status: McpCatalogServerItem["status"]): string {
       return t("mcps.status.needs_auth");
     case "needs_client_registration":
       return t("mcps.status.needs_client_registration");
+    case "configured":
+      return t("mcps.status.configured");
     default:
       return t("common.unknown");
   }
@@ -39,6 +41,8 @@ function getStatusEmoji(status: McpCatalogServerItem["status"]): string {
       return "🔒";
     case "needs_client_registration":
       return "🔒";
+    case "configured":
+      return "🔌";
     default:
       return "❓";
   }
@@ -105,6 +109,13 @@ export function buildMcpsDetailText(server: McpCatalogServerItem): string {
   lines.push(t("mcps.detail.title", { name: server.name }));
   lines.push("");
   lines.push(t("mcps.detail.status", { status: getStatusLabel(server.status) }));
+
+  if (server.transport) {
+    lines.push(t("mcps.detail.transport", { transport: server.transport }));
+  }
+  if (server.endpoint) {
+    lines.push(t("mcps.detail.endpoint", { endpoint: server.endpoint }));
+  }
 
   if (server.status.status === "failed" || server.status.status === "needs_client_registration") {
     lines.push(t("mcps.detail.error", { error: server.status.error }));
