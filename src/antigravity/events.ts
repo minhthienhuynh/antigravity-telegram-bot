@@ -921,33 +921,57 @@ export async function sendPromptToActiveProcess(text: string, directory: string)
   malformedRetryAttempt = 0;
   suppressNextTurnError = false;
   if (activeProcess && activeProcess.isRunning()) {
-    const effectiveModel = activeProcess.getModelId();
-    const storedNow = getStoredModel()?.modelID;
-    if (storedNow && effectiveModel !== storedNow) {
-      // The live process keeps its spawn-time --model; surface the mismatch
-      // instead of letting the prompt log (stored model) lie about it.
-      logger.warn(
-        `[AgyEvents] live agy model mismatch (running=${effectiveModel ?? "agy-default"} stored=${storedNow}) — applies on next spawn`,
+    const foregroundId = getCurrentSession()?.id ?? "";
+    const foregroundUuid = foregroundId.startsWith("new-")
+      ? ""
+      : foregroundId.replace(/^agy-session-/, "");
+    const liveUuid = currentSessionId.replace(/^agy-session-/, "");
+    // Reuse the live process only for a follow-up turn in the SAME conversation.
+    // A /new placeholder or a session switch (/sessions, /recent) means the live
+    // process is running a different thread: reusing it would send the prompt to
+    // the wrong conversation and mismatch the delivery session id (silent reply).
+    if (foregroundUuid && liveUuid && foregroundUuid === liveUuid) {
+      const effectiveModel = activeProcess.getModelId();
+      const storedNow = getStoredModel()?.modelID;
+      if (storedNow && effectiveModel !== storedNow) {
+        // The live process keeps its spawn-time --model; surface the mismatch
+        // instead of letting the prompt log (stored model) lie about it.
+        logger.warn(
+          `[AgyEvents] live agy model mismatch (running=${effectiveModel ?? "agy-default"} stored=${storedNow}) — applies on next spawn`,
+        );
+      }
+      logger.info(
+        "[AgyEvents] prompt written to live agy process (in-flight take or follow-up turn)",
       );
+      await activeProcess.sendPrompt(text);
+      return;
     }
+    // Stale live process (placeholder or a different conversation): replace it so
+    // the prompt spawns/resumes the foreground conversation instead of hijacking
+    // the old thread.
     logger.info(
-      "[AgyEvents] prompt written to live agy process (in-flight take or follow-up turn)",
+      "[AgyEvents] foreground session differs from the live agy conversation — recycling process",
     );
-    await activeProcess.sendPrompt(text);
-    return;
+    const stale = activeProcess;
+    activeProcess = null;
+    void stale.kill().catch(() => undefined);
   }
 
   if (!eventCallback) {
     throw new Error("Cannot send a prompt without an active event subscription");
   }
 
-  // Resume the current conversation when the foreground session is a real
-  // agy conversation (`agy-session-<uuid>`); a fresh spawn would otherwise
-  // start a new conversation every turn.
+  // Resume the foreground conversation when it is a real agy conversation
+  // (`agy-session-<uuid>` or a bare uuid from /sessions); a /new placeholder
+  // spawns a brand-new conversation.
   const spawnOptions: AntigravityProcessOptions = {};
   const current = getCurrentSession();
-  if (current?.id.startsWith("agy-session-")) {
-    spawnOptions.conversationId = current.id.slice("agy-session-".length);
+  const currentUuid =
+    current && !current.id.startsWith("new-")
+      ? current.id.replace(/^agy-session-/, "")
+      : "";
+  if (currentUuid) {
+    spawnOptions.conversationId = currentUuid;
   }
   // Pass the user-selected model so agy runs with it (otherwise agy falls
   // back to its own stored model, which may mismatch the bot’s footer).
