@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { logger } from "../../utils/logger.js";
 import { config } from "../../config.js";
-import type { ParsedTaskSchedule } from "../types/scheduled-task.js";
+import type { ParsedTaskSchedule, ScheduledTaskModel } from "../types/scheduled-task.js";
 
 /**
  * Schedule parser (agy version).
@@ -10,11 +10,16 @@ import type { ParsedTaskSchedule } from "../types/scheduled-task.js";
  * schedule text into a structured ParsedTaskSchedule (once or cron).
  */
 
-function agyPrint(prompt: string, directory: string): Promise<string> {
+function agyPrint(prompt: string, directory: string, model?: ScheduledTaskModel): Promise<string> {
+  const args = ["--print", prompt, "--output-format", "json"];
+  // agy encodes effort in the model key itself; the OpenCode-style variant has no agy equivalent.
+  if (model?.modelID) {
+    args.push(`--model=${model.modelID}`);
+  }
   return new Promise((resolve, reject) => {
     execFile(
       config.antigravity.bin,
-      ["--print", prompt, "--output-format", "json"],
+      args,
       { cwd: directory, maxBuffer: 16 * 1024 * 1024 },
       (error, stdout) => {
         if (error) {
@@ -30,6 +35,7 @@ function agyPrint(prompt: string, directory: string): Promise<string> {
 export async function parseTaskSchedule(
   scheduleText: string,
   directory: string,
+  model?: ScheduledTaskModel,
 ): Promise<ParsedTaskSchedule> {
   logger.info(`[ScheduledTaskScheduleParser] Parsing schedule via agy one-shot: ${scheduleText}`);
 
@@ -39,7 +45,7 @@ export async function parseTaskSchedule(
     `summary (human readable), nextRunAt (ISO 8601). For "cron": cron.expression, cron.summary, ` +
     `cron.nextRunAt. Use the current time for relative calculations. Schedule request: "${scheduleText}"`;
 
-  const stdout = await agyPrint(prompt, directory);
+  const stdout = await agyPrint(prompt, directory, model);
 
   const cleaned = stdout.trim().replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
   let parsed: Record<string, unknown>;

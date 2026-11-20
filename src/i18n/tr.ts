@@ -131,6 +131,10 @@ export const tr: I18nDictionary = {
   "bot.retrying": "⚠️ Antigravity hizmeti kullanılamıyor (503) — otomatik yeniden deneme… deneme {attempt}/{max}, sonraki deneme ~{seconds} sn sonra.",
   "bot.retry_recovered": "✅ Antigravity geri döndü — devam ediliyor.",
   "bot.retry_exhausted": "❌ Antigravity kullanılamaz durumda kaldı — denemeler tükendi. Hizmet geri geldiğinde mesajınızı yeniden gönderin.",
+  "bot.assistant_reply_undelivered":
+    "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
+  "bot.stale_messages_skipped":
+    "⚠️ Some messages were skipped while Telegram was unreachable. Please send them again.",
   "bot.session_retry":
     "🔁 {message}\n\nSağlayıcı tekrarlanan denemelerde aynı hatayı döndürmeye devam ediyor. Durdurmak için /abort kullanın.",
   "bot.external_user_input": "Harici kullanıcı girdisi",

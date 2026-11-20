@@ -137,6 +137,10 @@ export const es: I18nDictionary = {
   "bot.retry_recovered": "✅ Antigravity volvió — continuando.",
   "bot.retry_exhausted":
     "❌ Antigravity siguió caído — reintentos agotados. Reenvía tu mensaje cuando el servicio se recupere.",
+  "bot.assistant_reply_undelivered":
+    "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
+  "bot.stale_messages_skipped":
+    "⚠️ Some messages were skipped while Telegram was unreachable. Please send them again.",
   "bot.session_retry":
     "🔁 {message}\n\nEl proveedor devuelve el mismo error en intentos repetidos. Usa /abort para detenerlo.",
   "bot.external_user_input": "Entrada externa del usuario",

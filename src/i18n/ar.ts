@@ -134,6 +134,10 @@ export const ar: I18nDictionary = {
   "bot.retrying": "⚠️ خدمة Antigravity غير متاحة (503) — إعادة المحاولة تلقائيًا… المحاولة {attempt}/{max}، المحاولة التالية خلال ~{seconds} ثانية.",
   "bot.retry_recovered": "✅ عادت Antigravity — متابعة.",
   "bot.retry_exhausted": "❌ بقي Antigravity غير متاح — نفدت المحاولات. أعد إرسال رسالتك عندما يعود الخدمة.",
+  "bot.assistant_reply_undelivered":
+    "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
+  "bot.stale_messages_skipped":
+    "⚠️ Some messages were skipped while Telegram was unreachable. Please send them again.",
   "bot.session_retry":
     "🔁 {message}\n\nاستمر مزوّد الخدمة في إرجاع الخطأ نفسه بعد عدة محاولات. استخدم /abort لإيقاف المهمة.",
   "bot.external_user_input": "رسالة واردة من واجهة أخرى",
