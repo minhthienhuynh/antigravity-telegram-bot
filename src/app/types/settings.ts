@@ -5,6 +5,8 @@ import type { ScheduledTask } from "./scheduled-task.js";
 
 export type ResponseStreamingMode = "edit" | "draft";
 
+export type PromptQueueMode = "off" | "queue" | "steer";
+
 export interface ScheduledTaskSessionIgnoreInfo {
   sessionId: string;
   createdAt: string;
@@ -28,6 +30,7 @@ export interface Settings {
   /** Auto-compaction: hand the context over to a fresh conversation past the threshold. */
   autoCompactEnabled?: boolean | undefined;
   autoCompactThresholdTokens?: number | undefined;
+  promptQueueMode?: PromptQueueMode | undefined;
   sessionDirectoryCache?: SessionDirectoryCacheInfo | undefined;
   scheduledTasks?: ScheduledTask[] | undefined;
   scheduledTaskSessionIgnores?: ScheduledTaskSessionIgnoreInfo[] | undefined;

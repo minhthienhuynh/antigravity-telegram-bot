@@ -8,9 +8,10 @@ import { sendBotText } from "./telegram-text.js";
 type SendMessageApi = Pick<Api<RawApi>, "sendMessage">;
 
 interface DeliverExternalUserInputParams {
+  currentSessionId?: string | undefined;
   api: SendMessageApi;
   chatId: number;
-  currentSessionId: string | null;
+  isForegroundSession: boolean;
   sessionId: string;
   text: string;
   consumeSuppressedInput: (sessionId: string, text: string) => boolean;
@@ -33,13 +34,13 @@ async function sendExternalUserInputNotification(
 export async function deliverExternalUserInputNotification({
   api,
   chatId,
-  currentSessionId,
+  isForegroundSession,
   sessionId,
   text,
   consumeSuppressedInput,
 }: DeliverExternalUserInputParams): Promise<boolean> {
   const notification = buildExternalUserInputNotification(text);
-  if (!notification || currentSessionId !== sessionId) {
+  if (!notification || !isForegroundSession) {
     return false;
   }
 

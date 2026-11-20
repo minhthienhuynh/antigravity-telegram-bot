@@ -14,7 +14,7 @@ import type { ContextInfo, KeyboardState } from "./keyboard-types.js";
  * Keyboard Manager - manages Reply Keyboard state and updates
  * Singleton pattern
  */
-class KeyboardManager {
+export class KeyboardManager {
   private lastKeyboardText: string | null = null;
   private carrierMessageId: number | null = null;
   private state: KeyboardState | null = null;

@@ -1,3 +1,4 @@
+import { busyDeps, busyReconcileDeps, attachSessionDeps, permissionMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import { promises as fs } from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
@@ -103,10 +104,8 @@ import { questionManager } from "../../app/managers/question-manager.js";
 import { permissionManager } from "../../app/managers/permission-manager.js";
 import { showCurrentQuestion } from "../menus/question-menu.js";
 import { showPermissionRequest, syncPermissionInteractionState } from "../menus/permission-menu.js";
-import {
-  clearAllInteractionState,
-  interactionManager,
-} from "../../app/managers/interaction-manager.js";
+import { interactionManager } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import {
   isMalformedFunctionCallError,
   sendPromptToActiveProcess,
@@ -164,7 +163,7 @@ export interface BotEventSubscriptionService {
   cleanup(reason: string): void;
 }
 
-export function createEventSubscriptionService(): BotEventSubscriptionService {
+export function createEventSubscriptionService(_container?: unknown): BotEventSubscriptionService {
   return new EventSubscriptionService();
 }
 
@@ -813,7 +812,8 @@ class EventSubscriptionService implements BotEventSubscriptionService {
           await deliverExternalUserInputNotification({
             api: this.botInstance.api,
             chatId: this.chatIdInstance,
-            currentSessionId: getCurrentSession()?.id ?? null,
+            currentSessionId: getCurrentSession()?.id ?? undefined,
+            isForegroundSession: getCurrentSession()?.id === sessionId,
             sessionId,
             text: messageText,
             consumeSuppressedInput: (incomingSessionId, incomingText) =>
@@ -1100,14 +1100,14 @@ class EventSubscriptionService implements BotEventSubscriptionService {
       logger.info(
         `[Bot] Received permission request from agent: type=${request.permission}, requestID=${request.id}, subagent=${isSubagent}`,
       );
-      await showPermissionRequest(this.botInstance.api, this.chatIdInstance, request, generation);
+      await showPermissionRequest(this.botInstance.api, this.chatIdInstance, request, permissionMenuDeps, generation);
     });
 
     summaryAggregator.setOnPermissionReplied(async (_sessionId, requestID) => {
       const messageIds = permissionManager.resolveRequest(requestID);
       const interaction = interactionManager.getSnapshot();
       if (!permissionManager.isActive() || !interaction || interaction.kind === "permission") {
-        syncPermissionInteractionState({ resolvedRequestID: requestID });
+        syncPermissionInteractionState(permissionMenuDeps, { resolvedRequestID: requestID });
       }
 
       if (this.botInstance && this.chatIdInstance) {
@@ -1205,7 +1205,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
       });
     });
 
-    summaryAggregator.setOnTokens(async (tokens, isCompleted) => {
+    summaryAggregator.setOnTokens(async (_tokensSessionId, tokens, isCompleted) => {
       if (!pinnedMessageManager.isInitialized()) {
         return;
       }
@@ -1236,7 +1236,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
       }
     });
 
-    summaryAggregator.setOnCost(async (cost) => {
+    summaryAggregator.setOnCost(async (_costSessionId, cost) => {
       if (!pinnedMessageManager.isInitialized()) {
         return;
       }
@@ -1264,7 +1264,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
 
     summaryAggregator.setOnSessionIdle(async (sessionId) => {
       resetStreamThrottle(sessionId);
-      await markAttachedSessionIdle(sessionId);
+      await markAttachedSessionIdle(sessionId, busyDeps);
       // Dropped immediately when this session is no longer current: the early
       // returns below would otherwise leave a compact-progress timer armed.
       // A still-current session keeps the card until after in-flight completion
@@ -1296,7 +1296,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
         attachedSnapshot.sessionId &&
         !assistantRunState.hasActiveRun()
       ) {
-        const attachedIdle = markAttachedSessionIdle(attachedSnapshot.sessionId);
+        const attachedIdle = markAttachedSessionIdle(attachedSnapshot.sessionId, busyDeps);
         logger.warn(
           `[Bot] session.idle for ${sessionId}; attached ${attachedSnapshot.sessionId} had no live run — releasing stale busy latch`,
         );
@@ -1360,7 +1360,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
     });
 
     summaryAggregator.setOnSessionError(async (sessionId, message) => {
-      await markAttachedSessionIdle(sessionId);
+      await markAttachedSessionIdle(sessionId, busyDeps);
       this.clearToolElapsedState(sessionId, "session_error");
 
       // Safety net (mirrors setOnSessionIdle): an error emitted by an orphan
@@ -1371,7 +1371,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
         attachedAtError.sessionId &&
         !assistantRunState.hasActiveRun()
       ) {
-        await markAttachedSessionIdle(attachedAtError.sessionId);
+        await markAttachedSessionIdle(attachedAtError.sessionId, busyDeps);
         logger.warn(
           `[Bot] session.error for ${sessionId}; attached ${attachedAtError.sessionId} had no live run — releasing stale busy latch`,
         );
@@ -1498,7 +1498,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
       }
     });
 
-    summaryAggregator.setOnFileChange((change) => {
+    summaryAggregator.setOnFileChange((_changeSessionId, change) => {
       if (isCompactProgressMode()) {
         const currentSession = getCurrentSession();
         if (currentSession) {
@@ -1524,7 +1524,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
     logger.info(`[Bot] Subscribing to OpenCode events for project: ${directory}`);
     subscribeToEvents(directory, (event) => {
       if ((event as EventStreamItem).type === "server.heartbeat") {
-        void reconcileBusyState(directory);
+        void reconcileBusyState(directory, busyReconcileDeps);
       }
 
       const attached = attachManager.getSnapshot();
@@ -1534,7 +1534,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
         eventSessionId === attached.sessionId &&
         this.shouldMarkAttachedBusyFromEvent(event as EventStreamItem)
       ) {
-        void markAttachedSessionBusy(attached.sessionId);
+        void markAttachedSessionBusy(attached.sessionId, busyDeps);
       }
 
       // Step-stall notice from the driver watchdog (fires once per stall):
@@ -1819,7 +1819,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
       }
       return;
     }
-    if (isForegroundBusy()) {
+    if (isForegroundBusy(busyDeps)) {
       if (reason !== "auto") {
         await api.sendMessage(chatId, t("compact.busy")).catch(() => undefined);
       }
@@ -1859,7 +1859,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
     if (!getAutoCompactEnabled()) {
       return;
     }
-    if (isAwaitingSummary() || this.compactionRunning || isForegroundBusy()) {
+    if (isAwaitingSummary() || this.compactionRunning || isForegroundBusy(busyDeps)) {
       return;
     }
     const session = getCurrentSession();
@@ -1904,8 +1904,7 @@ class EventSubscriptionService implements BotEventSubscriptionService {
         bot: this.botInstance,
         chatId,
         session: sessionInfo,
-        ensureEventSubscription: this.ensureEventSubscription,
-      });
+        ensureEventSubscription: this.ensureEventSubscription, ...attachSessionDeps });
 
       const currentAgent = await resolveProjectAgent(getStoredAgent());
       const currentModel = getStoredModel();
@@ -2281,3 +2280,6 @@ class EventSubscriptionService implements BotEventSubscriptionService {
     }
   }
 }
+
+/** Process-wide singleton shared with the app container. */
+export const eventSubscriptionService = createEventSubscriptionService();

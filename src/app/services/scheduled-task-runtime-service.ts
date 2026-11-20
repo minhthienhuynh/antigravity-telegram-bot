@@ -1,3 +1,4 @@
+import { foregroundSessionState } from "../managers/foreground-session-state-manager.js";
 import type { Bot, Context } from "grammy";
 import { config } from "../../config.js";
 import { t } from "../../i18n/index.js";
@@ -5,7 +6,7 @@ import { logger } from "../../utils/logger.js";
 import { safeBackgroundTask } from "../../utils/safe-background-task.js";
 import { formatAssistantRunFooter } from "../formatters/assistant-run-footer-formatter.js";
 import { executeScheduledTask } from "./scheduled-task-executor-service.js";
-import { foregroundSessionState } from "../managers/foreground-session-state-manager.js";
+import type { ForegroundSessionState } from "../managers/foreground-session-state-manager.js";
 import { cleanupScheduledTaskSessionIgnores } from "./scheduled-task-session-ignore-service.js";
 import { computeNextRunAt, isTaskDue } from "./scheduled-task-next-run-service.js";
 import {
@@ -98,6 +99,8 @@ export class ScheduledTaskRuntime {
   private deliveryQueue: QueuedScheduledTaskDelivery[] = [];
   private flushInProgress = false;
 
+  constructor(private readonly foregroundSessionState: ForegroundSessionState) {}
+
   async initialize(bot: Bot<Context>, deliverySender?: ScheduledTaskDeliverySender): Promise<void> {
     this.botApi = bot.api;
     this.chatId = config.telegram.allowedUserId;
@@ -137,7 +140,7 @@ export class ScheduledTaskRuntime {
       this.flushInProgress ||
       !this.botApi ||
       this.chatId === null ||
-      foregroundSessionState.isBusy() ||
+      this.foregroundSessionState.isBusy() ||
       this.deliveryQueue.length === 0
     ) {
       return;
@@ -146,7 +149,7 @@ export class ScheduledTaskRuntime {
     this.flushInProgress = true;
 
     try {
-      while (this.deliveryQueue.length > 0 && !foregroundSessionState.isBusy()) {
+      while (this.deliveryQueue.length > 0 && !this.foregroundSessionState.isBusy()) {
         const nextDelivery = this.deliveryQueue[0];
         if (!nextDelivery) {
           break;
@@ -171,21 +174,6 @@ export class ScheduledTaskRuntime {
     this.timersByTaskId.clear();
     this.runningTaskIds.clear();
     this.initialized = false;
-  }
-
-  __resetForTests(): void {
-    for (const timer of this.timersByTaskId.values()) {
-      clearTimeout(timer);
-    }
-
-    this.botApi = null;
-    this.chatId = null;
-    this.deliverySender = null;
-    this.initialized = false;
-    this.timersByTaskId.clear();
-    this.runningTaskIds.clear();
-    this.deliveryQueue = [];
-    this.flushInProgress = false;
   }
 
   private async recoverTasksOnStartup(): Promise<void> {
@@ -448,7 +436,7 @@ export class ScheduledTaskRuntime {
     if (
       this.deliveryQueue.length === 0 &&
       !this.flushInProgress &&
-      !foregroundSessionState.isBusy() &&
+      !this.foregroundSessionState.isBusy() &&
       (await this.sendDelivery(delivery))
     ) {
       return;
@@ -480,4 +468,5 @@ export class ScheduledTaskRuntime {
   }
 }
 
-export const scheduledTaskRuntime = new ScheduledTaskRuntime();
+/** Process-wide singleton shared with the app container. */
+export const scheduledTaskRuntime = new ScheduledTaskRuntime(foregroundSessionState);

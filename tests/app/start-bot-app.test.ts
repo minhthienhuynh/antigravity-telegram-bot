@@ -51,6 +51,11 @@ vi.mock("../../src/opencode/auto-restart.js", () => ({
     start: mocked.autoRestartStartMock,
     stop: mocked.autoRestartStopMock,
   },
+  // containerDeps instantiates the dormant service for the shared bundle.
+  OpencodeAutoRestartService: class {
+    start = mocked.autoRestartStartMock;
+    stop = mocked.autoRestartStopMock;
+  },
 }));
 
 vi.mock("../../src/opencode/ready-refresh.js", () => ({
@@ -59,6 +64,8 @@ vi.mock("../../src/opencode/ready-refresh.js", () => ({
 }));
 
 vi.mock("../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   flushSettings: mocked.flushSettingsMock,
   loadSettings: mocked.loadSettingsMock,

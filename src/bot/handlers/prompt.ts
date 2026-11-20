@@ -1,3 +1,10 @@
+import type { ExternalUserInputSuppressionManager } from "../../app/managers/external-input-suppression-manager.js";
+import type { InteractionManager } from "../../app/managers/interaction-manager.js";
+import type { KeyboardManager } from "../keyboards/keyboard-manager.js";
+import type { AssistantRunState } from "../../app/managers/assistant-run-state-manager.js";
+import type { ForegroundSessionState } from "../../app/managers/foreground-session-state-manager.js";
+import type { AttachManager } from "../../app/managers/attach-manager.js";
+import { busyDeps, detachDeps } from "../../app/bootstrap/singleton-deps.js";
 import { Bot, Context } from "grammy";
 import { startTypingIndicator } from "../typing-indicator.js";
 import {
@@ -18,7 +25,7 @@ import {
   stopEventListening,
 } from "../../antigravity/events.js";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
-import { clearAllInteractionState } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { safeBackgroundTask } from "../../utils/safe-background-task.js";
 import { materializeFileParts } from "../utils/agy-media.js";
 import { formatErrorDetails } from "../../utils/error-format.js";
@@ -88,7 +95,7 @@ async function isSessionBusy(_sessionId: string, _directory: string): Promise<bo
 }
 
 async function resetMismatchedSessionContext(): Promise<void> {
-  detachAttachedSession("session_mismatch_reset");
+  detachAttachedSession("session_mismatch_reset", detachDeps);
   stopEventListening();
   summaryAggregator.clear();
   foregroundSessionState.clearAll("session_mismatch_reset");
@@ -111,6 +118,12 @@ async function resetMismatchedSessionContext(): Promise<void> {
 export interface ProcessPromptDeps {
   bot: Bot<Context>;
   ensureEventSubscription: (directory: string) => Promise<void>;
+  attachManager?: AttachManager;
+  foregroundSessionState?: ForegroundSessionState;
+  assistantRunState?: AssistantRunState;
+  keyboardManager?: KeyboardManager;
+  interactionManager?: InteractionManager;
+  externalUserInputSuppressionManager?: ExternalUserInputSuppressionManager;
   downloadFile?: (
     api: Context["api"],
     fileId: string,
@@ -151,18 +164,21 @@ async function retireAttachmentConfirmation(
  */
 export async function processUserPrompt(
   ctx: Context,
-  input: IncomingPrompt,
+  input: IncomingPrompt | string,
   deps: ProcessPromptDeps,
   options: ProcessPromptOptions = {},
 ): Promise<boolean> {
+  // Callers either pass a rich prompt or a plain string (agy era).
+  const incomingPrompt: IncomingPrompt =
+    typeof input === "string" ? { text: input, fileParts: [], photos: [] } : input;
   const { bot, ensureEventSubscription } = deps;
   const responseMode =
     options.responseMode ?? (getTtsMode() === "all" ? "text_and_tts" : "text_only");
 
   if (
-    input.text.trim().length === 0 &&
-    input.fileParts.length === 0 &&
-    input.photos.length === 0 &&
+    incomingPrompt.text.trim().length === 0 &&
+    incomingPrompt.fileParts.length === 0 &&
+    incomingPrompt.photos.length === 0 &&
     !promptAttachment.get()
   ) {
     return false;
@@ -213,8 +229,7 @@ export async function processUserPrompt(
     bot,
     chatId: ctx.chat!.id,
     session: currentSession,
-    ensureEventSubscription,
-  });
+    ensureEventSubscription });
 
   if (createdNewSession) {
     const currentAgent = await resolveProjectAgent(getStoredAgent());
@@ -244,7 +259,7 @@ export async function processUserPrompt(
   try {
     const currentAgent = await resolveProjectAgent(getStoredAgent());
     const storedModel = (deps.getStoredModel ?? getStoredModel)();
-    const preparedInput = await prepareTelegramPhotos(ctx, input, deps, storedModel);
+    const preparedInput = await prepareTelegramPhotos(ctx, incomingPrompt, deps, storedModel);
     if (!preparedInput) {
       return false;
     }
@@ -277,7 +292,7 @@ export async function processUserPrompt(
       // interaction on any failure but knows nothing about the attachment, which would leave
       // it behind to be picked up silently by an unrelated later prompt.
       promptAttachment.clear("consumed");
-      interactionManager.clear("attachment_consumed");
+      (deps.interactionManager ?? interactionManager).clear("attachment_consumed");
       await retireAttachmentConfirmation(ctx, pendingAttachment.confirmationMessageId);
     }
 
@@ -327,7 +342,7 @@ export async function processUserPrompt(
     );
 
     foregroundSessionState.markBusy(currentSession.id, currentSession.directory);
-    await markAttachedSessionBusy(currentSession.id);
+    await markAttachedSessionBusy(currentSession.id, busyDeps);
     assistantRunState.startRun(currentSession.id, {
       startedAt: Date.now(),
       configuredAgent: currentAgent,
@@ -336,7 +351,10 @@ export async function processUserPrompt(
     setPromptResponseMode(currentSession.id, responseMode);
 
     if (promptText.length > 0) {
-      externalUserInputSuppressionManager.register(currentSession.id, promptText);
+      (deps.externalUserInputSuppressionManager ?? externalUserInputSuppressionManager).register(
+        currentSession.id,
+        promptText,
+      );
     }
 
     // agy: the prompt goes into the stream-json pipe. The assistant reply
@@ -383,7 +401,7 @@ export async function processUserPrompt(
       },
       onError: (error) => {
         foregroundSessionState.markIdle(currentSession.id);
-        void markAttachedSessionIdle(currentSession.id);
+        void markAttachedSessionIdle(currentSession.id, busyDeps);
         assistantRunState.clearRun(currentSession.id, "agy_prompt_background_error");
         clearPromptResponseMode(currentSession.id);
         const details = formatErrorDetails(error, 6000);
@@ -398,7 +416,7 @@ export async function processUserPrompt(
   } catch (err) {
     if (currentSession) {
       foregroundSessionState.markIdle(currentSession.id);
-      await markAttachedSessionIdle(currentSession.id);
+      await markAttachedSessionIdle(currentSession.id, busyDeps);
       assistantRunState.clearRun(currentSession.id, "session_prompt_handler_error");
     }
     logger.error("Error in prompt handler:", err);
@@ -471,4 +489,29 @@ async function prepareTelegramPhotos(
     await ctx.reply(isAlbum ? t("bot.media_group_download_error") : t("bot.photo_download_error"));
     return null;
   }
+}
+
+// --- OpenCode V2 inbox (dormant on the agy backend) ---
+// The agy CLI has no server-side inbox; these keep the upstream V2 call sites
+// compiling. usesOpencodeInbox() is false with the default v1 config, so they
+// are never reached in practice.
+
+/** Opens a run for a prompt picked up from an OpenCode V2 inbox — not applicable to agy. */
+export async function startInboxPromptRun(
+  session: { id: string; directory: string },
+  _deps: unknown,
+  _responseMode: PromptResponseMode | undefined,
+): Promise<void> {
+  logger.warn(`[Bot] Inbox run requested for ${session.id}, but the agy backend has no inbox; ignoring`);
+}
+
+/** Sends a prompt into an OpenCode V2 session inbox — not applicable to agy; returns null. */
+export async function admitPromptToInbox(
+  _ctx: Context,
+  _input: IncomingPrompt,
+  _deps: unknown,
+  _delivery: "steer" | "queue",
+): Promise<{ sessionId: string; inboxId: string } | null> {
+  logger.warn("[Bot] Inbox admission requested, but the agy backend has no inbox; not sent");
+  return null;
 }

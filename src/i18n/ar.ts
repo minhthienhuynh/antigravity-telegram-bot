@@ -1,14 +1,20 @@
 import type { I18nDictionary } from "./en.js";
 
 /**
- * Arabic localization for Antigravity Telegram Bot.
+ * Arabic localization for OpenCode Telegram Bot.
  *
  * Keep upstream emoji and technical terms where they help recognition.
  * Prefer natural Arabic wording over literal translation.
  * Keep this dictionary complete to avoid falling back to another locale.
  */
 export const ar: I18nDictionary = {
-  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.description.recent": "الجلسات الأخيرة عبر المشاريع",
+  "recent.heading": "الجلسات الأخيرة عبر المشاريع (للتحديث: /recent):",
+  "recent.empty": "📭 لا توجد جلسات في المشاريع.",
+  "recent.running": "قيد التشغيل",
+  "recent.idle": "خامل",
+  "recent.question": "بانتظار الإجابة",
+  "recent.permission": "بانتظار الإذن",
   "cmd.description.status": "عرض حالة الخادم والجلسة",
   "cmd.description.new": "بدء جلسة جديدة",
   "cmd.description.stop": "إيقاف المهمة الحالية",
@@ -26,45 +32,16 @@ export const ar: I18nDictionary = {
   "cmd.description.opencode_start": "تشغيل خادم Antigravity",
   "cmd.description.opencode_stop": "إيقاف خادم Antigravity",
   "cmd.description.ls": "استعراض ملفات المجلد",
-  "cmd.restart.ack":
-    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
-  "switch.code_needed":
-    "Falta el código: usa /code <código> con el código que te dio Google.",
-  "switch.already_pending":
-    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
-  "switch.working":
-    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
-  "switch.no_url_yet":
-    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
-  "switch.url_intro":
-    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
-  "switch.paste_code_hint":
-    "🔑 Luego pega el código aquí con: /code <código>",
-  "switch.submitting":
-    "⏳ Entregando el código a agy...",
-  "switch.done":
-    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
-  "switch.failed":
-    "❌ El switch falló:",
   "cmd.description.help": "المساعدة",
   "cmd.description.rename": "تغيير اسم الجلسة الحالية",
   "cmd.description.open": "إضافة مشروع عبر استعراض المجلدات",
-
   "callback.unknown_command": "الأمر غير معروف",
   "callback.processing_error": "تعذر تنفيذ الطلب",
-
   "error.load_agents": "❌ تعذر تحميل قائمة الوكلاء",
   "error.load_models": "❌ تعذر تحميل قائمة النماذج",
   "error.load_variants": "❌ تعذر تحميل خيارات النموذج",
   "error.context_button": "❌ تعذر تنفيذ إجراء السياق",
   "error.generic": "🔴 حدث خطأ غير متوقع.",
-
   "interaction.blocked.expired": "⚠️ انتهت صلاحية هذا الإجراء. ابدأه من جديد.",
   "interaction.blocked.expected_callback":
     "⚠️ استخدم الأزرار الظاهرة في الرسالة لهذه الخطوة، أو اضغط إلغاء.",
@@ -84,19 +61,13 @@ export const ar: I18nDictionary = {
   "common.cancelled": "تم الإلغاء",
   "common.unknown": "غير معروف",
   "common.unknown_error": "خطأ غير معروف",
-
   "start.welcome":
     "👋 أهلًا بك في Antigravity Telegram Bot!\n\nالأوامر الأساسية:\n/projects — اختيار مشروع\n/sessions — عرض الجلسات\n/new — بدء جلسة جديدة\n/commands — الأوامر المخصصة\n/skills — قائمة المهارات\n/task — إنشاء مهمة مجدولة\n/tasklist — عرض المهام المجدولة\n/status — حالة الخادم والجلسة\n/help — المساعدة\n\nاستخدم الأزرار السفلية للتبديل بين الوكيل والنموذج وخيارات التشغيل.",
   "help.keyboard_hint":
     "💡 استخدم الأزرار السفلية للتبديل بين الوكيل والنموذج وخيارات التشغيل وإدارة السياق.",
   "help.text":
     "📖 **المساعدة**\n\n/status - عرض حالة الخادم والجلسة\n/sessions - عرض الجلسات\n/new - بدء جلسة جديدة\n/help - المساعدة",
-
   "bot.thinking": "💭 جارٍ التفكير...",
-  "bot.prompt_received": "📨 تم الاستلام — تحضير الوكيل…",
-  "bot.prompt_dispatched": "⚙️ تم الإرسال إلى مسار الوكيل — جارٍ العمل.",
-  "bot.prompt_slow_start": "⏳ لا يزال الوكيل يبدأ التشغيل…",
-  "bot.queue_hot_taken": "⚡ دخلت رسالتك مباشرةً إلى الدورة الحالية (hot takeover).",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ جارٍ العمل",
   "progress.compact.finished_header": "✅ اكتمل العمل",
@@ -112,28 +83,12 @@ export const ar: I18nDictionary = {
   "bot.create_session_error":
     "🔴 تعذر بدء جلسة جديدة. جرّب /new أو افحص حالة الخادم باستخدام /status.",
   "bot.session_created": "✅ تم إنشاء الجلسة: {title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
-  "cmd.description.compact": "ضغط سياق المحادثة",
-  "compact.busy": "⏳ الوكيل مشغول — حاول مرة أخرى عند انتهاء المهمة الحالية.",
-  "compact.no_session": "لا توجد محادثة نشطة لضغطها بعد.",
-  "compact.started": "🧹 جارٍ الضغط: طلبت من الوكيل ملخص تسليم…",
-  "compact.auto_started": "🧹 وصلت المحادثة إلى {tokens}k رمز — جارٍ الضغط تلقائيًا…",
-  "compact.done": "✅ تم الضغط — نتابع في محادثة جديدة مع نقل السياق.",
-  "compact.failed": "⚠️ فشل الضغط — تحقق من السجلات؛ أعد المحاولة بـ /compact.",
-  "compact.damaged_hint": "🛠 يعني هذا الخطأ عادةً أن حالة المحادثة تالفة. يمكنني ضغطها والمتابعة في محادثة جديدة.",
-  "compact.button": "🧹 اضغط وتابع",
   "bot.session_busy":
     "⏳ الوكيل مشغول بتنفيذ مهمة الآن. انتظر حتى ينتهي، أو استخدم /abort لإيقاف المهمة الحالية.",
   "bot.session_reset_project_mismatch":
     "⚠️ الجلسة النشطة مرتبطة بمشروع مختلف، لذلك تمت إعادة ضبطها. استخدم /sessions لاختيار جلسة أو /new لبدء جلسة جديدة.",
   "bot.prompt_send_error": "تعذر إرسال الطلب إلى Antigravity.",
   "bot.session_error": "🔴 أعاد Antigravity الخطأ التالي: {message}",
-  "bot.retrying": "⚠️ خدمة Antigravity غير متاحة (503) — إعادة المحاولة تلقائيًا… المحاولة {attempt}/{max}، المحاولة التالية خلال ~{seconds} ثانية.",
-  "bot.retry_recovered": "✅ عادت Antigravity — متابعة.",
-  "bot.retry_exhausted": "❌ بقي Antigravity غير متاح — نفدت المحاولات. أعد إرسال رسالتك عندما يعود الخدمة.",
   "bot.assistant_reply_undelivered":
     "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
   "bot.stale_messages_skipped":
@@ -166,7 +121,6 @@ export const ar: I18nDictionary = {
   "bot.model_no_pdf": "⚠️ النموذج الحالي لا يدعم ملفات PDF. سيتم إرسال النص فقط.",
   "bot.document_extraction_error": "🔴 فشل استخراج نص المستند.",
   "bot.text_file_too_large": "⚠️ حجم الملف النصي أكبر من الحد المسموح ({maxSizeKb}KB)",
-
   "status.header_running": "🟢 خادم Antigravity يعمل",
   "status.health.healthy": "يعمل بشكل طبيعي",
   "status.health.unhealthy": "توجد مشكلة",
@@ -192,16 +146,13 @@ export const ar: I18nDictionary = {
   "status.session_not_selected": "الجلسة الحالية: غير محددة",
   "status.session_hint": "استخدم /sessions لاختيار جلسة أو /new لبدء جلسة جديدة",
   "status.header_unavailable": "🔴 خادم Antigravity غير متاح",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "استخدم /opencode_start لتشغيل الخادم.",
-
   "tts.off": "🔇 تم تعطيل الردود الصوتية.",
   "tts.all": "🔊 تم تفعيل الردود الصوتية لجميع الرسائل.",
   "tts.auto": "🎤 تم تفعيل الردود الصوتية للرسائل الصوتية فقط.",
   "tts.not_configured":
     "⚠️ الردود الصوتية غير متاحة حاليًا. اضبط `TTS_API_URL` و`TTS_API_KEY` أولًا.",
   "tts.failed": "⚠️ تعذر إنشاء الرد الصوتي.",
-
   "settings.menu.title": "⚙️ إعدادات البوت\nاضغط على إعداد لتبديل قيمته:",
   "settings.compact_output.label": "وضع الإخراج المختصر",
   "settings.delete_progress_on_finish.label": "حذف التقدم عند الانتهاء",
@@ -216,8 +167,9 @@ export const ar: I18nDictionary = {
   "settings.prompt_queue.label": "قائمة انتظار الرسائل",
   "settings.value.on": "مفعّل",
   "settings.value.off": "معطّل",
+  "settings.prompt_queue.queue": "Queue",
+  "settings.prompt_queue.steer": "Steer",
   "settings.saved": "✅ تم حفظ الإعداد.",
-
   "projects.empty":
     "📭 لم يتم العثور على مشاريع.\n\nافتح مجلدًا في Antigravity وأنشئ جلسة واحدة على الأقل، ثم سيظهر المشروع هنا.",
   "projects.select": "اختر مشروعًا:",
@@ -230,7 +182,6 @@ export const ar: I18nDictionary = {
   "projects.selected":
     "✅ تم اختيار المشروع: {project}\n\n📋 تمت إعادة ضبط الجلسة الحالية. استخدم /sessions لاختيار جلسة أو /new لبدء جلسة جديدة.",
   "projects.select_error": "🔴 تعذر اختيار المشروع.",
-
   "sessions.project_not_selected":
     "🏗 لم تحدد مشروعًا بعد.\n\nاختر مشروعًا أولًا باستخدام /projects.",
   "sessions.empty": "📭 لا توجد جلسات لهذا المشروع.\n\nابدأ جلسة جديدة باستخدام /new.",
@@ -246,10 +197,8 @@ export const ar: I18nDictionary = {
   "sessions.selected": "✅ تم اختيار الجلسة: {title}",
   "sessions.select_error": "🔴 تعذر اختيار الجلسة.",
   "sessions.preview.empty": "لا توجد رسائل حديثة.",
-  "sessions.preview.title": "أحدث الرسائل:",
-  "sessions.preview.you": "أنت:",
-  "sessions.preview.agent": "الوكيل:",
-
+  "sessions.last_input.title": "آخر إدخال للمستخدم:",
+  "sessions.last_input.attachment": "مرفق",
   "messages.project_not_selected":
     "🏗 لم تحدد مشروعًا بعد.\n\nاختر مشروعًا أولًا باستخدام /projects.",
   "messages.session_not_selected":
@@ -272,7 +221,6 @@ export const ar: I18nDictionary = {
   "messages.revert_error": "❌ تعذر الرجوع إلى هذه الرسالة. حاول مرة أخرى.",
   "messages.fork_success": "🔀 تم إنشاء جلسة متفرعة بدءًا من الرسالة التالية:\n\n{text}",
   "messages.fork_error": "❌ تعذر إنشاء جلسة متفرعة. حاول مرة أخرى.",
-
   "attach.project_not_selected":
     "🏗 لم تحدد مشروعًا بعد.\n\nاختر مشروعًا أولًا باستخدام /projects.",
   "attach.session_not_selected": "💬 لم تحدد جلسة بعد.\n\nاختر جلسة أولًا باستخدام /sessions.",
@@ -286,18 +234,15 @@ export const ar: I18nDictionary = {
   "attach.restored_permissions": "تمت استعادة طلبات الصلاحيات المعلقة: {count}.",
   "attach.disconnect_hint": "لقطع الاتصال، انتقل إلى جلسة أو مشروع آخر.",
   "attach.error": "🔴 تعذر الاتصال بالجلسة الحالية.",
-
   "detach.project_not_selected":
     "🏗 لم تحدد مشروعًا بعد.\n\nاختر مشروعًا أولًا باستخدام /projects.",
   "detach.no_active_session": "ℹ️ البوت غير متصل بأي جلسة بالفعل.",
   "detach.success":
     "✅ تم قطع الاتصال بالجلسة: {title}\n\nلم يتم إيقاف جلسة Antigravity. إذا كانت لا تزال تعمل، فستستمر بشكل منفصل. للتحقق منها لاحقًا، اخترها مجددًا باستخدام /sessions.",
   "detach.error": "🔴 تعذر قطع الاتصال بالجلسة الحالية.",
-
   "new.project_not_selected": "🏗 لم تحدد مشروعًا بعد.\n\nاختر مشروعًا أولًا باستخدام /projects.",
   "new.created": "✅ تم إنشاء جلسة جديدة: {title}",
   "new.create_error": "🔴 خادم Antigravity غير متاح أو حدث خطأ أثناء إنشاء الجلسة.",
-
   "stop.no_active_session":
     "🛑 لم يتم تشغيل الوكيل\n\nأنشئ جلسة باستخدام /new أو اختر جلسة باستخدام /sessions.",
   "stop.in_progress":
@@ -312,7 +257,6 @@ export const ar: I18nDictionary = {
     "⚠️ انتهت مهلة طلب الإيقاف.\n\nتدفق الأحداث معطّل بالفعل، أعد محاولة /abort بعد بضع ثوانٍ.",
   "stop.warn_local_only": "⚠️ تم إيقاف تدفق الأحداث محليًا، لكن فشل الإيقاف على الخادم.",
   "stop.error": "🔴 تعذر إيقاف الإجراء.\n\nتم إيقاف تدفق الأحداث، حاول /abort مرة أخرى.",
-
   "opencode_start.already_running_managed":
     "⚠️ خادم Antigravity يعمل بالفعل\n\nPID: {pid}\nمدة التشغيل: {seconds} ثانية",
   "opencode_start.already_running_external":
@@ -337,7 +281,6 @@ export const ar: I18nDictionary = {
   "opencode_stop.still_running": "لا يزال الخادم يستجيب بعد طلب الإيقاف.",
   "opencode_stop.success": "✅ تم إيقاف خادم Antigravity بنجاح",
   "opencode_stop.error": "🔴 حدث خطأ أثناء إيقاف الخادم.\n\nراجع سجلات التطبيق للتفاصيل.",
-
   "agent.changed_message": "✅ تم تغيير الوكيل إلى: {name}",
   "agent.change_error_callback": "تعذر تغيير الوكيل",
   "agent.menu.current": "الوكيل الحالي: {name}\n\nاختر وكيلًا:",
@@ -372,7 +315,6 @@ export const ar: I18nDictionary = {
   "model.provider_models.title": "{provider} — اختر نموذجًا:",
   "model.provider_models.empty": "⚠️ لا توجد نماذج متاحة لدى {provider}",
   "model.provider_models.page_indicator": "الصفحة {current}/{total}",
-
   "variant.model_not_selected_callback": "خطأ: لم يتم تحديد النموذج",
   "variant.changed_message": "✅ تم تغيير الخيار إلى: {name}",
   "variant.change_error_callback": "تعذر تغيير الخيار",
@@ -380,16 +322,25 @@ export const ar: I18nDictionary = {
   "variant.menu.empty": "⚠️ لا توجد خيارات متاحة",
   "variant.menu.current": "الخيار الحالي: {name}\n\nاختر خيارًا:",
   "variant.menu.error": "🔴 تعذر تحميل قائمة الخيارات",
-
   "context.button.confirm": "✅ نعم، اضغط السياق",
+  "context.button.details_compact": "📦 Compact context",
+  "context.button.close": "❌ Close",
+  "context.details.title": "📊 Context details",
+  "context.details.window": "Window: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Token breakdown of the latest assistant message:",
+  "context.details.input": "Input: {count}",
+  "context.details.output": "Output: {count}",
+  "context.details.reasoning": "Reasoning: {count}",
+  "context.details.cache_read": "Cache read: {count}",
+  "context.details.cache_write": "Cache write: {count}",
+  "context.details.cost": "Cost: {cost}",
   "context.no_active_session": "⚠️ لا توجد جلسة نشطة. أنشئ جلسة باستخدام /new",
   "context.confirm_text":
-    '📊 ضغط السياق للجلسة "{title}"\n\nسيؤدي ذلك إلى تقليل استخدام السياق عبر إزالة الرسائل القديمة من السجل. لن تتم مقاطعة المهمة الحالية.\n\nهل تريد المتابعة؟',
+    '📊 ضغط السياق للجلسة "{title}"\n\nسيؤدي ذلك إلى تقليل استخدام السياق عبر إزالة الرسائل القديمة من السجل.\n\nهل تريد المتابعة؟',
   "context.callback_compacting": "جارٍ ضغط السياق...",
   "context.progress": "⏳ جارٍ ضغط السياق...",
   "context.error": "❌ فشل ضغط السياق",
   "context.success": "✅ تم ضغط السياق بنجاح",
-
   "permission.inactive_callback": "انتهت صلاحية طلب الصلاحية",
   "permission.processing_error_callback": "تعذر تنفيذ الطلب",
   "permission.no_active_request_callback": "لا يوجد طلب صلاحية نشط",
@@ -417,7 +368,6 @@ export const ar: I18nDictionary = {
   "permission.name.task": "تشغيل مهمة فرعية",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "الوصول إلى مجلد خارجي",
-
   "question.inactive_callback": "انتهت صلاحية الاستبيان",
   "question.processing_error_callback": "تعذر تنفيذ الطلب",
   "question.select_one_required_callback": "اختر خيارًا واحدًا على الأقل",
@@ -437,7 +387,6 @@ export const ar: I18nDictionary = {
   "question.summary.title": "✅ اكتمل الاستبيان!\n\n",
   "question.summary.question": "السؤال {index}:\n{question}\n\n",
   "question.summary.answer": "الإجابة:\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} الوكيل: {name}",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -449,9 +398,9 @@ export const ar: I18nDictionary = {
   "queue.media_limit": "⚠️ الوسائط في قائمة الانتظار محدودة بـ {maxSizeMb} MiB. انتظر إرسال عنصر ثم أعد المحاولة.",
   "queue.removed": "🗑 تمت إزالة الرسالة من قائمة الانتظار.",
   "queue.not_found": "لم تعد هذه الرسالة في قائمة الانتظار.",
+  "queue.steer_added": "📥 Added to the current task ({count}/{max}).",
   "queue.disabled_hint": "يمكن تفعيل قائمة انتظار الرسائل من /settings.",
   "keyboard.updated": "⌨️ تم تحديث لوحة التحكم",
-
   "pinned.default_session_title": "جلسة جديدة",
   "pinned.unknown": "غير معروف",
   "pinned.line.project": "المشروع: {project}",
@@ -477,13 +426,11 @@ export const ar: I18nDictionary = {
   "pinned.files.title": "الملفات ({count}):",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... و{count} أخرى",
-
   "tool.todo.overflow": "*({count} مهام أخرى)*",
   "tool.file_header.write":
     "كتابة ملف/مسار: {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "تعديل ملف/مسار: {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token": "أدخل رمز بوت Telegram الذي حصلت عليه من @BotFather.\n> ",
   "runtime.wizard.ask_language":
     "اختر لغة الواجهة.\nأدخل رقم اللغة من القائمة أو رمز اللغة.\nاضغط Enter لاستخدام اللغة الافتراضية: {defaultLocale}\n{options}\n> ",
@@ -501,6 +448,15 @@ export const ar: I18nDictionary = {
     "أدخل اسم مستخدم خادم Antigravity (اختياري).\nاضغط Enter لاستخدام القيمة الافتراضية: {defaultUsername}\n> ",
   "runtime.wizard.ask_server_password":
     "أدخل كلمة مرور خادم Antigravity (اختياري).\nاضغط Enter لتركها فارغة.\n> ",
+  "runtime.wizard.ask_server_version":
+    "Select OpenCode server version:\n1 - OpenCode V1 (1.x, npm package opencode-ai)\n2 - OpenCode V2 (2.x, npm package @opencode/cli)\nPress Enter to use default: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid": "Enter 1 or 2, or press Enter for default.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Enter OpenCode V2 server password (required).\nShow it with: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "The password is required for OpenCode V2. Please try again.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Enter OpenCode server password.\nPress Enter to keep the saved password.\n> ",
   "runtime.wizard.api_url_invalid":
     "أدخل رابطًا صالحًا (http/https) أو اضغط Enter لاستخدام الافتراضي.\n",
   "runtime.wizard.start": "إعداد Antigravity Telegram Bot.\n",
@@ -511,7 +467,6 @@ export const ar: I18nDictionary = {
     "يتطلب معالج الإعداد التفاعلي طرفية TTY. شغّل `opencode-telegram config` في shell تفاعلية.",
   "runtime.container.command_unavailable":
     "⚠️ هذا الأمر غير متاح في صورة Docker.",
-
   "rename.no_session": "⚠️ لا توجد جلسة نشطة. أنشئ جلسة أو اختر واحدة أولًا.",
   "rename.prompt": "📝 أدخل عنوانًا جديدًا للجلسة:\n\nالحالي: {title}",
   "rename.empty_title": "⚠️ لا يمكن أن يكون العنوان فارغًا.",
@@ -525,7 +480,6 @@ export const ar: I18nDictionary = {
   "rename.blocked.command_not_allowed":
     "⚠️ لا يمكن استخدام هذا الأمر أثناء انتظار اسم جديد للجلسة.",
   "rename.button.cancel": "❌ إلغاء",
-
   "task.prompt.schedule":
     "⏰ أرسل موعد المهمة بلغة طبيعية.\n\nأمثلة:\n- كل 5 دقائق\n- كل يوم الساعة 17:00\n- غدًا الساعة 12:00",
   "task.schedule_empty": "⚠️ لا يمكن أن يكون الموعد فارغًا.",
@@ -568,7 +522,6 @@ export const ar: I18nDictionary = {
   "tasklist.deleted_callback": "تم الحذف",
   "tasklist.inactive_callback": "انتهت صلاحية قائمة المهام المجدولة",
   "tasklist.load_error": "🔴 تعذر تحميل المهام المجدولة.",
-
   "commands.select": "اختر أمرًا من Antigravity:",
   "commands.empty": "📭 لا توجد أوامر مخصصة لهذا المشروع.",
   "commands.fetch_error": "🔴 تعذر تحميل أوامر Antigravity.",
@@ -594,7 +547,6 @@ export const ar: I18nDictionary = {
   "commands.download.size": "الحجم",
   "commands.download.modified": "آخر تعديل",
   "commands.download.error": "تعذر تنزيل الملف.",
-
   "skills.select": "اختر مهارة من Antigravity:",
   "skills.empty": "📭 لا توجد مهارات متاحة لهذا المشروع.",
   "skills.fetch_error": "🔴 تعذر تحميل مهارات Antigravity.",
@@ -611,7 +563,6 @@ export const ar: I18nDictionary = {
   "skills.button.next_page": "التالي ➡️",
   "skills.page_empty_callback": "لا توجد مهارات في هذه الصفحة",
   "skills.page_load_error_callback": "تعذر تحميل هذه الصفحة. حاول مرة أخرى.",
-
   "mcps.select": "خوادم MCP:",
   "mcps.empty": "📭 لم تتم إضافة أي خوادم MCP.",
   "mcps.fetch_error": "🔴 تعذر تحميل خوادم MCP.",
@@ -630,21 +581,18 @@ export const ar: I18nDictionary = {
   "mcps.button.disable": "🔴 تعطيل",
   "mcps.button.back": "⬅️ رجوع",
   "mcps.auth_required": "هذا الخادم يحتاج إلى تسجيل دخول، ولا يمكن تفعيله من داخل البوت.",
-
   "legacy.models.fetch_error": "🔴 تعذر تحميل قائمة النماذج. تحقق من حالة الخادم باستخدام /status.",
   "legacy.models.empty": "📋 لا توجد نماذج متاحة. اضبط المزوّدين في Antigravity.",
   "legacy.models.header": "📋 النماذج المتاحة:\n\n",
   "legacy.models.no_provider_models": "  ⚠️ لا توجد نماذج متاحة\n",
   "legacy.models.env_hint": "💡 لاستخدام النموذج في .env:\n",
   "legacy.models.error": "🔴 حدث خطأ أثناء تحميل قائمة النماذج.",
-
   "stt.recognizing": "🎤 جارٍ تحويل الصوت إلى نص...",
   "stt.recognized": "🎤 النص المستخرج من الرسالة الصوتية:",
   "stt.not_configured":
     "🎤 ميزة تحويل الصوت إلى نص غير مهيأة بعد.\n\nاضبط STT_API_URL وSTT_API_KEY داخل ملف .env لتفعيلها.",
   "stt.error": "🔴 تعذر تحويل الصوت إلى نص: {error}",
   "stt.empty_result": "🎤 لم يتم التقاط كلام واضح في الرسالة الصوتية.",
-
   "worktree.branch_detached": "HEAD مفصول",
   "worktree.select_with_current": "اختر نسخة عمل (Git worktree):",
   "worktree.project_not_selected":
@@ -690,4 +638,54 @@ export const ar: I18nDictionary = {
   "local_command.empty_output": "The command produced no output.",
   "local_command.failed": "Command failed with exit code {exitCode}: {stderr}",
   "local_command.timeout": "The command timed out.",
-};
+  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.restart.ack":
+    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
+  "switch.code_needed":
+    "Falta el código: usa /code <código> con el código que te dio Google.",
+  "switch.already_pending":
+    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
+  "switch.working":
+    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
+  "switch.no_url_yet":
+    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
+  "switch.url_intro":
+    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
+  "switch.paste_code_hint":
+    "🔑 Luego pega el código aquí con: /code <código>",
+  "switch.submitting":
+    "⏳ Entregando el código a agy...",
+  "switch.done":
+    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
+  "switch.failed":
+    "❌ El switch falló:",
+  "bot.prompt_received": "📨 تم الاستلام — تحضير الوكيل…",
+  "bot.prompt_dispatched": "⚙️ تم الإرسال إلى مسار الوكيل — جارٍ العمل.",
+  "bot.prompt_slow_start": "⏳ لا يزال الوكيل يبدأ التشغيل…",
+  "bot.queue_hot_taken": "⚡ دخلت رسالتك مباشرةً إلى الدورة الحالية (hot takeover).",
+  "bot.prompt_taken_in_flight":
+    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
+  "cmd.description.compact": "ضغط سياق المحادثة",
+  "compact.busy": "⏳ الوكيل مشغول — حاول مرة أخرى عند انتهاء المهمة الحالية.",
+  "compact.no_session": "لا توجد محادثة نشطة لضغطها بعد.",
+  "compact.started": "🧹 جارٍ الضغط: طلبت من الوكيل ملخص تسليم…",
+  "compact.auto_started": "🧹 وصلت المحادثة إلى {tokens}k رمز — جارٍ الضغط تلقائيًا…",
+  "compact.done": "✅ تم الضغط — نتابع في محادثة جديدة مع نقل السياق.",
+  "compact.failed": "⚠️ فشل الضغط — تحقق من السجلات؛ أعد المحاولة بـ /compact.",
+  "compact.damaged_hint": "🛠 يعني هذا الخطأ عادةً أن حالة المحادثة تالفة. يمكنني ضغطها والمتابعة في محادثة جديدة.",
+  "compact.button": "🧹 اضغط وتابع",
+  "bot.retrying": "⚠️ خدمة Antigravity غير متاحة (503) — إعادة المحاولة تلقائيًا… المحاولة {attempt}/{max}، المحاولة التالية خلال ~{seconds} ثانية.",
+  "bot.retry_recovered": "✅ عادت Antigravity — متابعة.",
+  "bot.retry_exhausted": "❌ بقي Antigravity غير متاح — نفدت المحاولات. أعد إرسال رسالتك عندما يعود الخدمة.",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "أحدث الرسائل:",
+  "sessions.preview.you": "أنت:",
+  "sessions.preview.agent": "الوكيل:",};

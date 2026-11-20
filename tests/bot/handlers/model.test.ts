@@ -271,7 +271,7 @@ describe("bot model selection (agy flat menu)", () => {
       expect(mocked.keyboardUpdateModelMock).toHaveBeenCalledWith(
         selectingModelInfo("claude-sonnet-4-6"),
       );
-      expect(mocked.clearActiveInlineMenuMock).toHaveBeenCalledWith("model_selected");
+      expect(mocked.clearActiveInlineMenuMock).toHaveBeenCalledWith("model_selected", expect.anything());
       expect(mocked.switchedMock).toHaveBeenCalled();
       expect(ctx.editMessageText).toHaveBeenCalled();
     });

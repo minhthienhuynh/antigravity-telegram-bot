@@ -1,15 +1,26 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
-import { clearAllInteractionState } from "../../app/managers/interaction-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { getProjectByWorktree } from "../../app/services/project-service.js";
-import { isForegroundBusy } from "../../app/services/run-control-service.js";
-import { switchToProject } from "../../app/services/project-switch-service.js";
+import {
+  isForegroundBusy,
+  type ForegroundBusyDeps,
+} from "../../app/services/run-control-service.js";
+import {
+  switchToProject,
+  type ProjectSwitchDeps,
+} from "../../app/services/project-switch-service.js";
 import { getGitWorktreeContext } from "../../app/services/worktree-service.js";
 import { upsertSessionDirectory } from "../../app/services/session-cache-service.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
 import { t } from "../../i18n/index.js";
 import { logger } from "../../utils/logger.js";
 import { alert, failure } from "./feedback.js";
-import { appendInlineMenuCancelButton, ensureActiveInlineMenu } from "../menus/inline-menu.js";
+import {
+  appendInlineMenuCancelButton,
+  ensureActiveInlineMenu,
+  type InlineMenuDeps,
+} from "../menus/inline-menu.js";
 import {
   buildWorktreeMenuView,
   parseWorktreeIndexCallback,
@@ -17,11 +28,16 @@ import {
   WORKTREE_CALLBACK_PREFIX,
 } from "../menus/worktree-selection-menu.js";
 import { replyBusyBlocked } from "../messages/busy-blocked-renderer.js";
-import { createProjectSwitchPresentation } from "../services/project-switch-presentation.js";
+import {
+  createProjectSwitchPresentation,
+  type ProjectSwitchPresentationDeps,
+} from "../services/project-switch-presentation.js";
 
-interface WorktreeCallbackDeps {
-  ensureEventSubscription?: (directory: string) => Promise<void>;
-}
+export type WorktreeCallbackDeps = Pick<AppContainer, "ensureEventSubscription"> &
+  ForegroundBusyDeps &
+  InlineMenuDeps &
+  ProjectSwitchDeps &
+  ProjectSwitchPresentationDeps;
 
 async function loadCurrentWorktreeContext() {
   const currentProject = getCurrentProject();
@@ -35,14 +51,14 @@ async function loadCurrentWorktreeContext() {
 
 export async function handleWorktreeCallback(
   ctx: Context,
-  deps: WorktreeCallbackDeps = {},
+  deps: WorktreeCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
   if (!callbackQuery?.data || !callbackQuery.data.startsWith(WORKTREE_CALLBACK_PREFIX)) {
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(deps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
@@ -50,7 +66,7 @@ export async function handleWorktreeCallback(
   const page = parseWorktreePageCallback(callbackQuery.data);
   const index = parseWorktreeIndexCallback(callbackQuery.data);
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "worktree");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "worktree", deps);
   if (!isActiveMenu) {
     return true;
   }
@@ -59,13 +75,13 @@ export async function handleWorktreeCallback(
     const { currentProject, context } = await loadCurrentWorktreeContext();
 
     if (!currentProject) {
-      clearAllInteractionState("worktree_project_missing");
+      deps.resetInteractions("worktree_project_missing");
       await alert(ctx, "worktree.project_not_selected");
       return true;
     }
 
     if (!context) {
-      clearAllInteractionState("worktree_git_context_missing");
+      deps.resetInteractions("worktree_git_context_missing");
       await ctx.answerCallbackQuery({ text: t("worktree.not_git_repo_callback") });
       return true;
     }
@@ -106,8 +122,8 @@ export async function handleWorktreeCallback(
     const projectInfo = await getProjectByWorktree(selectedWorktree.path);
     const selectedProjectInfo = { ...projectInfo, name: selectedWorktree.path };
     const replyKeyboard = await switchToProject(ctx, selectedProjectInfo, "worktree_switched", {
-      ensureEventSubscription: deps.ensureEventSubscription,
-      presentation: createProjectSwitchPresentation(),
+      ...deps,
+      presentation: createProjectSwitchPresentation(deps),
     });
 
     await ctx.answerCallbackQuery();
@@ -118,7 +134,7 @@ export async function handleWorktreeCallback(
     return true;
   } catch (error) {
     logger.error("[Bot] Error handling worktree callback:", error);
-    clearAllInteractionState("worktree_select_error");
+    deps.resetInteractions("worktree_select_error");
     await failure(ctx, "worktree.select_error");
     return true;
   }

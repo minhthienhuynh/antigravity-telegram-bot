@@ -1,3 +1,4 @@
+import { appContainer } from "../../app/bootstrap/app-container.js";
 import type { Bot, Context } from "grammy";
 import { config } from "../../config.js";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
@@ -85,7 +86,7 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
         return;
       }
 
-      await showAgentSelectionMenu(ctx);
+      await showAgentSelectionMenu(ctx, appContainer);
     } catch (err) {
       logger.error("[Bot] Error showing agent menu:", err);
       await ctx.reply(t("error.load_agents"));
@@ -121,7 +122,7 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
         return;
       }
 
-      await handleContextButtonPress(ctx);
+      await handleContextButtonPress(ctx, appContainer);
     } catch (err) {
       logger.error("[Bot] Error handling context button:", err);
       await ctx.reply(t("error.context_button"));
@@ -143,7 +144,7 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
         return;
       }
       logger.debug(`[Bot] Variant button pressed: ${ctx.message?.text}`);
-      await showVariantSelectionMenu(ctx);
+      await showVariantSelectionMenu(ctx, appContainer);
     } catch (err) {
       logger.error("[Bot] Error showing variant menu:", err);
       await ctx.reply(t("error.load_variants"));
@@ -165,13 +166,13 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
 
   bot.on("message:voice", async (ctx) => {
     logger.debug(`[Bot] Received voice message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handleVoiceMessage(ctx, voicePromptDeps);
   });
 
   bot.on("message:audio", async (ctx) => {
     logger.debug(`[Bot] Received audio message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handleVoiceMessage(ctx, voicePromptDeps);
   });
 
@@ -185,13 +186,13 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
 
   bot.on("message:photo", async (ctx) => {
     logger.debug(`[Bot] Received photo message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handlePhotoMessage(ctx, { bot, ensureEventSubscription: deps.ensureEventSubscription });
   });
 
   bot.on("message:document", async (ctx) => {
     logger.debug(`[Bot] Received document message, chatId=${ctx.chat.id}`);
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
     await handleDocumentMessage(ctx, { bot, ensureEventSubscription: deps.ensureEventSubscription });
   });
 
@@ -202,23 +203,23 @@ export function registerMessageRouter(bot: Bot<Context>, deps: MessageRouterDeps
     }
     const { text } = input;
 
-    deps.setTelegramContext(bot, ctx.chat.id);
+    deps.setTelegramContext?.(bot, ctx.chat.id);
 
     if (text.startsWith("/")) {
       return;
     }
 
     if (questionManager.isActive()) {
-      await handleQuestionTextAnswer(ctx);
+      await handleQuestionTextAnswer(ctx, appContainer);
       return;
     }
 
-    const handledTask = await handleTaskTextInput(ctx);
+    const handledTask = await handleTaskTextInput(ctx, appContainer);
     if (handledTask) {
       return;
     }
 
-    const handledRename = await handleRenameTextAnswer(ctx);
+    const handledRename = await handleRenameTextAnswer(ctx, appContainer);
     if (handledRename) {
       return;
     }

@@ -26,6 +26,8 @@ vi.mock("../../../src/opencode/client.js", () => ({
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentProject: vi.fn(() => mocked.currentProject),
 }));

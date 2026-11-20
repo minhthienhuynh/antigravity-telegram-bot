@@ -1,12 +1,18 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { loadMcpCatalog } from "../../app/services/mcp-catalog-service.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
 import { t } from "../../i18n/index.js";
 import { logger } from "../../utils/logger.js";
 import { buildMcpsListKeyboard } from "../menus/mcp-catalog-menu.js";
 
-export async function mcpsCommand(ctx: CommandContext<Context>): Promise<void> {
+export type McpsCommandDeps = Pick<AppContainer, "interactionManager">;
+
+export async function mcpsCommand(
+  ctx: CommandContext<Context>,
+  deps: McpsCommandDeps = containerDeps,
+): Promise<void> {
   try {
     const currentProject = getCurrentProject();
     if (!currentProject) {
@@ -25,7 +31,7 @@ export async function mcpsCommand(ctx: CommandContext<Context>): Promise<void> {
       reply_markup: keyboard,
     });
 
-    interactionManager.start({
+    deps.interactionManager.start({
       kind: "custom",
       expectedInput: "callback",
       metadata: {

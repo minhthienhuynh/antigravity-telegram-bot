@@ -25,7 +25,7 @@ import {
 } from "./pinned-message-format.js";
 import { getSessionStreamThrottleMs } from "../streaming/stream-throttle.js";
 
-class PinnedMessageManager {
+export class PinnedMessageManager {
   private api: Api | null = null;
   private chatId: number | null = null;
   private state: PinnedMessageState = {
@@ -910,7 +910,6 @@ class PinnedMessageManager {
     this.pendingUpdate = false;
     this.pendingForceUpdate = false;
   }
-
   __resetForTests(): void {
     if (this.updateDebounceTimer) {
       clearTimeout(this.updateDebounceTimer);
@@ -943,6 +942,8 @@ class PinnedMessageManager {
       cost: 0,
     };
   }
+
 }
 
+/** Process-wide singleton shared with the app container (single-user bot). */
 export const pinnedMessageManager = new PinnedMessageManager();

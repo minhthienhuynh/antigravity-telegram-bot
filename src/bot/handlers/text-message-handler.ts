@@ -1,5 +1,5 @@
-import type { Context } from "grammy";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
+import type { Context } from "grammy";
 import { t } from "../../i18n/index.js";
 import {
   clearCommandsInteraction,
@@ -22,7 +22,7 @@ export async function handleCommandTextArguments(
     return false;
   }
 
-  const metadata = parseCommandsMetadata(interactionManager.getSnapshot());
+  const metadata = parseCommandsMetadata((deps.interactionManager ?? interactionManager).getSnapshot());
   if (!metadata || metadata.stage !== "confirm") {
     return false;
   }
@@ -33,7 +33,7 @@ export async function handleCommandTextArguments(
     return true;
   }
 
-  clearCommandsInteraction("commands_arguments_submitted");
+  clearCommandsInteraction(deps, "commands_arguments_submitted");
 
   if (ctx.chat) {
     await ctx.api.deleteMessage(ctx.chat.id, metadata.messageId).catch(() => {});
@@ -57,7 +57,7 @@ export async function handleSkillTextArguments(
     return false;
   }
 
-  const metadata = parseSkillsMetadata(interactionManager.getSnapshot());
+  const metadata = parseSkillsMetadata((deps.interactionManager ?? interactionManager).getSnapshot());
   if (!metadata || metadata.stage !== "confirm") {
     return false;
   }
@@ -68,7 +68,7 @@ export async function handleSkillTextArguments(
     return true;
   }
 
-  clearSkillsInteraction("skills_arguments_submitted");
+  clearSkillsInteraction(deps, "skills_arguments_submitted");
 
   if (ctx.chat) {
     await ctx.api.deleteMessage(ctx.chat.id, metadata.messageId).catch(() => {});

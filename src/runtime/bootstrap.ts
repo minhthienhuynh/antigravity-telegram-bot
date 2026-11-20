@@ -452,11 +452,11 @@ async function validateExistingEnv(envFilePath: string): Promise<EnvValidationRe
 async function runWizardAndPersist(runtimePaths: RuntimePaths): Promise<void> {
   ensureInteractiveTty();
 
-  const [existingContent, envExampleContent, wizardValues] = await Promise.all([
+  const [existingContent, envExampleContent] = await Promise.all([
     readEnvFileIfExists(runtimePaths.envFilePath),
     loadEnvExampleContent(),
-    collectWizardValues(),
   ]);
+  const wizardValues = await collectWizardValues();
 
   const envValues: WizardEnvValues = {
     BOT_LOCALE: wizardValues.locale,

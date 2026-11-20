@@ -22,7 +22,7 @@ export interface AssistantRunInfo extends AssistantRunStartInfo {
   hasCompletedResponse: boolean;
 }
 
-class AssistantRunState {
+export class AssistantRunState {
   private readonly runs = new Map<string, AssistantRunInfo>();
 
   /** True when at least one assistant turn is streaming. */
@@ -68,6 +68,14 @@ class AssistantRunState {
     }
   }
 
+  hasRun(sessionId: string): boolean {
+    return this.runs.has(sessionId);
+  }
+
+  isResponseCompleted(sessionId: string): boolean {
+    return this.runs.get(sessionId)?.hasCompletedResponse === true;
+  }
+
   finishRun(sessionId: string, reason: string): AssistantRunInfo | null {
     resetStreamThrottle(sessionId);
     const run = this.runs.get(sessionId) ?? null;
@@ -98,11 +106,12 @@ class AssistantRunState {
     logger.debug(`[AssistantRunState] Cleared all runs: count=${this.runs.size}, reason=${reason}`);
     this.runs.clear();
   }
-
   __resetForTests(): void {
     resetAllStreamThrottles();
     this.runs.clear();
   }
+
 }
 
+/** Process-wide singleton shared with the app container (single-user bot). */
 export const assistantRunState = new AssistantRunState();

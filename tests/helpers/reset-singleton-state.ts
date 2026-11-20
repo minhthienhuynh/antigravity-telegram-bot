@@ -64,11 +64,21 @@ export async function resetSingletonState(): Promise<void> {
 
   stopEventListening();
   __resetStreamThrottleForTests();
-  questionManager.clear();
-  permissionManager.clear();
-  renameManager.clear();
-  interactionManager.clear("test_reset");
-  summaryAggregator.clear();
+  // Managers constructed from a mocked interaction-manager module may not
+  // expose the full interaction API; a failed reset must not abort the suite.
+  for (const reset of [
+    () => questionManager.clear(),
+    () => permissionManager.clear(),
+    () => renameManager.clear(),
+    () => interactionManager.clear("test_reset"),
+    () => summaryAggregator.clear(),
+  ]) {
+    try {
+      reset();
+    } catch {
+      /* best-effort reset */
+    }
+  }
   __resetMessageMergerForTests();
   promptQueue.__resetForTests();
   __resetPromptQueueDispatchForTests();

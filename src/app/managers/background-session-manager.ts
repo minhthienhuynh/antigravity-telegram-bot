@@ -191,4 +191,6 @@ class BackgroundSessionTracker {
 }
 
 export { BackgroundSessionTracker };
+
+/** Process-wide singleton shared with the app container (single-user bot). */
 export const backgroundSessionTracker = new BackgroundSessionTracker();

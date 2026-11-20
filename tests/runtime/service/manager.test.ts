@@ -49,6 +49,7 @@ const { getRuntimePathsMock, runtimePathsState } = vi.hoisted(() => {
 vi.mock("node:child_process", () => ({
   spawn: spawnMock,
   exec: execMock,
+  execFile: vi.fn(),
 }));
 
 vi.mock("../../../src/runtime/paths.js", () => ({

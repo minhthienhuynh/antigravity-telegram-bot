@@ -1,7 +1,13 @@
 import type { I18nDictionary } from "./en.js";
 
 export const fr: I18nDictionary = {
-  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.description.recent": "Sessions récentes de tous les projets",
+  "recent.heading": "Sessions récentes de tous les projets (actualiser avec /recent) :",
+  "recent.empty": "📭 Aucune session dans les projets.",
+  "recent.running": "en cours",
+  "recent.idle": "inactive",
+  "recent.question": "attend une réponse",
+  "recent.permission": "attend une autorisation",
   "cmd.description.status": "Statut du serveur et de la session",
   "cmd.description.new": "Créer une nouvelle session",
   "cmd.description.stop": "Arrêter l'action en cours",
@@ -19,43 +25,14 @@ export const fr: I18nDictionary = {
   "cmd.description.opencode_start": "Démarrer le serveur Antigravity",
   "cmd.description.opencode_stop": "Arrêter le serveur Antigravity",
   "cmd.description.ls": "Lister le contenu du répertoire",
-  "cmd.restart.ack":
-    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
-  "switch.code_needed":
-    "Falta el código: usa /code <código> con el código que te dio Google.",
-  "switch.already_pending":
-    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
-  "switch.working":
-    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
-  "switch.no_url_yet":
-    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
-  "switch.url_intro":
-    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
-  "switch.paste_code_hint":
-    "🔑 Luego pega el código aquí con: /code <código>",
-  "switch.submitting":
-    "⏳ Entregando el código a agy...",
-  "switch.done":
-    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
-  "switch.failed":
-    "❌ El switch falló:",
   "cmd.description.help": "Aide",
-
   "callback.unknown_command": "Commande inconnue",
   "callback.processing_error": "Erreur de traitement",
-
   "error.load_agents": "❌ Impossible de charger la liste des modes",
   "error.load_models": "❌ Impossible de charger la liste des modèles",
   "error.load_variants": "❌ Impossible de charger la liste des variantes",
   "error.context_button": "❌ Impossible de traiter le bouton de contexte",
   "error.generic": "🔴 Une erreur s'est produite.",
-
   "interaction.blocked.expired": "⚠️ Cette interaction a expiré. Veuillez la relancer.",
   "interaction.blocked.expected_callback":
     "⚠️ Veuillez utiliser les boutons inline pour cette étape ou appuyer sur Annuler.",
@@ -65,37 +42,27 @@ export const fr: I18nDictionary = {
     "⚠️ Cette commande n'est pas disponible à l'étape actuelle.",
   "interaction.blocked.finish_current":
     "⚠️ Terminez d'abord l'interaction en cours (réponse ou annulation), puis ouvrez un autre menu.",
-
   "inline.blocked.expected_choice":
     "⚠️ Choisissez une option avec les boutons inline ou appuyez sur Annuler.",
   "inline.blocked.command_not_allowed":
     "⚠️ Cette commande n'est pas disponible tant que le menu inline est actif.",
-
   "question.blocked.expected_answer":
     "⚠️ Répondez à la question en cours avec les boutons, Réponse personnalisée ou Annuler.",
   "question.blocked.command_not_allowed":
     "⚠️ Cette commande n'est pas disponible tant que le flux de question actuel n'est pas terminé.",
-
   "inline.button.cancel": "❌ Annuler",
   "inline.button.close": "❌ Fermer",
   "inline.inactive_callback": "Ce menu est inactif",
-
   "common.cancelled": "Annulé",
   "common.unknown": "inconnu",
   "common.unknown_error": "erreur inconnue",
-
   "start.welcome":
     "👋 Bienvenue dans Antigravity Telegram Bot !\n\nUtilisez les commandes :\n/projects — sélectionner un projet\n/sessions — liste des sessions\n/new — nouvelle session\n/commands — commandes personnalisées\n/skills — catalogue de skills\n/task — tâche planifiée\n/tasklist — tâches planifiées\n/status — statut\n/help — aide\n\nUtilisez les boutons du bas pour choisir l'agent, le modèle et la variante.",
   "help.keyboard_hint":
     "💡 Utilisez les boutons du bas pour l'agent, le modèle, la variante et les actions de contexte.",
   "help.text":
     "📖 **Aide**\n\n/status - Vérifier l'état du serveur\n/sessions - Liste des sessions\n/new - Créer une nouvelle session\n/help - Aide",
-
   "bot.thinking": "💭 Réflexion en cours...",
-  "bot.prompt_received": "📨 Reçu — préparation de l'agent…",
-  "bot.prompt_dispatched": "⚙️ Envoyé au pipeline de l'agent — au travail.",
-  "bot.prompt_slow_start": "⏳ L'agent met encore du temps à démarrer (démarrage à froid possible)…",
-  "bot.queue_hot_taken": "⚡ Ton message est entré directement dans le tour en cours (hot takeover).",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ Travail en cours",
   "progress.compact.finished_header": "✅ Travail terminé",
@@ -112,28 +79,12 @@ export const fr: I18nDictionary = {
   "bot.create_session_error":
     "🔴 Impossible de créer la session. Essayez /new ou vérifiez l'état du serveur avec /status.",
   "bot.session_created": "✅ Session créée : {title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
-  "cmd.description.compact": "Compacter le contexte de la conversation",
-  "compact.busy": "⏳ L'agent est occupé — réessayez quand la tâche en cours sera terminée.",
-  "compact.no_session": "Il n'y a pas encore de conversation active à compacter.",
-  "compact.started": "🧹 Compactage : résumé de passation demandé à l'agent…",
-  "compact.auto_started": "🧹 La conversation a atteint {tokens}k tokens — compactage automatique…",
-  "compact.done": "✅ Compacté — on continue dans une nouvelle conversation avec le contexte transféré.",
-  "compact.failed": "⚠️ Échec du compactage — vérifiez les logs ; réessayez avec /compact.",
-  "compact.damaged_hint": "🛠 Cette erreur signifie souvent que l'état de la conversation est endommagé. Je peux le compacter et continuer dans une nouvelle conversation.",
-  "compact.button": "🧹 Compacter et continuer",
   "bot.session_busy":
     "⏳ L'agent exécute déjà une tâche. Attendez la fin ou utilisez /abort pour interrompre l'exécution en cours.",
   "bot.session_reset_project_mismatch":
     "⚠️ La session active ne correspond pas au projet sélectionné, elle a donc été réinitialisée. Utilisez /sessions pour en choisir une ou /new pour créer une nouvelle session.",
   "bot.prompt_send_error": "Impossible d'envoyer la requête à Antigravity.",
   "bot.session_error": "🔴 Antigravity a renvoyé une erreur : {message}",
-  "bot.retrying": "⚠️ Service Antigravity indisponible (503) — nouvelle tentative automatique… essai {attempt}/{max}, prochain essai dans ~{seconds}s.",
-  "bot.retry_recovered": "✅ Antigravity est de retour — reprise.",
-  "bot.retry_exhausted": "❌ Antigravity est resté indisponible — tentatives épuisées. Renvoyez votre message lorsque le service sera rétabli.",
   "bot.assistant_reply_undelivered":
     "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
   "bot.stale_messages_skipped":
@@ -175,7 +126,6 @@ export const fr: I18nDictionary = {
   "bot.document_extraction_error":
     "🔴 Échec de l'extraction du texte du document.",
   "bot.text_file_too_large": "⚠️ Le fichier texte est trop volumineux (max {maxSizeKb}KB)",
-
   "status.header_running": "🟢 Le serveur Antigravity est en cours d'exécution",
   "status.health.healthy": "Sain",
   "status.health.unhealthy": "Dégradé",
@@ -201,16 +151,13 @@ export const fr: I18nDictionary = {
   "status.session_not_selected": "Session actuelle : non sélectionnée",
   "status.session_hint": "Utilisez /sessions pour en sélectionner une ou /new pour en créer une",
   "status.header_unavailable": "🔴 Le serveur Antigravity est indisponible",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "Utilisez /opencode_start pour démarrer le serveur.",
-
   "tts.off": "🔇 Réponses audio désactivées.",
   "tts.all": "🔊 Réponses audio activées pour tous les messages.",
   "tts.auto": "🎤 Réponses audio activées pour les messages vocaux uniquement.",
   "tts.not_configured":
     "⚠️ Les réponses audio ne sont pas disponibles. Définissez d'abord `TTS_API_URL` et `TTS_API_KEY`.",
   "tts.failed": "⚠️ Impossible de générer la réponse audio.",
-
   "settings.menu.title": "⚙️ Paramètres du bot\nTouchez un paramètre pour basculer sa valeur :",
   "settings.compact_output.label": "Sortie compacte",
   "settings.delete_progress_on_finish.label": "Supprimer la progression à la fin",
@@ -225,8 +172,9 @@ export const fr: I18nDictionary = {
   "settings.prompt_queue.label": "File d'attente des messages",
   "settings.value.on": "Activé",
   "settings.value.off": "Désactivé",
+  "settings.prompt_queue.queue": "Queue",
+  "settings.prompt_queue.steer": "Steer",
   "settings.saved": "✅ Paramètre enregistré.",
-
   "projects.empty":
     "📭 Aucun projet trouvé.\n\nOuvrez un répertoire dans Antigravity et créez au moins une session, il apparaîtra ensuite ici.",
   "projects.select": "Sélectionnez un projet :",
@@ -240,7 +188,6 @@ export const fr: I18nDictionary = {
   "projects.selected":
     "✅ Projet sélectionné : {project}\n\n📋 La session a été réinitialisée. Utilisez /sessions ou /new pour ce projet.",
   "projects.select_error": "🔴 Impossible de sélectionner le projet.",
-
   "sessions.project_not_selected":
     "🏗 Aucun projet n'est sélectionné.\n\nSélectionnez d'abord un projet avec /projects.",
   "sessions.empty": "📭 Aucune session trouvée.\n\nCréez une nouvelle session avec /new.",
@@ -257,10 +204,8 @@ export const fr: I18nDictionary = {
   "sessions.selected": "✅ Session sélectionnée : {title}",
   "sessions.select_error": "🔴 Impossible de sélectionner la session.",
   "sessions.preview.empty": "Aucun message récent.",
-  "sessions.preview.title": "Messages récents :",
-  "sessions.preview.you": "Vous :",
-  "sessions.preview.agent": "Agent :",
-
+  "sessions.last_input.title": "Dernière entrée utilisateur :",
+  "sessions.last_input.attachment": "pièce jointe",
   "messages.project_not_selected":
     "🏗 Aucun projet sélectionné.\n\nSélectionnez d'abord un projet avec /projects.",
   "messages.session_not_selected":
@@ -284,7 +229,6 @@ export const fr: I18nDictionary = {
   "messages.revert_error": "❌ Impossible de revenir au message. Veuillez réessayer.",
   "messages.fork_success": "🔀 Fork créé à partir du message :\n\n{text}",
   "messages.fork_error": "❌ Échec de la création du fork. Veuillez réessayer.",
-
   "attach.project_not_selected":
     "🏗 Aucun projet sélectionné.\n\nSélectionnez d'abord un projet avec /projects.",
   "attach.session_not_selected":
@@ -300,20 +244,17 @@ export const fr: I18nDictionary = {
   "attach.disconnect_hint":
     "Pour vous déconnecter, passez simplement à une autre session ou à un autre projet.",
   "attach.error": "🔴 Impossible de se connecter à la session actuelle.",
-
   "detach.project_not_selected":
     "🏗 Aucun projet n'est sélectionné.\n\nSélectionnez d'abord un projet avec /projects.",
   "detach.no_active_session": "ℹ️ Le bot n'est déjà attaché à aucune session.",
   "detach.success":
     "✅ Détaché de la session : {title}\n\nLa session Antigravity n'a pas été arrêtée. Si elle est toujours en cours, elle continuera séparément. Pour la consulter plus tard, sélectionnez-la à nouveau via /sessions.",
   "detach.error": "🔴 Impossible de se détacher de la session actuelle.",
-
   "new.project_not_selected":
     "🏗 Aucun projet n'est sélectionné.\n\nSélectionnez d'abord un projet avec /projects.",
   "new.created": "✅ Nouvelle session créée : {title}",
   "new.create_error":
     "🔴 Le serveur Antigravity est indisponible ou une erreur s'est produite lors de la création de la session.",
-
   "stop.no_active_session":
     "🛑 L'agent n'a pas été démarré\n\nCréez une session avec /new ou sélectionnez-en une via /sessions.",
   "stop.in_progress":
@@ -332,7 +273,6 @@ export const fr: I18nDictionary = {
     "⚠️ Le flux d'événements a été arrêté localement, mais l'abandon côté serveur a échoué.",
   "stop.error":
     "🔴 Impossible d'arrêter l'action.\n\nLe flux d'événements est arrêté, essayez /abort à nouveau.",
-
   "opencode_start.already_running_managed":
     "⚠️ Le serveur Antigravity est déjà en cours d'exécution\n\nPID : {pid}\nTemps de fonctionnement : {seconds} secondes",
   "opencode_start.already_running_external":
@@ -363,14 +303,12 @@ export const fr: I18nDictionary = {
   "opencode_stop.success": "✅ Serveur Antigravity arrêté avec succès",
   "opencode_stop.error":
     "🔴 Une erreur s'est produite lors de l'arrêt du serveur.\n\nConsultez les logs de l'application pour plus de détails.",
-
   "agent.changed_message": "✅ Agent défini sur : {name}",
   "agent.change_error_callback": "Impossible de modifier l'agent",
   "agent.menu.current": "Agent actuel : {name}\n\nSélectionnez un agent :",
   "agent.menu.select": "Sélectionnez un agent :",
   "agent.menu.empty": "⚠️ Aucun mode disponible",
   "agent.menu.error": "🔴 Impossible de récupérer la liste des modes",
-
   "model.changed_message": "✅ Modèle défini sur : {name}",
   "model.change_error_callback": "Impossible de modifier le modèle",
   "model.menu.empty": "⚠️ Aucun modèle disponible",
@@ -401,7 +339,6 @@ export const fr: I18nDictionary = {
   "model.provider_models.title": "{provider} — choisissez un modèle :",
   "model.provider_models.empty": "⚠️ Aucun modèle disponible pour {provider}",
   "model.provider_models.page_indicator": "Page {current}/{total}",
-
   "variant.model_not_selected_callback": "Erreur : aucun modèle sélectionné",
   "variant.changed_message": "✅ Variante définie sur : {name}",
   "variant.change_error_callback": "Impossible de modifier la variante",
@@ -409,16 +346,25 @@ export const fr: I18nDictionary = {
   "variant.menu.empty": "⚠️ Aucune variante disponible",
   "variant.menu.current": "Variante actuelle : {name}\n\nSélectionnez une variante :",
   "variant.menu.error": "🔴 Impossible de récupérer la liste des variantes",
-
   "context.button.confirm": "✅ Oui, compacter le contexte",
+  "context.button.details_compact": "📦 Compact context",
+  "context.button.close": "❌ Close",
+  "context.details.title": "📊 Context details",
+  "context.details.window": "Window: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Token breakdown of the latest assistant message:",
+  "context.details.input": "Input: {count}",
+  "context.details.output": "Output: {count}",
+  "context.details.reasoning": "Reasoning: {count}",
+  "context.details.cache_read": "Cache read: {count}",
+  "context.details.cache_write": "Cache write: {count}",
+  "context.details.cost": "Cost: {cost}",
   "context.no_active_session": "⚠️ Aucune session active. Créez une session avec /new",
   "context.confirm_text":
-    "📊 Réduction du contexte pour la session \"{title}\"\n\nCela réduira l'utilisation du contexte en supprimant les anciens messages de l'historique. La tâche en cours ne sera pas interrompue.\n\nContinuer ?",
+    "📊 Réduction du contexte pour la session \"{title}\"\n\nCela réduira l'utilisation du contexte en supprimant les anciens messages de l'historique.\n\nContinuer ?",
   "context.callback_compacting": "Réduction du contexte en cours...",
   "context.progress": "⏳ Réduction du contexte en cours...",
   "context.error": "❌ La réduction du contexte a échoué",
   "context.success": "✅ Contexte compacté avec succès",
-
   "permission.inactive_callback": "La demande d'autorisation est inactive",
   "permission.processing_error_callback": "Erreur de traitement",
   "permission.no_active_request_callback": "Erreur : aucune demande active",
@@ -447,7 +393,6 @@ export const fr: I18nDictionary = {
   "permission.name.task": "Tâche",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "Répertoire externe",
-
   "question.inactive_callback": "Le sondage est inactif",
   "question.processing_error_callback": "Erreur de traitement",
   "question.select_one_required_callback": "Sélectionnez au moins une option",
@@ -467,7 +412,6 @@ export const fr: I18nDictionary = {
   "question.summary.title": "✅ Sondage terminé !\n\n",
   "question.summary.question": "Question {index} :\n{question}\n\n",
   "question.summary.answer": "Réponse :\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} {name} Agent",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -481,9 +425,9 @@ export const fr: I18nDictionary = {
     "⚠️ La file d'attente est pleine ({max}). Supprimez un message ou attendez la fin de la tâche en cours.",
   "queue.removed": "🗑 Message retiré de la file d'attente.",
   "queue.not_found": "Ce message n'est plus dans la file d'attente.",
+  "queue.steer_added": "📥 Added to the current task ({count}/{max}).",
   "queue.disabled_hint": "La file d'attente des messages s'active dans /settings.",
   "keyboard.updated": "⌨️ Clavier mis à jour",
-
   "pinned.default_session_title": "nouvelle session",
   "pinned.unknown": "Inconnu",
   "pinned.line.project": "Projet : {project}",
@@ -509,13 +453,11 @@ export const fr: I18nDictionary = {
   "pinned.files.title": "Fichiers ({count}) :",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... et encore {count}",
-
   "tool.todo.overflow": "*({count} tâches supplémentaires)*",
   "tool.file_header.write":
     "Écrire Fichier/Chemin : {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "Modifier Fichier/Chemin : {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token":
     "Entrez le token du bot Telegram (obtenez-le auprès de @BotFather).\n> ",
   "runtime.wizard.ask_language":
@@ -535,6 +477,15 @@ export const fr: I18nDictionary = {
     "Entrez le nom d'utilisateur du serveur Antigravity (optionnel).\nAppuyez sur Entrée pour utiliser la valeur par défaut : {defaultUsername}\n> ",
   "runtime.wizard.ask_server_password":
     "Entrez le mot de passe du serveur Antigravity (optionnel).\nAppuyez sur Entrée pour le laisser vide.\n> ",
+  "runtime.wizard.ask_server_version":
+    "Select OpenCode server version:\n1 - OpenCode V1 (1.x, npm package opencode-ai)\n2 - OpenCode V2 (2.x, npm package @opencode/cli)\nPress Enter to use default: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid": "Enter 1 or 2, or press Enter for default.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Enter OpenCode V2 server password (required).\nShow it with: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "The password is required for OpenCode V2. Please try again.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Enter OpenCode server password.\nPress Enter to keep the saved password.\n> ",
   "runtime.wizard.api_url_invalid":
     "Entrez une URL valide (http/https) ou appuyez sur Entrée pour la valeur par défaut.\n",
   "runtime.wizard.start": "Configuration d'Antigravity Telegram Bot.\n",
@@ -545,7 +496,6 @@ export const fr: I18nDictionary = {
     "L'assistant interactif nécessite un terminal TTY. Exécutez `opencode-telegram config` dans un shell interactif.",
   "runtime.container.command_unavailable":
     "⚠️ Cette commande n'est pas disponible dans l'image Docker.",
-
   "rename.no_session": "⚠️ Aucune session active. Créez ou sélectionnez d'abord une session.",
   "rename.prompt": "📝 Entrez le nouveau titre de la session :\n\nActuel : {title}",
   "rename.empty_title": "⚠️ Le titre ne peut pas être vide.",
@@ -559,7 +509,6 @@ export const fr: I18nDictionary = {
   "rename.blocked.command_not_allowed":
     "⚠️ Cette commande n'est pas disponible tant que le renommage attend un nouveau nom.",
   "rename.button.cancel": "❌ Annuler",
-
   "task.prompt.schedule":
     "⏰ Envoyez le planning de la tâche en langage naturel.\n\nExemples :\n- toutes les 5 minutes\n- chaque jour à 17:00\n- demain à 12:00",
   "task.schedule_empty": "⚠️ Le planning ne peut pas être vide.",
@@ -595,7 +544,6 @@ export const fr: I18nDictionary = {
     "La tâche planifiée a demandé une question interactive et ne peut pas continuer sans intervention.",
   "task.run.error.interactive_permission":
     "La tâche planifiée a demandé une autorisation interactive et ne peut pas continuer sans intervention.",
-
   "tasklist.empty": "📭 Aucune tâche planifiée pour le moment.",
   "tasklist.select": "Sélectionnez une tâche planifiée :",
   "tasklist.details":
@@ -606,7 +554,6 @@ export const fr: I18nDictionary = {
   "tasklist.deleted_callback": "Supprimée",
   "tasklist.inactive_callback": "Ce menu des tâches planifiées est inactif",
   "tasklist.load_error": "🔴 Impossible de charger les tâches planifiées.",
-
   "commands.select": "Choisissez une commande Antigravity :",
   "commands.empty": "📭 Aucune commande Antigravity n'est disponible pour ce projet.",
   "commands.fetch_error": "🔴 Impossible de charger les commandes Antigravity.",
@@ -634,7 +581,6 @@ export const fr: I18nDictionary = {
   "commands.download.size": "Taille",
   "commands.download.modified": "Modifié",
   "commands.download.error": "Impossible de télécharger le fichier.",
-
   "skills.select": "Choisissez un skill Antigravity :",
   "skills.empty": "📭 Aucun skill Antigravity n'est disponible pour ce projet.",
   "skills.fetch_error": "🔴 Impossible de charger les skills Antigravity.",
@@ -653,7 +599,6 @@ export const fr: I18nDictionary = {
   "skills.button.next_page": "Suivant ➡️",
   "skills.page_empty_callback": "Aucun skill sur cette page",
   "skills.page_load_error_callback": "Impossible de charger cette page. Veuillez réessayer.",
-
   "mcps.select": "MCP servers:",
   "mcps.empty": "📭 No MCP servers configured.",
   "mcps.fetch_error": "🔴 Failed to load MCP servers.",
@@ -672,9 +617,7 @@ export const fr: I18nDictionary = {
   "mcps.button.disable": "🔴 Disable",
   "mcps.button.back": "⬅️ Back",
   "mcps.auth_required": "This server requires authorization and cannot be enabled from the bot.",
-
   "cmd.description.rename": "Renommer la session actuelle",
-
   "legacy.models.fetch_error":
     "🔴 Impossible de récupérer la liste des modèles. Vérifiez l'état du serveur avec /status.",
   "legacy.models.empty": "📋 Aucun modèle disponible. Configurez les fournisseurs dans Antigravity.",
@@ -682,14 +625,12 @@ export const fr: I18nDictionary = {
   "legacy.models.no_provider_models": "  ⚠️ Aucun modèle disponible\n",
   "legacy.models.env_hint": "💡 Pour utiliser le modèle dans .env :\n",
   "legacy.models.error": "🔴 Une erreur s'est produite lors du chargement de la liste des modèles.",
-
   "stt.recognizing": "🎤 Reconnaissance audio en cours...",
   "stt.recognized": "🎤 Reconnu :",
   "stt.not_configured":
     "🎤 La reconnaissance vocale n'est pas configurée.\n\nDéfinissez STT_API_URL et STT_API_KEY dans .env pour l'activer.",
   "stt.error": "🔴 Impossible de reconnaître l'audio : {error}",
   "stt.empty_result": "🎤 Aucune parole détectée dans le message audio.",
-
   "cmd.description.open": "Ajouter un projet en parcourant les dossiers",
   "worktree.branch_detached": "detached HEAD",
   "worktree.select_with_current": "Sélectionnez un worktree :",
@@ -736,4 +677,54 @@ export const fr: I18nDictionary = {
   "local_command.empty_output": "The command produced no output.",
   "local_command.failed": "Command failed with exit code {exitCode}: {stderr}",
   "local_command.timeout": "The command timed out.",
-};
+  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.restart.ack":
+    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
+  "switch.code_needed":
+    "Falta el código: usa /code <código> con el código que te dio Google.",
+  "switch.already_pending":
+    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
+  "switch.working":
+    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
+  "switch.no_url_yet":
+    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
+  "switch.url_intro":
+    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
+  "switch.paste_code_hint":
+    "🔑 Luego pega el código aquí con: /code <código>",
+  "switch.submitting":
+    "⏳ Entregando el código a agy...",
+  "switch.done":
+    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
+  "switch.failed":
+    "❌ El switch falló:",
+  "bot.prompt_received": "📨 Reçu — préparation de l'agent…",
+  "bot.prompt_dispatched": "⚙️ Envoyé au pipeline de l'agent — au travail.",
+  "bot.prompt_slow_start": "⏳ L'agent met encore du temps à démarrer (démarrage à froid possible)…",
+  "bot.queue_hot_taken": "⚡ Ton message est entré directement dans le tour en cours (hot takeover).",
+  "bot.prompt_taken_in_flight":
+    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
+  "cmd.description.compact": "Compacter le contexte de la conversation",
+  "compact.busy": "⏳ L'agent est occupé — réessayez quand la tâche en cours sera terminée.",
+  "compact.no_session": "Il n'y a pas encore de conversation active à compacter.",
+  "compact.started": "🧹 Compactage : résumé de passation demandé à l'agent…",
+  "compact.auto_started": "🧹 La conversation a atteint {tokens}k tokens — compactage automatique…",
+  "compact.done": "✅ Compacté — on continue dans une nouvelle conversation avec le contexte transféré.",
+  "compact.failed": "⚠️ Échec du compactage — vérifiez les logs ; réessayez avec /compact.",
+  "compact.damaged_hint": "🛠 Cette erreur signifie souvent que l'état de la conversation est endommagé. Je peux le compacter et continuer dans une nouvelle conversation.",
+  "compact.button": "🧹 Compacter et continuer",
+  "bot.retrying": "⚠️ Service Antigravity indisponible (503) — nouvelle tentative automatique… essai {attempt}/{max}, prochain essai dans ~{seconds}s.",
+  "bot.retry_recovered": "✅ Antigravity est de retour — reprise.",
+  "bot.retry_exhausted": "❌ Antigravity est resté indisponible — tentatives épuisées. Renvoyez votre message lorsque le service sera rétabli.",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "Messages récents :",
+  "sessions.preview.you": "Vous :",
+  "sessions.preview.agent": "Agent :",};

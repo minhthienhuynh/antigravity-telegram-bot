@@ -21,8 +21,15 @@ export function isExpectedOpencodeUnavailableError(error: unknown): boolean {
     normalized.includes("econnrefused") ||
     normalized.includes("econnreset") ||
     normalized.includes("enotfound") ||
-    normalized.includes("connectex")
+    normalized.includes("connectex") ||
+    normalized.includes("not supported by this version") ||
+    normalized.includes("text/html")
   );
+}
+
+/** A "not found" answer from OpenCode (V1 body, or the V2 adapter's equivalent). */
+export function isOpencodeNotFoundError(error: unknown): boolean {
+  return isRecord(error) && error.name === "NotFoundError";
 }
 
 function hasServerUnavailableMarker(value: string): boolean {

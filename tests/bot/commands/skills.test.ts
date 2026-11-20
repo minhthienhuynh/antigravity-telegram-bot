@@ -8,10 +8,12 @@ import {
   formatSkillsSelectText,
   parseSkillPageCallback,
 } from "../../../src/bot/menus/skills-catalog-menu.js";
-import { interactionManager } from "../../../src/app/managers/interaction-manager.js";
 import { t } from "../../../src/i18n/index.js";
 import { defined } from "../../helpers/defined.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
 import type { ProcessPromptDeps } from "../../../src/bot/handlers/prompt.js";
+import type { ExecuteCommandDeps } from "../../../src/bot/callbacks/command-catalog-callback-handler.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   currentProject: {
@@ -23,6 +25,8 @@ const mocked = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentProject: vi.fn(() => mocked.currentProject),
 }));
@@ -34,6 +38,7 @@ vi.mock("../../../src/app/services/skills-catalog-service.js", () => ({
 vi.mock("../../../src/bot/handlers/prompt.js", () => ({
   processUserPrompt: (ctx: Context, input: { text: string }, deps: ProcessPromptDeps) =>
     mocked.processUserPromptMock(ctx, input.text, deps),
+  clearPromptResponseMode: vi.fn(),
 }));
 
 function createCommandContext(messageId: number): Context {
@@ -85,16 +90,22 @@ function createTextContext(text: string): Context {
   } as unknown as Context;
 }
 
-function createDeps(): ProcessPromptDeps {
+function createDeps(): ExecuteCommandDeps {
   return {
+    ...container, ensureEventSubscription: vi.fn(),
     bot: {} as Bot<Context>,
-    ensureEventSubscription: vi.fn(),
   };
 }
 
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
+
 describe("bot/commands/skills", () => {
   beforeEach(() => {
-    interactionManager.clear("test_setup");
+    container.interactionManager.clear("test_setup");
 
     mocked.currentProject = {
       id: "project-1",
@@ -113,7 +124,7 @@ describe("bot/commands/skills", () => {
     ]);
 
     const ctx = createCommandContext(123);
-    await skillsCommand(ctx as never);
+    await skillsCommand(ctx as never, createDeps());
 
     expect(mocked.commandListMock).toHaveBeenCalledWith("D:\\Projects\\Repo");
     expect(ctx.reply).toHaveBeenCalledTimes(1);
@@ -126,7 +137,7 @@ describe("bot/commands/skills", () => {
     expect(options.reply_markup.inline_keyboard[1]?.[0]?.callback_data).toBe("skills:select:1");
     expect(options.reply_markup.inline_keyboard[2]?.[0]?.callback_data).toBe("skills:cancel");
 
-    const state = interactionManager.getSnapshot();
+    const state = container.interactionManager.getSnapshot();
     expect(state?.kind).toBe("custom");
     expect(state?.expectedInput).toBe("callback");
     expect(state?.metadata.flow).toBe("skills");
@@ -141,9 +152,9 @@ describe("bot/commands/skills", () => {
     ]);
 
     const ctx = createCommandContext(124);
-    await skillsCommand(ctx as never);
+    await skillsCommand(ctx as never, createDeps());
 
-    const state = interactionManager.getSnapshot();
+    const state = container.interactionManager.getSnapshot();
     expect(state?.kind).toBe("custom");
     expect(state?.metadata.skills).toEqual([
       { name: "borsch", description: "Cook borsch" },
@@ -152,7 +163,7 @@ describe("bot/commands/skills", () => {
   });
 
   it("transitions to confirmation step after selecting skill", async () => {
-    interactionManager.start({
+    container.interactionManager.start({
       kind: "custom",
       expectedInput: "callback",
       metadata: {
@@ -176,7 +187,7 @@ describe("bot/commands/skills", () => {
       expect.objectContaining({ reply_markup: expect.any(Object) }),
     );
 
-    const state = interactionManager.getSnapshot();
+    const state = container.interactionManager.getSnapshot();
     expect(state?.kind).toBe("custom");
     expect(state?.expectedInput).toBe("mixed");
     expect(state?.metadata.stage).toBe("confirm");
@@ -184,7 +195,7 @@ describe("bot/commands/skills", () => {
   });
 
   it("executes selected skill from callback via prompt flow", async () => {
-    interactionManager.start({
+    container.interactionManager.start({
       kind: "custom",
       expectedInput: "mixed",
       metadata: {
@@ -201,7 +212,7 @@ describe("bot/commands/skills", () => {
     const handled = await handleSkillsCallback(ctx, deps);
 
     expect(handled).toBe(true);
-    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(container.interactionManager.getSnapshot()).toBeNull();
     expect(ctx.deleteMessage).toHaveBeenCalledTimes(1);
     expect(ctx.reply).toHaveBeenCalledWith(`${t("skills.executing_prefix")}\n/borsch`, {
       entities: [{ type: "code", offset: t("skills.executing_prefix").length + 1, length: 7 }],
@@ -210,7 +221,7 @@ describe("bot/commands/skills", () => {
   });
 
   it("executes selected skill with arguments from text message", async () => {
-    interactionManager.start({
+    container.interactionManager.start({
       kind: "custom",
       expectedInput: "mixed",
       metadata: {
@@ -227,7 +238,7 @@ describe("bot/commands/skills", () => {
     const handled = await handleSkillTextArguments(ctx, deps);
 
     expect(handled).toBe(true);
-    expect(interactionManager.getSnapshot()).toBeNull();
+    expect(container.interactionManager.getSnapshot()).toBeNull();
     expect(ctx.api.deleteMessage).toHaveBeenCalledWith(777, 500);
     expect(ctx.reply).toHaveBeenCalledWith(
       `${t("skills.executing_prefix")}\n/borsch with garlic buns`,
@@ -243,7 +254,7 @@ describe("bot/commands/skills", () => {
   });
 
   it("handles stale callback as inactive", async () => {
-    interactionManager.start({
+    container.interactionManager.start({
       kind: "custom",
       expectedInput: "callback",
       metadata: {
@@ -263,7 +274,7 @@ describe("bot/commands/skills", () => {
       text: t("skills.inactive_callback"),
       show_alert: true,
     });
-    expect(interactionManager.getSnapshot()?.kind).toBe("custom");
+    expect(container.interactionManager.getSnapshot()?.kind).toBe("custom");
   });
 
   it("handles next-page callback and renders second page", async () => {
@@ -272,7 +283,7 @@ describe("bot/commands/skills", () => {
       description: `Skill ${i + 1} description`,
     }));
 
-    interactionManager.start({
+    container.interactionManager.start({
       kind: "custom",
       expectedInput: "callback",
       metadata: {

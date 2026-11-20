@@ -1,6 +1,8 @@
+import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { CommandContext, Context } from "grammy";
 import { getCurrentSession } from "../../app/services/session-service.js";
-import { clearAllInteractionState } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { logger } from "../../utils/logger.js";
 import { t } from "../../i18n/index.js";
 import { foregroundSessionState } from "../../app/managers/foreground-session-state-manager.js";
@@ -19,14 +21,27 @@ interface AbortCurrentOperationOptions {
 async function releaseAbortBusyState(sessionId: string, reason: string): Promise<void> {
   foregroundSessionState.markIdle(sessionId);
   assistantRunState.clearRun(sessionId, reason);
-  await markAttachedSessionIdle(sessionId);
+  await markAttachedSessionIdle(sessionId, busyDeps);
   clearPromptResponseMode(sessionId);
 }
 
+export type AbortCommandDeps = Pick<
+  AppContainer,
+  "assistantRunState" | "attachManager" | "foregroundSessionState" | "resetInteractions"
+>;
+
 export async function abortCurrentOperation(
   ctx: Context,
-  options: AbortCurrentOperationOptions = {},
+  depsOrOptions?: AbortCommandDeps | AbortCurrentOperationOptions,
+  maybeOptions?: AbortCurrentOperationOptions,
 ): Promise<void> {
+  // Callers either pass (ctx, options) from the agy era or (ctx, deps, options)
+  // from the upstream container wiring.
+  const options: AbortCurrentOperationOptions =
+    maybeOptions ??
+    (depsOrOptions && "notifyUser" in depsOrOptions
+      ? (depsOrOptions as AbortCurrentOperationOptions)
+      : {});
   const notifyUser = options.notifyUser ?? true;
 
   try {
@@ -61,6 +76,6 @@ export async function abortCurrentOperation(
   }
 }
 
-export async function abortCommand(ctx: CommandContext<Context>): Promise<void> {
+export async function abortCommand(ctx: CommandContext<Context>, _deps?: AbortCommandDeps): Promise<void> {
   await abortCurrentOperation(ctx);
 }

@@ -1,8 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "grammy";
 import { settingsCommand } from "../../../src/bot/commands/settings-command.js";
 import { handleSettingsCallback } from "../../../src/bot/callbacks/settings-callback-handler.js";
-import { interactionManager } from "../../../src/app/managers/interaction-manager.js";
 import { t } from "../../../src/i18n/index.js";
 import { ar } from "../../../src/i18n/ar.js";
 import { de } from "../../../src/i18n/de.js";
@@ -27,6 +26,8 @@ import {
   SETTINGS_THINKING_CONTENT_CALLBACK,
   SETTINGS_TTS_CALLBACK,
 } from "../../../src/bot/menus/settings-menu.js";
+import { createTestAppContainer } from "../../helpers/app-container.js";
+import type { AppContainer } from "../../../src/app/bootstrap/app-container.js";
 
 const mocked = vi.hoisted(() => ({
   getCompactOutputModeMock: vi.fn(),
@@ -46,12 +47,24 @@ const mocked = vi.hoisted(() => ({
   applyPinnedDashboardEnabledMock: vi.fn(),
   getTtsModeMock: vi.fn(),
   setTtsModeMock: vi.fn(),
-  getPromptQueueEnabledMock: vi.fn(),
-  setPromptQueueEnabledMock: vi.fn(),
+  getPromptQueueModeMock: vi.fn(),
+  setPromptQueueModeMock: vi.fn(),
   isTtsConfiguredMock: vi.fn(),
+  serverVersion: "v1" as "v1" | "v2",
 }));
 
+vi.mock("../../../src/opencode/client.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../../src/opencode/client.js")>();
+  return {
+    ...original,
+    get opencodeServerVersion() {
+      return mocked.serverVersion;
+    },
+  };
+});
+
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCompactOutputMode: mocked.getCompactOutputModeMock,
   setCompactOutputMode: mocked.setCompactOutputModeMock,
@@ -69,20 +82,29 @@ vi.mock("../../../src/app/stores/settings-store.js", () => ({
   setPinnedDashboardEnabled: mocked.setPinnedDashboardEnabledMock,
   getTtsMode: mocked.getTtsModeMock,
   setTtsMode: mocked.setTtsModeMock,
-  getPromptQueueEnabled: mocked.getPromptQueueEnabledMock,
-  setPromptQueueEnabled: mocked.setPromptQueueEnabledMock,
+  getPromptQueueMode: mocked.getPromptQueueModeMock,
+  setPromptQueueMode: mocked.setPromptQueueModeMock,
 }));
 
 vi.mock("../../../src/app/services/tts-service.js", () => ({
   isTtsConfigured: mocked.isTtsConfiguredMock,
 }));
 
-vi.mock("../../../src/bot/pinned/pinned-message-manager.js", () => ({
-  pinnedMessageManager: {
-    initialize: vi.fn(),
-    applyPinnedDashboardEnabled: mocked.applyPinnedDashboardEnabledMock,
-  },
-}));
+function createDeps() {
+  return {
+    ...container,
+    pinnedMessageManager: {
+      initialize: vi.fn(),
+      applyPinnedDashboardEnabled: mocked.applyPinnedDashboardEnabledMock,
+    } as never,
+  };
+}
+
+let container: AppContainer;
+
+beforeEach(() => {
+  container = createTestAppContainer();
+});
 
 describe("bot/commands/settings-command", () => {
   beforeEach(() => {
@@ -103,16 +125,16 @@ describe("bot/commands/settings-command", () => {
     mocked.applyPinnedDashboardEnabledMock.mockReset();
     mocked.getTtsModeMock.mockReset();
     mocked.setTtsModeMock.mockReset();
-    mocked.getPromptQueueEnabledMock.mockReset();
-    mocked.setPromptQueueEnabledMock.mockReset();
+    mocked.getPromptQueueModeMock.mockReset();
+    mocked.setPromptQueueModeMock.mockReset();
     mocked.isTtsConfiguredMock.mockReset();
     mocked.getResponseStreamingModeMock.mockReturnValue("edit");
     mocked.getSendDiffFileAttachmentsMock.mockReturnValue(true);
     mocked.getShowAssistantRunFooterMock.mockReturnValue(true);
     mocked.getPinnedDashboardEnabledMock.mockReturnValue(true);
     mocked.applyPinnedDashboardEnabledMock.mockResolvedValue(undefined);
-    mocked.getPromptQueueEnabledMock.mockReturnValue(false);
-    interactionManager.clear("settings_test_reset");
+    mocked.getPromptQueueModeMock.mockReturnValue("off");
+    container.interactionManager.clear("settings_test_reset");
   });
 
   it("shows settings menu with current compact output and TTS modes", async () => {
@@ -127,7 +149,7 @@ describe("bot/commands/settings-command", () => {
       reply: replyMock,
     } as unknown as Context;
 
-    await settingsCommand(ctx as never);
+    await settingsCommand(ctx as never, createDeps());
 
     expect(replyMock).toHaveBeenCalledTimes(1);
     const call = defined(replyMock.mock.calls[0]);
@@ -169,7 +191,7 @@ describe("bot/commands/settings-command", () => {
       reply: replyMock,
     } as unknown as Context;
 
-    await settingsCommand(ctx as never);
+    await settingsCommand(ctx as never, createDeps());
 
     const call = defined(replyMock.mock.calls[0]);
     const [, opts] = call;
@@ -209,7 +231,7 @@ describe("bot/commands/settings-command", () => {
       reply: replyMock,
     } as unknown as Context;
 
-    await settingsCommand(ctx as never);
+    await settingsCommand(ctx as never, createDeps());
 
     const call = defined(replyMock.mock.calls[0]);
     const [, opts] = call;
@@ -238,20 +260,20 @@ describe("bot/callbacks/settings-callback-handler", () => {
     mocked.applyPinnedDashboardEnabledMock.mockReset();
     mocked.getTtsModeMock.mockReset();
     mocked.setTtsModeMock.mockReset();
-    mocked.getPromptQueueEnabledMock.mockReset();
-    mocked.setPromptQueueEnabledMock.mockReset();
+    mocked.getPromptQueueModeMock.mockReset();
+    mocked.setPromptQueueModeMock.mockReset();
     mocked.isTtsConfiguredMock.mockReset();
     mocked.getResponseStreamingModeMock.mockReturnValue("edit");
     mocked.getSendDiffFileAttachmentsMock.mockReturnValue(true);
     mocked.getShowAssistantRunFooterMock.mockReturnValue(true);
     mocked.getPinnedDashboardEnabledMock.mockReturnValue(true);
     mocked.applyPinnedDashboardEnabledMock.mockResolvedValue(undefined);
-    mocked.getPromptQueueEnabledMock.mockReturnValue(false);
-    interactionManager.clear("settings_test_reset");
+    mocked.getPromptQueueModeMock.mockReturnValue("off");
+    container.interactionManager.clear("settings_test_reset");
   });
 
   function activateSettingsMenu(): void {
-    interactionManager.start({
+    container.interactionManager.start({
       kind: "inline",
       expectedInput: "callback",
       metadata: {
@@ -277,7 +299,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_COMPACT_OUTPUT_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setCompactOutputModeMock).toHaveBeenCalledWith(true);
@@ -314,7 +336,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_DELETE_PROGRESS_ON_FINISH_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setDeleteCompactProgressOnFinishMock).toHaveBeenCalledWith(true);
@@ -334,7 +356,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_THINKING_CONTENT_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setShowThinkingContentMock).toHaveBeenCalledWith(false);
@@ -355,7 +377,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_DIFF_FILES_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setSendDiffFileAttachmentsMock).toHaveBeenCalledWith(false);
@@ -376,7 +398,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_RESPONSE_STREAMING_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setResponseStreamingModeMock).toHaveBeenCalledWith("draft");
@@ -397,7 +419,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_ASSISTANT_FOOTER_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setShowAssistantRunFooterMock).toHaveBeenCalledWith(false);
@@ -414,14 +436,14 @@ describe("bot/callbacks/settings-callback-handler", () => {
     mocked.getCompactOutputModeMock.mockReturnValue(false);
     mocked.getShowThinkingContentMock.mockReturnValue(true);
     mocked.getTtsModeMock.mockReturnValue("off");
-    mocked.getPromptQueueEnabledMock.mockReturnValueOnce(false).mockReturnValueOnce(true);
+    mocked.getPromptQueueModeMock.mockReturnValueOnce("off").mockReturnValueOnce("queue");
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_PROMPT_QUEUE_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
-    expect(mocked.setPromptQueueEnabledMock).toHaveBeenCalledWith(true);
+    expect(mocked.setPromptQueueModeMock).toHaveBeenCalledWith("queue");
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({ text: t("settings.saved") });
     const call = defined(vi.mocked(ctx.editMessageText).mock.calls[0]);
     const [text, opts] = call;
@@ -429,6 +451,57 @@ describe("bot/callbacks/settings-callback-handler", () => {
     expect(defined(opts?.reply_markup?.inline_keyboard[7]?.[0]).text).toBe(
       `${t("settings.prompt_queue.label")}: ${t("settings.value.on")}`,
     );
+  });
+
+  describe("message queue row", () => {
+    afterEach(() => {
+      mocked.serverVersion = "v1";
+    });
+
+    function queueRowText(ctx: ReturnType<typeof createCallbackContext>): string | undefined {
+      const call = defined(vi.mocked(ctx.editMessageText).mock.calls[0]);
+      const rows = call[1]?.reply_markup?.inline_keyboard ?? [];
+      return rows
+        .flat()
+        .map((button) => button.text)
+        .find((text) => text.startsWith(t("settings.prompt_queue.label")));
+    }
+
+    it.each([
+      { current: "off", next: "queue", label: "settings.prompt_queue.queue" },
+      { current: "queue", next: "steer", label: "settings.prompt_queue.steer" },
+      { current: "steer", next: "off", label: "settings.value.off" },
+    ] as const)(
+      "cycles $current to $next on a V2 server",
+      async ({ current, next, label }) => {
+        mocked.serverVersion = "v2";
+        mocked.getCompactOutputModeMock.mockReturnValue(false);
+        mocked.getTtsModeMock.mockReturnValue("off");
+        mocked.getPromptQueueModeMock.mockReturnValueOnce(current).mockReturnValueOnce(next);
+        activateSettingsMenu();
+        const ctx = createCallbackContext(SETTINGS_PROMPT_QUEUE_CALLBACK);
+
+        await handleSettingsCallback(ctx, createDeps());
+
+        expect(mocked.setPromptQueueModeMock).toHaveBeenCalledWith(next);
+        expect(queueRowText(ctx)).toBe(`${t("settings.prompt_queue.label")}: ${t(label)}`);
+      },
+    );
+
+    it("toggles the bot queue off on a V1 server", async () => {
+      mocked.getCompactOutputModeMock.mockReturnValue(false);
+      mocked.getTtsModeMock.mockReturnValue("off");
+      mocked.getPromptQueueModeMock.mockReturnValueOnce("queue").mockReturnValueOnce("off");
+      activateSettingsMenu();
+      const ctx = createCallbackContext(SETTINGS_PROMPT_QUEUE_CALLBACK);
+
+      await handleSettingsCallback(ctx, createDeps());
+
+      expect(mocked.setPromptQueueModeMock).toHaveBeenCalledWith("off");
+      expect(queueRowText(ctx)).toBe(
+        `${t("settings.prompt_queue.label")}: ${t("settings.value.off")}`,
+      );
+    });
   });
 
   it("cycles TTS mode and returns to settings menu", async () => {
@@ -439,7 +512,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_TTS_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setTtsModeMock).toHaveBeenCalledWith("all");
@@ -458,7 +531,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_TTS_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setTtsModeMock).not.toHaveBeenCalled();
@@ -477,7 +550,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_TTS_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setTtsModeMock).toHaveBeenCalledWith("off");
@@ -493,7 +566,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_PIN_SESSION_DASHBOARD_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.applyPinnedDashboardEnabledMock).toHaveBeenCalledWith(false);
@@ -511,7 +584,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(SETTINGS_PIN_SESSION_DASHBOARD_CALLBACK);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(mocked.setPinnedDashboardEnabledMock).not.toHaveBeenCalled();
@@ -522,7 +595,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
   it("ignores unrelated callbacks", async () => {
     const ctx = createCallbackContext("unknown:data");
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(false);
     expect(ctx.answerCallbackQuery).not.toHaveBeenCalled();
@@ -532,7 +605,7 @@ describe("bot/callbacks/settings-callback-handler", () => {
     activateSettingsMenu();
     const ctx = createCallbackContext(`${SETTINGS_CALLBACK_PREFIX}unknown`);
 
-    const result = await handleSettingsCallback(ctx);
+    const result = await handleSettingsCallback(ctx, createDeps());
 
     expect(result).toBe(true);
     expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({ text: t("callback.processing_error") });

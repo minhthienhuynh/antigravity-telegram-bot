@@ -44,6 +44,8 @@ const mocked = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentProject: vi.fn(() => mocked.currentProject),
 }));
@@ -59,6 +61,8 @@ vi.mock("../../../src/opencode/client.js", () => ({
     },
     session: {
       status: mocked.sessionStatusMock,
+      get: vi.fn().mockResolvedValue({ data: null, error: null }),
+      messages: vi.fn().mockResolvedValue({ data: [], error: null }),
     },
     question: {
       list: mocked.questionListMock,

@@ -1,4 +1,6 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { InlineKeyboard, type Context } from "grammy";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import {
   getProjectRoot,
   isPathWithinDirectory,
@@ -6,18 +8,30 @@ import {
   isWithinProjectRoot,
   pathToDisplayPath,
 } from "../../app/services/file-browser-service.js";
-import { isForegroundBusy } from "../../app/services/run-control-service.js";
+import {
+  isForegroundBusy,
+  type ForegroundBusyDeps,
+} from "../../app/services/run-control-service.js";
 import { t } from "../../i18n/index.js";
 import { alert, failure } from "./feedback.js";
 import { getProjectByWorktree } from "../../app/services/project-service.js";
 import { upsertSessionDirectory } from "../../app/services/session-cache-service.js";
 import { logger } from "../../utils/logger.js";
 import { replyBusyBlocked } from "../messages/busy-blocked-renderer.js";
-import { ensureActiveInlineMenu, clearActiveInlineMenu } from "../menus/inline-menu.js";
+import {
+  ensureActiveInlineMenu,
+  clearActiveInlineMenu,
+  type InlineMenuDeps,
+} from "../menus/inline-menu.js";
 import { sendDownloadedFile } from "../messages/send-downloaded-file.js";
-import { switchToProject } from "../../app/services/project-switch-service.js";
-import { createProjectSwitchPresentation } from "../services/project-switch-presentation.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
+import {
+  switchToProject,
+  type ProjectSwitchDeps,
+} from "../../app/services/project-switch-service.js";
+import {
+  createProjectSwitchPresentation,
+  type ProjectSwitchPresentationDeps,
+} from "../services/project-switch-presentation.js";
 import { promptAttachment } from "../../app/managers/prompt-attachment-manager.js";
 import { toRelativePath } from "../../app/services/prompt-attachment-service.js";
 import { ATTACHMENT_CANCEL_CALLBACK } from "./prompt-attachment-callback-handler.js";
@@ -44,9 +58,13 @@ import {
   renderOpenBrowseView,
 } from "../menus/file-browser-menu.js";
 
-export interface OpenCallbackDeps {
-  ensureEventSubscription?: (directory: string) => Promise<void>;
-}
+export type LsCallbackDeps = ForegroundBusyDeps & InlineMenuDeps;
+
+export type OpenCallbackDeps = Pick<AppContainer, "ensureEventSubscription"> &
+  ForegroundBusyDeps &
+  InlineMenuDeps &
+  ProjectSwitchDeps &
+  ProjectSwitchPresentationDeps;
 
 const sessionDirectories = new Map<number, string>();
 
@@ -78,19 +96,19 @@ export function rememberLsDirectory(userId: number | undefined, directory: strin
 
 export async function handleOpenCallback(
   ctx: Context,
-  deps: OpenCallbackDeps = {},
+  deps: OpenCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(OPEN_CALLBACK_PREFIX)) {
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(deps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "open");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "open", deps);
   if (!isActiveMenu) {
     return true;
   }
@@ -159,7 +177,7 @@ async function navigateOpenTo(ctx: Context, dirPath: string, page: number = 0): 
 async function selectDirectory(
   ctx: Context,
   directory: string,
-  deps: OpenCallbackDeps = {},
+  deps: OpenCallbackDeps = containerDeps,
 ): Promise<void> {
   const displayPath = pathToDisplayPath(directory);
 
@@ -170,8 +188,8 @@ async function selectDirectory(
     const projectInfo = await getProjectByWorktree(directory);
     const selectedProjectInfo = { ...projectInfo, name: displayPath };
     const replyKeyboard = await switchToProject(ctx, selectedProjectInfo, "open_project_selected", {
-      ensureEventSubscription: deps.ensureEventSubscription,
-      presentation: createProjectSwitchPresentation(),
+      ...deps,
+      presentation: createProjectSwitchPresentation(deps),
     });
 
     await ctx.answerCallbackQuery();
@@ -186,18 +204,18 @@ async function selectDirectory(
   }
 }
 
-export async function handleLsCallback(ctx: Context): Promise<boolean> {
+export async function handleLsCallback(ctx: Context, deps: LsCallbackDeps): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(LS_CALLBACK_PREFIX)) {
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(deps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "ls");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "ls", deps);
   if (!isActiveMenu) {
     return true;
   }
@@ -239,7 +257,7 @@ export async function handleLsCallback(ctx: Context): Promise<boolean> {
         await alert(ctx, "ls.access_denied");
         return true;
       }
-      await attachFileAndClose(ctx, attachPath);
+      await attachFileAndClose(ctx, deps, attachPath);
       return true;
     }
 
@@ -249,7 +267,7 @@ export async function handleLsCallback(ctx: Context): Promise<boolean> {
         await alert(ctx, "ls.access_denied");
         return true;
       }
-      await downloadFileAndClose(ctx, downloadPath);
+      await downloadFileAndClose(ctx, deps, downloadPath);
       return true;
     }
 
@@ -294,7 +312,11 @@ async function showLsFileDetails(ctx: Context, filePath: string, page: number): 
   await ctx.editMessageText(view.text, { parse_mode: "HTML", reply_markup: view.keyboard });
 }
 
-async function attachFileAndClose(ctx: Context, filePath: string): Promise<void> {
+async function attachFileAndClose(
+  ctx: Context,
+  deps: LsCallbackDeps,
+  filePath: string,
+): Promise<void> {
   const projectRoot = getProjectRoot();
   if (!projectRoot) {
     await ctx.answerCallbackQuery({ text: t("bot.project_not_selected") });
@@ -304,7 +326,7 @@ async function attachFileAndClose(ctx: Context, filePath: string): Promise<void>
   promptAttachment.set(filePath, projectRoot);
 
   await ctx.answerCallbackQuery();
-  clearActiveInlineMenu("ls_attached");
+  clearActiveInlineMenu("ls_attached", deps);
   clearLsPathIndex();
   await ctx.deleteMessage().catch(() => {});
 
@@ -316,7 +338,7 @@ async function attachFileAndClose(ctx: Context, filePath: string): Promise<void>
 
   // Wait for the prompt the file belongs to: "mixed" lets the text and the cancel button
   // through while blocking commands, menus, and non-text messages.
-  interactionManager.start({
+  deps.interactionManager.start({
     kind: "custom",
     expectedInput: "mixed",
     metadata: { flow: "attachment" },
@@ -325,14 +347,18 @@ async function attachFileAndClose(ctx: Context, filePath: string): Promise<void>
   logger.info(`[PromptAttachment] Attached from /ls: ${filePath}`);
 }
 
-async function downloadFileAndClose(ctx: Context, filePath: string): Promise<void> {
+async function downloadFileAndClose(
+  ctx: Context,
+  deps: LsCallbackDeps,
+  filePath: string,
+): Promise<void> {
   await ctx.answerCallbackQuery({ text: t("commands.download.downloading") });
   const downloaded = await sendDownloadedFile(ctx, filePath, { announce: false });
   if (!downloaded) {
     return;
   }
 
-  clearActiveInlineMenu("ls_downloaded");
+  clearActiveInlineMenu("ls_downloaded", deps);
   clearLsPathIndex();
   await ctx.deleteMessage().catch(() => {});
 }

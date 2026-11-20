@@ -1,7 +1,13 @@
 import type { I18nDictionary } from "./en.js";
 
 export const tr: I18nDictionary = {
-  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.description.recent": "Projelerdeki son oturumlar",
+  "recent.heading": "Projelerdeki son oturumlar (/recent ile yenile):",
+  "recent.empty": "📭 Projelerde oturum bulunamadı.",
+  "recent.running": "çalışıyor",
+  "recent.idle": "boşta",
+  "recent.question": "yanıt bekliyor",
+  "recent.permission": "izin bekliyor",
   "cmd.description.status": "Sunucu ve oturum durumu",
   "cmd.description.new": "Yeni oturum oluştur",
   "cmd.description.stop": "Geçerli işlemi durdur",
@@ -19,43 +25,14 @@ export const tr: I18nDictionary = {
   "cmd.description.opencode_start": "Antigravity sunucusunu başlat",
   "cmd.description.opencode_stop": "Antigravity sunucusunu durdur",
   "cmd.description.ls": "Dizin içeriğini listele",
-  "cmd.restart.ack":
-    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
-  "switch.code_needed":
-    "Falta el código: usa /code <código> con el código que te dio Google.",
-  "switch.already_pending":
-    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
-  "switch.working":
-    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
-  "switch.no_url_yet":
-    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
-  "switch.url_intro":
-    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
-  "switch.paste_code_hint":
-    "🔑 Luego pega el código aquí con: /code <código>",
-  "switch.submitting":
-    "⏳ Entregando el código a agy...",
-  "switch.done":
-    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
-  "switch.failed":
-    "❌ El switch falló:",
   "cmd.description.help": "Yardım",
-
   "callback.unknown_command": "Bilinmeyen komut",
   "callback.processing_error": "İşleme hatası",
-
   "error.load_agents": "❌ Ajan listesi yüklenemedi",
   "error.load_models": "❌ Model listesi yüklenemedi",
   "error.load_variants": "❌ Varyant listesi yüklenemedi",
   "error.context_button": "❌ Bağlam düğmesi işlenemedi",
   "error.generic": "🔴 Bir şeyler ters gitti.",
-
   "interaction.blocked.expired": "⚠️ Bu etkileşimin süresi doldu. Lütfen yeniden başlatın.",
   "interaction.blocked.expected_callback":
     "⚠️ Bu adım için lütfen satır içi düğmeleri kullanın veya İptal'e dokunun.",
@@ -64,36 +41,26 @@ export const tr: I18nDictionary = {
   "interaction.blocked.command_not_allowed": "⚠️ Bu komut geçerli adımda kullanılamaz.",
   "interaction.blocked.finish_current":
     "⚠️ Başka bir menü açmadan önce geçerli etkileşimi tamamlayın (yanıtlayın veya iptal edin).",
-
   "inline.blocked.expected_choice":
     "⚠️ Satır içi düğmelerle bir seçenek seçin veya İptal'e dokunun.",
   "inline.blocked.command_not_allowed": "⚠️ Satır içi menü etkinken bu komut kullanılamaz.",
-
   "question.blocked.expected_answer":
     "⚠️ Geçerli soruyu düğmelerle, Özel yanıt ile veya İptal ile yanıtlayın.",
   "question.blocked.command_not_allowed":
     "⚠️ Geçerli soru akışı tamamlanana kadar bu komut kullanılamaz.",
-
   "inline.button.cancel": "❌ İptal",
   "inline.button.close": "❌ Kapat",
   "inline.inactive_callback": "Bu menü etkin değil",
-
   "common.cancelled": "İptal edildi",
   "common.unknown": "bilinmiyor",
   "common.unknown_error": "bilinmeyen hata",
-
   "start.welcome":
     "👋 Antigravity Telegram Bot'a hoş geldiniz!\n\nKomutları kullanın:\n/projects — proje seç\n/sessions — oturum listesi\n/new — yeni oturum\n/commands — özel komutlar\n/skills — yetenek kataloğu\n/task — zamanlanmış görev\n/tasklist — zamanlanmış görevler\n/status — durum\n/help — yardım\n\nAjanı, modeli ve varyantı seçmek için alttaki düğmeleri kullanın.",
   "help.keyboard_hint":
     "💡 Ajan, model, varyant ve bağlam işlemleri için alttaki klavye düğmelerini kullanın.",
   "help.text":
     "📖 **Yardım**\n\n/status - Sunucu durumunu kontrol et\n/sessions - Oturum listesi\n/new - Yeni oturum oluştur\n/help - Yardım",
-
   "bot.thinking": "💭 Düşünüyor...",
-  "bot.prompt_received": "📨 Alındı — ajan hazırlanıyor…",
-  "bot.prompt_dispatched": "⚙️ Ajan hattına gönderildi — çalışıyor.",
-  "bot.prompt_slow_start": "⏳ Ajan hâlâ başlıyor (soğuk başlangıç zaman alabilir)…",
-  "bot.queue_hot_taken": "⚡ Mesajınız doğrudan devam eden tura girdi (hot takeover).",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ Çalışıyor",
   "progress.compact.finished_header": "✅ Çalışma tamamlandı",
@@ -109,28 +76,12 @@ export const tr: I18nDictionary = {
   "bot.create_session_error":
     "🔴 Oturum oluşturulamadı. /new komutunu deneyin veya sunucu durumunu /status ile kontrol edin.",
   "bot.session_created": "✅ Oturum oluşturuldu: {title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
-  "cmd.description.compact": "Konuşma bağlamını sıkıştır",
-  "compact.busy": "⏳ Ajan meşgul — mevcut görev bittiğinde tekrar deneyin.",
-  "compact.no_session": "Henüz sıkıştırılacak etkin bir konuşma yok.",
-  "compact.started": "🧹 Sıkıştırılıyor: ajandan devir özeti istendi…",
-  "compact.auto_started": "🧹 Konuşma {tokens}k token'a ulaştı — otomatik sıkıştırılıyor…",
-  "compact.done": "✅ Sıkıştırıldı — bağlam aktarılmış yeni bir konuşmada devam ediyoruz.",
-  "compact.failed": "⚠️ Sıkıştırma başarısız — günlükleri kontrol edin; /compact ile yeniden deneyin.",
-  "compact.damaged_hint": "🛠 Bu hata genellikle konuşma durumunun bozulduğu anlamına gelir. Sıkıştırıp yeni bir konuşmada devam edebilirim.",
-  "compact.button": "🧹 Sıkıştır ve devam et",
   "bot.session_busy":
     "⏳ Ajan zaten bir görev yürütüyor. Tamamlanmasını bekleyin veya geçerli çalışmayı kesmek için /abort kullanın.",
   "bot.session_reset_project_mismatch":
     "⚠️ Etkin oturum seçili projeyle eşleşmediği için sıfırlandı. Birini seçmek için /sessions veya yeni oturum oluşturmak için /new kullanın.",
   "bot.prompt_send_error": "İstek Antigravity'a gönderilemedi.",
   "bot.session_error": "🔴 Antigravity bir hata döndürdü: {message}",
-  "bot.retrying": "⚠️ Antigravity hizmeti kullanılamıyor (503) — otomatik yeniden deneme… deneme {attempt}/{max}, sonraki deneme ~{seconds} sn sonra.",
-  "bot.retry_recovered": "✅ Antigravity geri döndü — devam ediliyor.",
-  "bot.retry_exhausted": "❌ Antigravity kullanılamaz durumda kaldı — denemeler tükendi. Hizmet geri geldiğinde mesajınızı yeniden gönderin.",
   "bot.assistant_reply_undelivered":
     "⚠️ The last assistant reply could not be delivered. Send your message again if you still need it.",
   "bot.stale_messages_skipped":
@@ -167,7 +118,6 @@ export const tr: I18nDictionary = {
   "bot.model_no_pdf": "⚠️ Geçerli model PDF girdisini desteklemiyor. Yalnızca metin gönderiliyor.",
   "bot.document_extraction_error": "🔴 Belge metni çıkarılamadı.",
   "bot.text_file_too_large": "⚠️ Metin dosyası çok büyük (en fazla {maxSizeKb}KB)",
-
   "status.header_running": "🟢 Antigravity Sunucusu çalışıyor",
   "status.health.healthy": "Sağlıklı",
   "status.health.unhealthy": "Sağlıksız",
@@ -193,16 +143,13 @@ export const tr: I18nDictionary = {
   "status.session_not_selected": "Geçerli oturum: seçilmedi",
   "status.session_hint": "Seçmek için /sessions veya oluşturmak için /new kullanın",
   "status.header_unavailable": "🔴 Antigravity Sunucusu kullanılamıyor",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "Sunucuyu başlatmak için /opencode_start kullanın.",
-
   "tts.off": "🔇 Sesli yanıtlar kapatıldı.",
   "tts.all": "🔊 Sesli yanıtlar tüm mesajlar için açıldı.",
   "tts.auto": "🎤 Sesli yanıtlar yalnızca sesli/ses mesajları için açıldı.",
   "tts.not_configured":
     "⚠️ Sesli yanıtlar kullanılamıyor. Önce `TTS_API_URL` ve `TTS_API_KEY` ayarlayın.",
   "tts.failed": "⚠️ Sesli yanıt oluşturulamadı.",
-
   "settings.menu.title": "⚙️ Bot ayarları\nDeğerini değiştirmek için bir ayara dokunun:",
   "settings.compact_output.label": "Kompakt çıktı modu",
   "settings.delete_progress_on_finish.label": "Bitince ilerlemeyi sil",
@@ -217,8 +164,9 @@ export const tr: I18nDictionary = {
   "settings.prompt_queue.label": "Mesaj kuyruğu",
   "settings.value.on": "Açık",
   "settings.value.off": "Kapalı",
+  "settings.prompt_queue.queue": "Queue",
+  "settings.prompt_queue.steer": "Steer",
   "settings.saved": "✅ Ayar kaydedildi.",
-
   "projects.empty":
     "📭 Proje bulunamadı.\n\nAntigravity'da bir dizin açın ve en az bir oturum oluşturun, ardından burada görünecektir.",
   "projects.select": "Bir proje seçin:",
@@ -232,7 +180,6 @@ export const tr: I18nDictionary = {
   "projects.selected":
     "✅ Proje seçildi: {project}\n\n📋 Oturum sıfırlandı. Bu proje için /sessions veya /new kullanın.",
   "projects.select_error": "🔴 Proje seçilemedi.",
-
   "sessions.project_not_selected": "🏗 Proje seçilmedi.\n\nÖnce /projects ile bir proje seçin.",
   "sessions.empty": "📭 Oturum bulunamadı.\n\n/new ile yeni bir oturum oluşturun.",
   "sessions.select": "Bir oturum seçin:",
@@ -248,10 +195,8 @@ export const tr: I18nDictionary = {
   "sessions.selected": "✅ Oturum seçildi: {title}",
   "sessions.select_error": "🔴 Oturum seçilemedi.",
   "sessions.preview.empty": "Son mesaj yok.",
-  "sessions.preview.title": "Son mesajlar:",
-  "sessions.preview.you": "Siz:",
-  "sessions.preview.agent": "Ajan:",
-
+  "sessions.last_input.title": "Son kullanıcı girdisi:",
+  "sessions.last_input.attachment": "ek",
   "messages.project_not_selected": "🏗 Proje seçilmedi.\n\nÖnce /projects ile bir proje seçin.",
   "messages.session_not_selected":
     "💬 Oturum seçilmedi.\n\nÖnce /sessions ile bir oturum seçin veya /new ile oluşturun.",
@@ -274,7 +219,6 @@ export const tr: I18nDictionary = {
   "messages.revert_error": "❌ Mesaja geri dönülemedi. Lütfen tekrar deneyin.",
   "messages.fork_success": "🔀 Şu mesajdan fork oluşturuldu:\n\n{text}",
   "messages.fork_error": "❌ Fork oluşturulamadı. Lütfen tekrar deneyin.",
-
   "attach.project_not_selected": "🏗 Proje seçilmedi.\n\nÖnce /projects ile bir proje seçin.",
   "attach.session_not_selected": "💬 Oturum seçilmedi.\n\nÖnce /sessions ile bir oturum seçin.",
   "attach.session_project_mismatch":
@@ -287,18 +231,15 @@ export const tr: I18nDictionary = {
   "attach.restored_permissions": "Bekleyen izin istekleri geri yüklendi: {count}.",
   "attach.disconnect_hint": "Bağlantıyı kesmek için başka bir oturuma veya projeye geçin.",
   "attach.error": "🔴 Geçerli oturuma bağlanılamadı.",
-
   "detach.project_not_selected": "🏗 Proje seçilmedi.\n\nÖnce /projects ile bir proje seçin.",
   "detach.no_active_session": "ℹ️ Bot zaten hiçbir oturuma bağlı değil.",
   "detach.success":
     "✅ Oturumdan ayrılındı: {title}\n\nAntigravity oturumu durdurulmadı. Hâlâ çalışıyorsa ayrı olarak devam edecek. Daha sonra kontrol etmek için /sessions ile yeniden seçin.",
   "detach.error": "🔴 Geçerli oturumdan ayrılınamadı.",
-
   "new.project_not_selected": "🏗 Proje seçilmedi.\n\nÖnce /projects ile bir proje seçin.",
   "new.created": "✅ Yeni oturum oluşturuldu: {title}",
   "new.create_error":
     "🔴 Antigravity Sunucusu kullanılamıyor veya oturum oluşturulurken bir hata oluştu.",
-
   "stop.no_active_session":
     "🛑 Ajan başlatılmadı\n\n/new ile bir oturum oluşturun veya /sessions ile birini seçin.",
   "stop.in_progress":
@@ -314,7 +255,6 @@ export const tr: I18nDictionary = {
   "stop.warn_local_only":
     "⚠️ Olay akışı yerel olarak durduruldu, ancak sunucu tarafında iptal başarısız oldu.",
   "stop.error": "🔴 İşlem durdurulamadı.\n\nOlay akışı durduruldu, /abort komutunu tekrar deneyin.",
-
   "opencode_start.already_running_managed":
     "⚠️ Antigravity Sunucusu zaten çalışıyor\n\nPID: {pid}\nÇalışma süresi: {seconds} saniye",
   "opencode_start.already_running_external":
@@ -344,14 +284,12 @@ export const tr: I18nDictionary = {
   "opencode_stop.success": "✅ Antigravity Sunucusu başarıyla durduruldu",
   "opencode_stop.error":
     "🔴 Sunucu durdurulurken bir hata oluştu.\n\nAyrıntılar için uygulama günlüklerini kontrol edin.",
-
   "agent.changed_message": "✅ Ajan değiştirildi: {name}",
   "agent.change_error_callback": "Ajan değiştirilemedi",
   "agent.menu.current": "Geçerli ajan: {name}\n\nAjan seçin:",
   "agent.menu.select": "Ajan seçin:",
   "agent.menu.empty": "⚠️ Kullanılabilir ajan yok",
   "agent.menu.error": "🔴 Ajan listesi alınamadı",
-
   "model.changed_message": "✅ Model değiştirildi: {name}",
   "model.change_error_callback": "Model değiştirilemedi",
   "model.menu.empty": "⚠️ Kullanılabilir model yok",
@@ -381,7 +319,6 @@ export const tr: I18nDictionary = {
   "model.provider_models.title": "{provider} — model seçin:",
   "model.provider_models.empty": "⚠️ {provider} için kullanılabilir model yok",
   "model.provider_models.page_indicator": "Sayfa {current}/{total}",
-
   "variant.model_not_selected_callback": "Hata: model seçilmedi",
   "variant.changed_message": "✅ Varyant değiştirildi: {name}",
   "variant.change_error_callback": "Varyant değiştirilemedi",
@@ -389,16 +326,25 @@ export const tr: I18nDictionary = {
   "variant.menu.empty": "⚠️ Kullanılabilir varyant yok",
   "variant.menu.current": "Geçerli varyant: {name}\n\nVaryant seçin:",
   "variant.menu.error": "🔴 Varyant listesi alınamadı",
-
   "context.button.confirm": "✅ Evet, bağlamı sıkıştır",
+  "context.button.details_compact": "📦 Compact context",
+  "context.button.close": "❌ Close",
+  "context.details.title": "📊 Context details",
+  "context.details.window": "Window: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Token breakdown of the latest assistant message:",
+  "context.details.input": "Input: {count}",
+  "context.details.output": "Output: {count}",
+  "context.details.reasoning": "Reasoning: {count}",
+  "context.details.cache_read": "Cache read: {count}",
+  "context.details.cache_write": "Cache write: {count}",
+  "context.details.cost": "Cost: {cost}",
   "context.no_active_session": "⚠️ Etkin oturum yok. /new ile bir oturum oluşturun",
   "context.confirm_text":
-    '📊 "{title}" oturumu için bağlam sıkıştırma\n\nBu işlem, geçmişteki eski mesajları kaldırarak bağlam kullanımını azaltır. Geçerli görev kesilmeyecek.\n\nDevam edilsin mi?',
+    '📊 "{title}" oturumu için bağlam sıkıştırma\n\nBu işlem, geçmişteki eski mesajları kaldırarak bağlam kullanımını azaltır.\n\nDevam edilsin mi?',
   "context.callback_compacting": "Bağlam sıkıştırılıyor...",
   "context.progress": "⏳ Bağlam sıkıştırılıyor...",
   "context.error": "❌ Bağlam sıkıştırma başarısız oldu",
   "context.success": "✅ Bağlam başarıyla sıkıştırıldı",
-
   "permission.inactive_callback": "İzin isteği etkin değil",
   "permission.processing_error_callback": "İşleme hatası",
   "permission.no_active_request_callback": "Hata: etkin istek yok",
@@ -427,7 +373,6 @@ export const tr: I18nDictionary = {
   "permission.name.task": "Görev",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "Harici dizin",
-
   "question.inactive_callback": "Anket etkin değil",
   "question.processing_error_callback": "İşleme hatası",
   "question.select_one_required_callback": "En az bir seçenek seçin",
@@ -447,7 +392,6 @@ export const tr: I18nDictionary = {
   "question.summary.title": "✅ Anket tamamlandı!\n\n",
   "question.summary.question": "Soru {index}:\n{question}\n\n",
   "question.summary.answer": "Yanıt:\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} {name} Agent",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -461,9 +405,9 @@ export const tr: I18nDictionary = {
     "⚠️ Kuyruktaki medya {maxSizeMb} MiB ile sınırlıdır. Bir öğenin gönderilmesini bekleyip tekrar deneyin.",
   "queue.removed": "🗑 Mesaj kuyruktan kaldırıldı.",
   "queue.not_found": "Bu mesaj artık kuyrukta değil.",
+  "queue.steer_added": "📥 Added to the current task ({count}/{max}).",
   "queue.disabled_hint": "Mesaj kuyruğu /settings içinden açılabilir.",
   "keyboard.updated": "⌨️ Klavye güncellendi",
-
   "pinned.default_session_title": "yeni oturum",
   "pinned.unknown": "Bilinmiyor",
   "pinned.line.project": "Proje: {project}",
@@ -489,13 +433,11 @@ export const tr: I18nDictionary = {
   "pinned.files.title": "Dosyalar ({count}):",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... ve {count} tane daha",
-
   "tool.todo.overflow": "*({count} görev daha)*",
   "tool.file_header.write":
     "Dosya/Yol yaz: {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "Dosya/Yol düzenle: {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token": "Telegram bot token'ını girin (@BotFather'dan alabilirsiniz).\n> ",
   "runtime.wizard.ask_language":
     "Arayüz dilini seçin.\nListeden dil numarasını veya yerel ayar kodunu girin.\nVarsayılan dili korumak için Enter'a basın: {defaultLocale}\n{options}\n> ",
@@ -514,6 +456,15 @@ export const tr: I18nDictionary = {
     "Antigravity sunucu kullanıcı adını girin (isteğe bağlı).\nVarsayılanı kullanmak için Enter'a basın: {defaultUsername}\n> ",
   "runtime.wizard.ask_server_password":
     "Antigravity sunucu parolasını girin (isteğe bağlı).\nBoş bırakmak için Enter'a basın.\n> ",
+  "runtime.wizard.ask_server_version":
+    "Select OpenCode server version:\n1 - OpenCode V1 (1.x, npm package opencode-ai)\n2 - OpenCode V2 (2.x, npm package @opencode/cli)\nPress Enter to use default: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid": "Enter 1 or 2, or press Enter for default.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Enter OpenCode V2 server password (required).\nShow it with: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "The password is required for OpenCode V2. Please try again.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Enter OpenCode server password.\nPress Enter to keep the saved password.\n> ",
   "runtime.wizard.api_url_invalid":
     "Geçerli bir URL (http/https) girin veya varsayılan için Enter'a basın.\n",
   "runtime.wizard.start": "Antigravity Telegram Bot kurulumu.\n",
@@ -523,7 +474,6 @@ export const tr: I18nDictionary = {
   "runtime.wizard.tty_required":
     "Etkileşimli sihirbaz bir TTY terminali gerektirir. `opencode-telegram config` komutunu etkileşimli bir kabukta çalıştırın.",
   "runtime.container.command_unavailable": "⚠️ Bu komut Docker imajında kullanılamaz.",
-
   "rename.no_session": "⚠️ Etkin oturum yok. Önce bir oturum oluşturun veya seçin.",
   "rename.prompt": "📝 Oturum için yeni başlık girin:\n\nGeçerli: {title}",
   "rename.empty_title": "⚠️ Başlık boş olamaz.",
@@ -538,7 +488,6 @@ export const tr: I18nDictionary = {
   "rename.blocked.command_not_allowed":
     "⚠️ Yeniden adlandırma yeni ad beklerken bu komut kullanılamaz.",
   "rename.button.cancel": "❌ İptal",
-
   "task.prompt.schedule":
     "⏰ Görev zamanlamasını doğal dilde gönderin.\n\nÖrnekler:\n- her 5 dakikada bir\n- her gün 17:00'de\n- yarın 12:00'de",
   "task.schedule_empty": "⚠️ Zamanlama boş olamaz.",
@@ -574,7 +523,6 @@ export const tr: I18nDictionary = {
     "Zamanlanmış görev etkileşimli bir soru sordu ve gözetimsiz devam edemiyor.",
   "task.run.error.interactive_permission":
     "Zamanlanmış görev etkileşimli izin istedi ve gözetimsiz devam edemiyor.",
-
   "tasklist.empty": "📭 Henüz zamanlanmış görev yok.",
   "tasklist.select": "Bir zamanlanmış görev seçin:",
   "tasklist.details":
@@ -585,7 +533,6 @@ export const tr: I18nDictionary = {
   "tasklist.deleted_callback": "Silindi",
   "tasklist.inactive_callback": "Bu zamanlanmış görev menüsü etkin değil",
   "tasklist.load_error": "🔴 Zamanlanmış görevler yüklenemedi.",
-
   "commands.select": "Bir Antigravity komutu seçin:",
   "commands.empty": "📭 Bu proje için kullanılabilir Antigravity komutu yok.",
   "commands.fetch_error": "🔴 Antigravity komutları yüklenemedi.",
@@ -612,7 +559,6 @@ export const tr: I18nDictionary = {
   "commands.download.size": "Boyut",
   "commands.download.modified": "Değiştirilme",
   "commands.download.error": "Dosya indirilemedi.",
-
   "skills.select": "Bir Antigravity yeteneği seçin:",
   "skills.empty": "📭 Bu proje için kullanılabilir Antigravity yeteneği yok.",
   "skills.fetch_error": "🔴 Antigravity yetenekleri yüklenemedi.",
@@ -630,7 +576,6 @@ export const tr: I18nDictionary = {
   "skills.button.next_page": "Sonraki ➡️",
   "skills.page_empty_callback": "Bu sayfada yetenek yok",
   "skills.page_load_error_callback": "Bu sayfa yüklenemiyor. Lütfen tekrar deneyin.",
-
   "mcps.select": "MCP sunucuları:",
   "mcps.empty": "📭 Yapılandırılmış MCP sunucusu yok.",
   "mcps.fetch_error": "🔴 MCP sunucuları yüklenemedi.",
@@ -649,9 +594,7 @@ export const tr: I18nDictionary = {
   "mcps.button.disable": "🔴 Devre dışı bırak",
   "mcps.button.back": "⬅️ Geri",
   "mcps.auth_required": "Bu sunucu yetkilendirme gerektiriyor ve bottan etkinleştirilemez.",
-
   "cmd.description.rename": "Geçerli oturumu yeniden adlandır",
-
   "legacy.models.fetch_error":
     "🔴 Model listesi alınamadı. Sunucu durumunu /status ile kontrol edin.",
   "legacy.models.empty": "📋 Kullanılabilir model yok. Antigravity'da sağlayıcıları yapılandırın.",
@@ -659,14 +602,12 @@ export const tr: I18nDictionary = {
   "legacy.models.no_provider_models": "  ⚠️ Kullanılabilir model yok\n",
   "legacy.models.env_hint": "💡 Modeli .env içinde kullanmak için:\n",
   "legacy.models.error": "🔴 Model listesi yüklenirken bir hata oluştu.",
-
   "stt.recognizing": "🎤 Ses tanınıyor...",
   "stt.recognized": "🎤 Tanınan:",
   "stt.not_configured":
     "🎤 Ses tanıma yapılandırılmamış.\n\nEtkinleştirmek için .env içinde STT_API_URL ve STT_API_KEY ayarlayın.",
   "stt.error": "🔴 Ses tanınamadı: {error}",
   "stt.empty_result": "🎤 Ses mesajında konuşma algılanmadı.",
-
   "cmd.description.open": "Dizinlere göz atarak proje ekle",
   "worktree.branch_detached": "detached HEAD",
   "worktree.select_with_current": "Bir worktree seçin:",
@@ -712,4 +653,54 @@ export const tr: I18nDictionary = {
   "local_command.empty_output": "Komut herhangi bir çıktı üretmedi.",
   "local_command.failed": "Komut {exitCode} çıkış koduyla başarısız oldu: {stderr}",
   "local_command.timeout": "Komut zaman aşımına uğradı.",
-};
+  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.restart.ack":
+    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
+  "switch.code_needed":
+    "Falta el código: usa /code <código> con el código que te dio Google.",
+  "switch.already_pending":
+    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
+  "switch.working":
+    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
+  "switch.no_url_yet":
+    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
+  "switch.url_intro":
+    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
+  "switch.paste_code_hint":
+    "🔑 Luego pega el código aquí con: /code <código>",
+  "switch.submitting":
+    "⏳ Entregando el código a agy...",
+  "switch.done":
+    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
+  "switch.failed":
+    "❌ El switch falló:",
+  "bot.prompt_received": "📨 Alındı — ajan hazırlanıyor…",
+  "bot.prompt_dispatched": "⚙️ Ajan hattına gönderildi — çalışıyor.",
+  "bot.prompt_slow_start": "⏳ Ajan hâlâ başlıyor (soğuk başlangıç zaman alabilir)…",
+  "bot.queue_hot_taken": "⚡ Mesajınız doğrudan devam eden tura girdi (hot takeover).",
+  "bot.prompt_taken_in_flight":
+    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
+  "cmd.description.compact": "Konuşma bağlamını sıkıştır",
+  "compact.busy": "⏳ Ajan meşgul — mevcut görev bittiğinde tekrar deneyin.",
+  "compact.no_session": "Henüz sıkıştırılacak etkin bir konuşma yok.",
+  "compact.started": "🧹 Sıkıştırılıyor: ajandan devir özeti istendi…",
+  "compact.auto_started": "🧹 Konuşma {tokens}k token'a ulaştı — otomatik sıkıştırılıyor…",
+  "compact.done": "✅ Sıkıştırıldı — bağlam aktarılmış yeni bir konuşmada devam ediyoruz.",
+  "compact.failed": "⚠️ Sıkıştırma başarısız — günlükleri kontrol edin; /compact ile yeniden deneyin.",
+  "compact.damaged_hint": "🛠 Bu hata genellikle konuşma durumunun bozulduğu anlamına gelir. Sıkıştırıp yeni bir konuşmada devam edebilirim.",
+  "compact.button": "🧹 Sıkıştır ve devam et",
+  "bot.retrying": "⚠️ Antigravity hizmeti kullanılamıyor (503) — otomatik yeniden deneme… deneme {attempt}/{max}, sonraki deneme ~{seconds} sn sonra.",
+  "bot.retry_recovered": "✅ Antigravity geri döndü — devam ediliyor.",
+  "bot.retry_exhausted": "❌ Antigravity kullanılamaz durumda kaldı — denemeler tükendi. Hizmet geri geldiğinde mesajınızı yeniden gönderin.",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "Son mesajlar:",
+  "sessions.preview.you": "Siz:",
+  "sessions.preview.agent": "Ajan:",};

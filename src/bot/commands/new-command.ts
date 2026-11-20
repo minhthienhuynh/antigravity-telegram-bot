@@ -1,9 +1,11 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
+import { busyDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Bot } from "grammy";
 import { CommandContext, Context } from "grammy";
 import { setCurrentSession, clearSession } from "../../app/services/session-service.js";
 import type { SessionInfo } from "../../app/types/session.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
-import { clearAllInteractionState } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { keyboardManager } from "../keyboards/keyboard-manager.js";
 import { getStoredAgent, resolveProjectAgent } from "../../app/services/agent-selection-service.js";
 import { getStoredModel } from "../../app/services/model-selection-service.js";
@@ -26,9 +28,9 @@ export interface NewCommandDeps {
  * The conversation id is cleared so the next prompt spawns agy without
  * `--conversation`, and agy creates a brand-new conversation .db.
  */
-export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandDeps) {
+export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandDeps = containerDeps) {
   try {
-    if (isForegroundBusy()) {
+    if (isForegroundBusy(busyDeps)) {
       await replyBusyBlocked(ctx);
       return;
     }
@@ -58,8 +60,7 @@ export async function newCommand(ctx: CommandContext<Context>, deps: NewCommandD
       bot: deps.bot,
       chatId: ctx.chat.id,
       session: sessionInfo,
-      ensureEventSubscription: deps.ensureEventSubscription,
-    });
+      ensureEventSubscription: deps.ensureEventSubscription });
 
     // Get current state for keyboard
     const currentAgent = await resolveProjectAgent(getStoredAgent());

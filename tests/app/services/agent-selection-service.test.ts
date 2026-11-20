@@ -28,6 +28,8 @@ const {
 });
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentAgent: getCurrentAgentMock,
   setCurrentAgent: setCurrentAgentMock,

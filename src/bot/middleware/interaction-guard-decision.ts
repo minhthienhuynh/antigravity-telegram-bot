@@ -1,5 +1,6 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import type {
   BlockReason,
   ExpectedInput,
@@ -8,10 +9,13 @@ import type {
   InteractionState,
   InteractionKind,
 } from "../../app/types/interaction.js";
-import { foregroundSessionState } from "../../app/managers/foreground-session-state-manager.js";
-import { attachManager } from "../../app/managers/attach-manager.js";
 import { QUEUED_PROMPT_BUTTON_TEXT_PATTERN } from "../message-patterns.js";
 import type { LocalCommandRegistry } from "../../app/services/local-command-registry.js";
+
+export type InteractionGuardDecisionDeps = Pick<
+  AppContainer,
+  "attachManager" | "foregroundSessionState" | "interactionManager"
+>;
 
 const BUSY_ALLOWED_COMMANDS = ["/abort", "/detach", "/status", "/help", "/opencode_stop"] as const;
 const BUSY_ALLOWED_COMMAND_SET = new Set<string>(BUSY_ALLOWED_COMMANDS);
@@ -157,8 +161,10 @@ function isAllowedTaskCallback(ctx: Context, state: InteractionState): boolean {
 
 export function resolveInteractionGuardDecision(
   ctx: Context,
+  deps: InteractionGuardDecisionDeps = containerDeps,
   localCommandRegistry?: LocalCommandRegistry,
 ): GuardDecision {
+  const { attachManager, foregroundSessionState, interactionManager } = deps;
   const state = interactionManager.getSnapshot();
   const { inputType, command } = classifyIncomingInput(ctx);
   const isBusy = foregroundSessionState.isBusy() || attachManager.isBusy();

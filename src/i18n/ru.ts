@@ -1,7 +1,13 @@
 import type { I18nDictionary } from "./en.js";
 
 export const ru: I18nDictionary = {
-  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.description.recent": "Последние сессии всех проектов",
+  "recent.heading": "Последние сессии всех проектов (обновить: /recent):",
+  "recent.empty": "📭 Сессий в проектах нет.",
+  "recent.running": "выполняется",
+  "recent.idle": "ожидает",
+  "recent.question": "ждёт ответа",
+  "recent.permission": "ждёт разрешения",
   "cmd.description.status": "Статус сервера и сессии",
   "cmd.description.new": "Создать новую сессию",
   "cmd.description.stop": "Прервать текущее действие",
@@ -19,43 +25,14 @@ export const ru: I18nDictionary = {
   "cmd.description.opencode_start": "Запустить Antigravity сервер",
   "cmd.description.opencode_stop": "Остановить Antigravity сервер",
   "cmd.description.ls": "Список содержимого каталога",
-  "cmd.restart.ack":
-    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
-  "cmd.description.switch":
-    "switch",
-  "cmd.description.code":
-    "code",
-  "switch.no_pending":
-    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
-  "switch.code_needed":
-    "Falta el código: usa /code <código> con el código que te dio Google.",
-  "switch.already_pending":
-    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
-  "switch.working":
-    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
-  "switch.no_url_yet":
-    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
-  "switch.url_intro":
-    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
-  "switch.paste_code_hint":
-    "🔑 Luego pega el código aquí con: /code <código>",
-  "switch.submitting":
-    "⏳ Entregando el código a agy...",
-  "switch.done":
-    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
-  "switch.failed":
-    "❌ El switch falló:",
   "cmd.description.help": "Справка",
-
   "callback.unknown_command": "Неизвестная команда",
   "callback.processing_error": "Ошибка обработки",
-
   "error.load_agents": "❌ Ошибка при загрузке списка агентов",
   "error.load_models": "❌ Ошибка при загрузке списка моделей",
   "error.load_variants": "❌ Ошибка при загрузке списка вариантов",
   "error.context_button": "❌ Ошибка при обработке кнопки контекста",
   "error.generic": "🔴 Произошла ошибка.",
-
   "interaction.blocked.expired": "⚠️ Текущая интеракция устарела. Запустите ее снова.",
   "interaction.blocked.expected_callback":
     "⚠️ Для этого шага используйте inline-кнопки или нажмите Отмена.",
@@ -64,35 +41,25 @@ export const ru: I18nDictionary = {
   "interaction.blocked.command_not_allowed": "⚠️ Эта команда недоступна на текущем шаге.",
   "interaction.blocked.finish_current":
     "⚠️ Сначала завершите текущую интеракцию (ответьте или отмените), затем откройте другое меню.",
-
   "inline.blocked.expected_choice": "⚠️ Выберите вариант через inline-кнопки или нажмите Отмена.",
   "inline.blocked.command_not_allowed": "⚠️ Эта команда недоступна, пока активно inline-меню.",
-
   "question.blocked.expected_answer":
     "⚠️ Ответьте на текущий вопрос кнопками, через Свой ответ, или нажмите Отмена.",
   "question.blocked.command_not_allowed":
     "⚠️ Эта команда недоступна, пока не завершен текущий опрос.",
-
   "inline.button.cancel": "❌ Отмена",
   "inline.button.close": "❌ Закрыть",
   "inline.inactive_callback": "Это меню уже неактивно",
-
   "common.cancelled": "Отменено",
   "common.unknown": "неизвестна",
   "common.unknown_error": "неизвестная ошибка",
-
   "start.welcome":
     "👋 Добро пожаловать в Antigravity Telegram Bot!\n\nИспользуйте команды:\n/projects — выбрать проект\n/sessions — список сессий\n/new — новая сессия\n/commands — пользовательские команды\n/skills — каталог скиллов\n/task — задача по расписанию\n/tasklist — список задач по расписанию\n/status — статус\n/help — справка\n\nАгент, модель и вариант выбираются кнопками внизу.",
   "help.keyboard_hint":
     "💡 Агент, модель, вариант и действия с контекстом доступны через нижние кнопки клавиатуры.",
   "help.text":
     "📖 **Справка**\n\n/status - Проверить статус сервера\n/sessions - Список сессий\n/new - Создать новую сессию\n/help - Справка",
-
   "bot.thinking": "💭 Думаю...",
-  "bot.prompt_received": "📨 Получено — подготавливаем агента…",
-  "bot.prompt_dispatched": "⚙️ Отправлено в пайплайн агента — работаем.",
-  "bot.prompt_slow_start": "⏳ Агент ещё запускается (холодный старт может занять время)…",
-  "bot.queue_hot_taken": "⚡ Ваше сообщение ушло прямо в текущий ход (hot takeover).",
   "progress.compact.activity": "{header}\n{activity}",
   "progress.compact.working_header": "⏳ Работаю",
   "progress.compact.finished_header": "✅ Работа завершена",
@@ -108,28 +75,12 @@ export const ru: I18nDictionary = {
   "bot.create_session_error":
     "🔴 Не удалось создать сессию. Попробуйте команду /new или проверьте статус сервера /status.",
   "bot.session_created": "✅ Сессия создана: {title}",
-  "bot.prompt_taken_in_flight":
-    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
-  "bot.interrupted_for_new_prompt":
-    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
-  "cmd.description.compact": "Сжать контекст беседы",
-  "compact.busy": "⏳ Агент занят — попробуйте, когда текущая задача завершится.",
-  "compact.no_session": "Пока нет активной беседы для сжатия.",
-  "compact.started": "🧹 Сжатие: запросил у агента сводку для передачи…",
-  "compact.auto_started": "🧹 Беседа достигла {tokens}k токенов — сжимаю автоматически…",
-  "compact.done": "✅ Сжато — продолжаем в новой беседе с переданным контекстом.",
-  "compact.failed": "⚠️ Не удалось сжать — проверьте логи; повторите с /compact.",
-  "compact.damaged_hint": "🛠 Эта ошибка обычно означает, что состояние беседы повреждено. Могу сжать его и продолжить в новой беседе.",
-  "compact.button": "🧹 Сжать и продолжить",
   "bot.session_busy":
     "⏳ Агент уже выполняет задачу. Дождитесь завершения или используйте /abort, чтобы прервать текущий запуск.",
   "bot.session_reset_project_mismatch":
     "⚠️ Активная сессия не соответствует выбранному проекту, поэтому была сброшена. Используйте /sessions для выбора или /new для создания новой сессии.",
   "bot.prompt_send_error": "Не удалось отправить запрос в Antigravity.",
   "bot.session_error": "🔴 Antigravity вернул ошибку: {message}",
-  "bot.retrying": "⚠️ Сервис Antigravity недоступен (503) — автоматическая повторная попытка… попытка {attempt}/{max}, следующая через ~{seconds} с.",
-  "bot.retry_recovered": "✅ Antigravity снова доступен — продолжаю.",
-  "bot.retry_exhausted": "❌ Antigravity остался недоступен — попытки исчерпаны. Отправьте сообщение снова, когда сервис восстановится.",
   "bot.assistant_reply_undelivered":
     "⚠️ Последний ответ ассистента не удалось доставить. Отправьте сообщение ещё раз, если оно ещё нужно.",
   "bot.stale_messages_skipped":
@@ -165,7 +116,6 @@ export const ru: I18nDictionary = {
   "bot.model_no_pdf": "⚠️ Текущая модель не поддерживает PDF. Отправляю только текст.",
   "bot.document_extraction_error": "🔴 Не удалось извлечь текст из документа.",
   "bot.text_file_too_large": "⚠️ Текстовый файл слишком большой (макс. {maxSizeKb}КБ)",
-
   "status.header_running": "🟢 Antigravity Server запущен",
   "status.health.healthy": "Healthy",
   "status.health.unhealthy": "Unhealthy",
@@ -191,15 +141,12 @@ export const ru: I18nDictionary = {
   "status.session_not_selected": "Текущая сессия: не выбрана",
   "status.session_hint": "Используйте /sessions для выбора или /new для создания",
   "status.header_unavailable": "🔴 Antigravity Server недоступен",
-  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
   "status.unavailable_hint": "Используйте /opencode_start для запуска сервера.",
-
   "tts.off": "🔇 Аудиоответы выключены.",
   "tts.all": "🔊 Аудиоответы включены для всех сообщений.",
   "tts.auto": "🎤 Аудиоответы включены только для голосовых сообщений.",
   "tts.not_configured": "⚠️ Аудиоответы недоступны. Сначала укажите `TTS_API_URL` и `TTS_API_KEY`.",
   "tts.failed": "⚠️ Не удалось создать аудиоответ.",
-
   "settings.menu.title": "⚙️ Настройки бота\nНажмите на параметр, чтобы переключить его значение:",
   "settings.compact_output.label": "Компактный вывод",
   "settings.delete_progress_on_finish.label": "Удалять прогресс по завершении",
@@ -214,8 +161,9 @@ export const ru: I18nDictionary = {
   "settings.prompt_queue.label": "Очередь сообщений",
   "settings.value.on": "Вкл",
   "settings.value.off": "Выкл",
+  "settings.prompt_queue.queue": "Очередь",
+  "settings.prompt_queue.steer": "Стир",
   "settings.saved": "✅ Настройка сохранена.",
-
   "projects.empty":
     "📭 Проектов нет.\n\nОткройте директорию в Antigravity и создайте хотя бы одну сессию, после этого она появится здесь.",
   "projects.select": "Выберите проект:",
@@ -229,7 +177,6 @@ export const ru: I18nDictionary = {
   "projects.selected":
     "✅ Проект выбран: {project}\n\n📋 Сессия сброшена. Используйте /sessions или /new для работы с этим проектом.",
   "projects.select_error": "🔴 Ошибка при выборе проекта.",
-
   "sessions.project_not_selected":
     "🏗 Проект не выбран.\n\nСначала выберите проект командой /projects.",
   "sessions.empty": "📭 Сессий нет.\n\nСоздайте новую сессию командой /new.",
@@ -247,10 +194,8 @@ export const ru: I18nDictionary = {
   "sessions.selected": "✅ Сессия выбрана: {title}",
   "sessions.select_error": "🔴 Ошибка при выборе сессии.",
   "sessions.preview.empty": "Последних сообщений нет.",
-  "sessions.preview.title": "Последние сообщения:",
-  "sessions.preview.you": "Вы:",
-  "sessions.preview.agent": "Агент:",
-
+  "sessions.last_input.title": "Последний ввод пользователя:",
+  "sessions.last_input.attachment": "вложение",
   "messages.project_not_selected":
     "🏗 Проект не выбран.\n\nСначала выберите проект командой /projects.",
   "messages.session_not_selected":
@@ -274,7 +219,6 @@ export const ru: I18nDictionary = {
   "messages.revert_error": "❌ Не удалось откатить сообщение. Попробуйте ещё раз.",
   "messages.fork_success": "🔀 Создан форк от сообщения:\n\n{text}",
   "messages.fork_error": "❌ Не удалось создать форк. Попробуйте ещё раз.",
-
   "attach.project_not_selected":
     "🏗 Проект не выбран.\n\nСначала выберите проект командой /projects.",
   "attach.session_not_selected":
@@ -289,18 +233,15 @@ export const ru: I18nDictionary = {
   "attach.restored_permissions": "Восстановил ожидающие запросы разрешений: {count}.",
   "attach.disconnect_hint": "Чтобы отключиться, переключитесь на другую сессию или проект.",
   "attach.error": "🔴 Не удалось подключиться к текущей сессии.",
-
   "detach.project_not_selected":
     "🏗 Проект не выбран.\n\nСначала выберите проект командой /projects.",
   "detach.no_active_session": "ℹ️ Бот уже не привязан ни к одной сессии.",
   "detach.success":
     "✅ Отсоединился от сессии: {title}\n\nAntigravity-сессия не остановлена. Если она еще выполняется, выполнение продолжится отдельно. Чтобы проверить ее позже, снова выберите эту сессию через /sessions.",
   "detach.error": "🔴 Не удалось отсоединиться от текущей сессии.",
-
   "new.project_not_selected": "🏗 Проект не выбран.\n\nСначала выберите проект командой /projects.",
   "new.created": "✅ Создана новая сессия: {title}",
   "new.create_error": "🔴 Antigravity Server недоступен или произошла ошибка при создании сессии.",
-
   "stop.no_active_session":
     "🛑 Агент не был запущен\n\nСначала создайте сессию командой /new или выберите существующую через /sessions.",
   "stop.in_progress":
@@ -319,7 +260,6 @@ export const ru: I18nDictionary = {
     "⚠️ Поток событий остановлен локально, но при прерывании на сервере произошла ошибка.",
   "stop.error":
     "🔴 Ошибка при прерывании действия.\n\nПоток событий остановлен, попробуйте /abort еще раз.",
-
   "opencode_start.already_running_managed":
     "⚠️ Antigravity Server уже запущен\n\nPID: {pid}\nUptime: {seconds} секунд",
   "opencode_start.already_running_external":
@@ -348,14 +288,12 @@ export const ru: I18nDictionary = {
   "opencode_stop.success": "✅ Antigravity Server успешно остановлен",
   "opencode_stop.error":
     "🔴 Произошла ошибка при остановке сервера.\n\nПроверьте логи приложения для подробностей.",
-
   "agent.changed_message": "✅ Агент изменен на: {name}",
   "agent.change_error_callback": "Ошибка при смене агента",
   "agent.menu.current": "Текущий агент: {name}\n\nВыберите агента:",
   "agent.menu.select": "Выберите агента:",
   "agent.menu.empty": "⚠️ Нет доступных агентов",
   "agent.menu.error": "🔴 Не удалось получить список агентов",
-
   "model.changed_message": "✅ Модель изменена на: {name}",
   "model.change_error_callback": "Ошибка при смене модели",
   "model.menu.empty": "⚠️ Нет доступных моделей",
@@ -385,7 +323,6 @@ export const ru: I18nDictionary = {
   "model.provider_models.title": "{provider} — выберите модель:",
   "model.provider_models.empty": "⚠️ У провайдера {provider} нет доступных моделей",
   "model.provider_models.page_indicator": "Страница {current}/{total}",
-
   "variant.model_not_selected_callback": "Ошибка: модель не выбрана",
   "variant.changed_message": "✅ Вариант изменен на: {name}",
   "variant.change_error_callback": "Ошибка при смене варианта",
@@ -393,16 +330,25 @@ export const ru: I18nDictionary = {
   "variant.menu.empty": "⚠️ Нет доступных вариантов",
   "variant.menu.current": "Текущий вариант: {name}\n\nВыберите вариант:",
   "variant.menu.error": "🔴 Не удалось получить список вариантов",
-
   "context.button.confirm": "✅ Да, сжать контекст",
+  "context.button.details_compact": "📦 Сжать контекст",
+  "context.button.close": "❌ Закрыть",
+  "context.details.title": "📊 Детали контекста",
+  "context.details.window": "Окно: {used} / {limit} ({percent}%)",
+  "context.details.token_breakdown": "Токены последнего сообщения ассистента:",
+  "context.details.input": "Вход: {count}",
+  "context.details.output": "Выход: {count}",
+  "context.details.reasoning": "Рассуждения: {count}",
+  "context.details.cache_read": "Чтение кэша: {count}",
+  "context.details.cache_write": "Запись в кэш: {count}",
+  "context.details.cost": "Стоимость: {cost}",
   "context.no_active_session": "⚠️ Нет активной сессии. Создайте сессию командой /new",
   "context.confirm_text":
-    '📊 Сжатие контекста для сессии "{title}"\n\nЭто уменьшит использование контекста, удалив старые сообщения из истории. Текущая задача не будет прервана.\n\nПродолжить?',
+    '📊 Сжатие контекста для сессии "{title}"\n\nЭто уменьшит использование контекста, удалив старые сообщения из истории.\n\nПродолжить?',
   "context.callback_compacting": "Сжатие контекста...",
   "context.progress": "⏳ Сжимаю контекст...",
   "context.error": "❌ Ошибка при сжатии контекста",
   "context.success": "✅ Контекст успешно сжат",
-
   "permission.inactive_callback": "Запрос разрешения неактивен",
   "permission.processing_error_callback": "Ошибка при обработке",
   "permission.no_active_request_callback": "Ошибка: нет активного запроса",
@@ -430,7 +376,6 @@ export const ru: I18nDictionary = {
   "permission.name.task": "Task",
   "permission.name.lsp": "LSP",
   "permission.name.external_directory": "Внешняя директория",
-
   "question.inactive_callback": "Опрос неактивен",
   "question.processing_error_callback": "Ошибка при обработке",
   "question.select_one_required_callback": "Выберите хотя бы один вариант",
@@ -450,7 +395,6 @@ export const ru: I18nDictionary = {
   "question.summary.title": "✅ Опрос завершен!\n\n",
   "question.summary.question": "Вопрос {index}:\n{question}\n\n",
   "question.summary.answer": "Ответ:\n{answer}\n\n",
-
   "keyboard.agent_mode": "{emoji} {name} Agent",
   "keyboard.context": "📊 {used} / {limit} ({percent}%)",
   "keyboard.context_empty": "📊 —",
@@ -462,9 +406,9 @@ export const ru: I18nDictionary = {
   "queue.media_limit": "⚠️ Медиа в очереди ограничены {maxSizeMb} MiB. Дождитесь отправки элемента и повторите попытку.",
   "queue.removed": "🗑 Сообщение удалено из очереди.",
   "queue.not_found": "Этого сообщения больше нет в очереди.",
+  "queue.steer_added": "📥 Добавлено в текущую задачу ({count}/{max}).",
   "queue.disabled_hint": "Очередь сообщений включается в /settings.",
   "keyboard.updated": "⌨️ Клавиатура обновлена",
-
   "pinned.default_session_title": "новая сессия",
   "pinned.unknown": "Неизвестно",
   "pinned.line.project": "Проект: {project}",
@@ -490,13 +434,11 @@ export const ru: I18nDictionary = {
   "pinned.files.title": "Файлы ({count}):",
   "pinned.files.item": "  {path}{diff}",
   "pinned.files.more": "  ... и еще {count}",
-
   "tool.todo.overflow": "*(ещё {count} задач)*",
   "tool.file_header.write":
     "Write File/Path: {path}\n============================================================\n\n",
   "tool.file_header.edit":
     "Edit File/Path: {path}\n============================================================\n\n",
-
   "runtime.wizard.ask_token": "Введите токен Telegram-бота (получить у @BotFather).\n> ",
   "runtime.wizard.ask_language":
     "Выберите язык интерфейса.\nВведите номер языка из списка или код локали.\nНажмите Enter, чтобы оставить язык по умолчанию: {defaultLocale}\n{options}\n> ",
@@ -514,6 +456,16 @@ export const ru: I18nDictionary = {
     "Введите логин Antigravity сервера (опционально).\nНажмите Enter для значения по умолчанию: {defaultUsername}\n> ",
   "runtime.wizard.ask_server_password":
     "Введите пароль Antigravity сервера (опционально).\nНажмите Enter, чтобы оставить пустым.\n> ",
+  "runtime.wizard.ask_server_version":
+    "Выберите версию сервера OpenCode:\n1 - OpenCode V1 (1.x, npm-пакет opencode-ai)\n2 - OpenCode V2 (2.x, npm-пакет @opencode/cli)\nНажмите Enter, чтобы использовать значение по умолчанию: {defaultVersion}\n> ",
+  "runtime.wizard.server_version_invalid":
+    "Введите 1 или 2 либо нажмите Enter для значения по умолчанию.\n",
+  "runtime.wizard.ask_server_password_required":
+    "Введите пароль сервера OpenCode V2 (обязательно).\nПоказать его: opencode service get password\n> ",
+  "runtime.wizard.server_password_required":
+    "Для OpenCode V2 пароль обязателен. Попробуйте ещё раз.\n",
+  "runtime.wizard.ask_server_password_keep":
+    "Введите пароль сервера OpenCode.\nНажмите Enter, чтобы оставить сохранённый пароль.\n> ",
   "runtime.wizard.api_url_invalid":
     "Введите корректный URL (http/https) или нажмите Enter для значения по умолчанию.\n",
   "runtime.wizard.start": "Настройка Antigravity Telegram Bot.\n",
@@ -524,7 +476,6 @@ export const ru: I18nDictionary = {
     "Интерактивный wizard требует TTY-терминал. Запустите `opencode-telegram config` в интерактивной оболочке.",
   "runtime.container.command_unavailable":
     "⚠️ Эта команда недоступна в Docker-образе.",
-
   "rename.no_session": "⚠️ Нет активной сессии. Сначала создайте или выберите сессию.",
   "rename.prompt": "📝 Введите новое название сессии:\n\nТекущее: {title}",
   "rename.empty_title": "⚠️ Название не может быть пустым.",
@@ -538,7 +489,6 @@ export const ru: I18nDictionary = {
   "rename.blocked.command_not_allowed":
     "⚠️ Эта команда недоступна, пока ожидается новое название сессии.",
   "rename.button.cancel": "❌ Отмена",
-
   "task.prompt.schedule":
     "⏰ Отправьте расписание задачи обычным языком.\n\nПримеры:\n- каждые 5 минут\n- каждый день в 17:00\n- завтра в 12:00",
   "task.schedule_empty": "⚠️ Расписание не может быть пустым.",
@@ -574,7 +524,6 @@ export const ru: I18nDictionary = {
     "Задача по расписанию задала интерактивный вопрос и не может продолжить выполнение без участия пользователя.",
   "task.run.error.interactive_permission":
     "Задача по расписанию запросила интерактивное разрешение и не может продолжить выполнение без участия пользователя.",
-
   "tasklist.empty": "📭 Задач по расписанию пока нет.",
   "tasklist.select": "Выберите задачу по расписанию:",
   "tasklist.details":
@@ -585,7 +534,6 @@ export const ru: I18nDictionary = {
   "tasklist.deleted_callback": "Удалено",
   "tasklist.inactive_callback": "Это меню задач по расписанию уже неактивно",
   "tasklist.load_error": "🔴 Не удалось загрузить задачи по расписанию.",
-
   "commands.select": "Выберите команду Antigravity:",
   "commands.empty": "📭 Для этого проекта нет доступных команд Antigravity.",
   "commands.fetch_error": "🔴 Не удалось загрузить список команд Antigravity.",
@@ -614,7 +562,6 @@ export const ru: I18nDictionary = {
   "commands.download.size": "Размер",
   "commands.download.modified": "Изменён",
   "commands.download.error": "Не удалось скачать файл.",
-
   "skills.select": "Выберите скилл Antigravity:",
   "skills.empty": "📭 Для этого проекта нет доступных скиллов Antigravity.",
   "skills.fetch_error": "🔴 Не удалось загрузить список скиллов Antigravity.",
@@ -634,7 +581,6 @@ export const ru: I18nDictionary = {
   "skills.page_empty_callback": "На этой странице нет скиллов",
   "skills.page_load_error_callback":
     "Не удалось загрузить эту страницу. Пожалуйста, попробуйте снова.",
-
   "mcps.select": "MCP серверы:",
   "mcps.empty": "📭 MCP серверы не настроены.",
   "mcps.fetch_error": "🔴 Не удалось загрузить MCP серверы.",
@@ -653,9 +599,7 @@ export const ru: I18nDictionary = {
   "mcps.button.disable": "🔴 Выключить",
   "mcps.button.back": "⬅️ Назад",
   "mcps.auth_required": "Этот сервер требует авторизации и не может быть включен из бота.",
-
   "cmd.description.rename": "Переименовать текущую сессию",
-
   "legacy.models.fetch_error":
     "🔴 Не удалось получить список моделей. Проверьте статус сервера /status.",
   "legacy.models.empty": "📋 Нет доступных моделей. Настройте провайдеры через Antigravity.",
@@ -663,14 +607,12 @@ export const ru: I18nDictionary = {
   "legacy.models.no_provider_models": "  ⚠️ Нет доступных моделей\n",
   "legacy.models.env_hint": "💡 Для использования модели в .env:\n",
   "legacy.models.error": "🔴 Произошла ошибка при получении списка моделей.",
-
   "stt.recognizing": "🎤 Распознаю аудио...",
   "stt.recognized": "🎤 Распознано:",
   "stt.not_configured":
     "🎤 Распознавание голоса не настроено.\n\nУстановите STT_API_URL и STT_API_KEY в .env для включения.",
   "stt.error": "🔴 Не удалось распознать аудио: {error}",
   "stt.empty_result": "🎤 В аудиосообщении не обнаружена речь.",
-
   "cmd.description.open": "Добавить проект через обзор папок",
   "worktree.branch_detached": "detached HEAD",
   "worktree.select_with_current": "Выберите worktree:",
@@ -717,4 +659,54 @@ export const ru: I18nDictionary = {
   "local_command.empty_output": "Команда не вернула вывод.",
   "local_command.failed": "Команда завершилась с кодом {exitCode}: {stderr}",
   "local_command.timeout": "Время выполнения команды истекло.",
-};
+  "cmd.description.usage": "Show remaining Google account quota (no cost).",
+  "cmd.restart.ack":
+    "🔄 Reiniciando el bot con los cambios pendientes... espera ~5 segundos.",
+  "cmd.description.switch":
+    "switch",
+  "cmd.description.code":
+    "code",
+  "switch.no_pending":
+    "No hay ningún cambio de cuenta en curso. Usa /switch primero.",
+  "switch.code_needed":
+    "Falta el código: usa /code <código> con el código que te dio Google.",
+  "switch.already_pending":
+    "Ya hay un /switch en curso. Pega el código con /code <código> o espera.",
+  "switch.working":
+    "🔄 Preparando el cambio de cuenta (respaldo del token actual + limpieza)... espera la URL.",
+  "switch.no_url_yet":
+    "⏳ agy sigue cargando; en unos segundos manda /switch de nuevo o espera el mensaje con la URL.",
+  "switch.url_intro":
+    "🌐 Abre este link en tu navegador (en el celular) con la cuenta DESTINO:",
+  "switch.paste_code_hint":
+    "🔑 Luego pega el código aquí con: /code <código>",
+  "switch.submitting":
+    "⏳ Entregando el código a agy...",
+  "switch.done":
+    "✅ ¡Cuenta cambiada! El token nuevo quedó en el llavero. /usage para verificar la cuota de la cuenta nueva.",
+  "switch.failed":
+    "❌ El switch falló:",
+  "bot.prompt_received": "📨 Получено — подготавливаем агента…",
+  "bot.prompt_dispatched": "⚙️ Отправлено в пайплайн агента — работаем.",
+  "bot.prompt_slow_start": "⏳ Агент ещё запускается (холодный старт может занять время)…",
+  "bot.queue_hot_taken": "⚡ Ваше сообщение ушло прямо в текущий ход (hot takeover).",
+  "bot.prompt_taken_in_flight":
+    "⚡ Tu mensaje entró en caliente al turno en curso; verás su respuesta en la misma conversación sin interrumpir nada.",
+  "bot.interrupted_for_new_prompt":
+    "⚡ Interrumpí la tarea anterior. Tu mensaje va primero; lo otro queda en la conversación y lo retomas con /sessions.",
+  "cmd.description.compact": "Сжать контекст беседы",
+  "compact.busy": "⏳ Агент занят — попробуйте, когда текущая задача завершится.",
+  "compact.no_session": "Пока нет активной беседы для сжатия.",
+  "compact.started": "🧹 Сжатие: запросил у агента сводку для передачи…",
+  "compact.auto_started": "🧹 Беседа достигла {tokens}k токенов — сжимаю автоматически…",
+  "compact.done": "✅ Сжато — продолжаем в новой беседе с переданным контекстом.",
+  "compact.failed": "⚠️ Не удалось сжать — проверьте логи; повторите с /compact.",
+  "compact.damaged_hint": "🛠 Эта ошибка обычно означает, что состояние беседы повреждено. Могу сжать его и продолжить в новой беседе.",
+  "compact.button": "🧹 Сжать и продолжить",
+  "bot.retrying": "⚠️ Сервис Antigravity недоступен (503) — автоматическая повторная попытка… попытка {attempt}/{max}, следующая через ~{seconds} с.",
+  "bot.retry_recovered": "✅ Antigravity снова доступен — продолжаю.",
+  "bot.retry_exhausted": "❌ Antigravity остался недоступен — попытки исчерпаны. Отправьте сообщение снова, когда сервис восстановится.",
+  "usage.error": "⚠️ Could not read the Antigravity quota (CLI failed).",
+  "sessions.preview.title": "Последние сообщения:",
+  "sessions.preview.you": "Вы:",
+  "sessions.preview.agent": "Агент:",};

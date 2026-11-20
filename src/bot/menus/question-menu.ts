@@ -3,6 +3,7 @@ import { questionManager } from "../../app/managers/question-manager.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
 import { getCurrentSession } from "../../app/services/session-service.js";
 import { summaryAggregator } from "../../app/managers/summary-aggregation-manager.js";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { interactionManager } from "../../app/managers/interaction-manager.js";
 import { logger } from "../../utils/logger.js";
 import { safeBackgroundTask } from "../../utils/safe-background-task.js";
@@ -25,7 +26,9 @@ function getCallbackMessageId(ctx: Context): number | null {
   return typeof messageId === "number" ? messageId : null;
 }
 
-export function clearQuestionInteraction(reason: string): void {
+export type QuestionMenuDeps = Pick<AppContainer, "interactionManager" | "questionManager">;
+
+export function clearQuestionInteraction(reason: string, _deps?: QuestionMenuDeps): void {
   const state = interactionManager.getSnapshot();
   if (state?.kind === "question") {
     interactionManager.clear(reason);
@@ -36,6 +39,7 @@ export function syncQuestionInteractionState(
   expectedInput: "callback" | "mixed",
   questionIndex: number,
   messageId: number | null,
+  _deps?: QuestionMenuDeps,
 ): void {
   const metadata: Record<string, unknown> = {
     questionIndex,
@@ -64,10 +68,21 @@ export function syncQuestionInteractionState(
     kind: "question",
     expectedInput,
     metadata,
+    payload: questionManager.getState() ?? {
+      questions: [],
+      currentIndex: 0,
+      selectedOptions: new Map(),
+      customAnswers: new Map(),
+      selectedCustomAnswers: new Set(),
+      customInputQuestionIndex: null,
+      activeMessageId: null,
+      messageIds: [],
+      requestID: null,
+    },
   });
 }
 
-export async function updateQuestionMessage(ctx: Context): Promise<void> {
+export async function updateQuestionMessage(ctx: Context, _deps?: QuestionMenuDeps): Promise<void> {
   const question = questionManager.getCurrentQuestion();
   if (!question) {
     logger.debug("[QuestionHandler] updateQuestionMessage: no current question");
@@ -107,7 +122,7 @@ export async function updateQuestionMessage(ctx: Context): Promise<void> {
   }
 }
 
-export async function showCurrentQuestion(bot: Context["api"], chatId: number): Promise<void> {
+export async function showCurrentQuestion(bot: Context["api"], chatId: number, _deps?: QuestionMenuDeps): Promise<void> {
   const question = questionManager.getCurrentQuestion();
 
   if (!question) {
@@ -155,7 +170,7 @@ export async function showCurrentQuestion(bot: Context["api"], chatId: number): 
   }
 }
 
-export async function showNextQuestion(ctx: Context): Promise<void> {
+export async function showNextQuestion(ctx: Context, _deps?: QuestionMenuDeps): Promise<void> {
   questionManager.nextQuestion();
 
   if (!ctx.chat) {
@@ -216,21 +231,9 @@ async function sendAllAnswersToAgent(bot: Context["api"], chatId: number): Promi
   const allAnswers: string[][] = [];
 
   for (let i = 0; i < totalQuestions; i++) {
-    const customAnswer = questionManager.getCustomAnswer(i);
-    const selectedAnswer = questionManager.getSelectedAnswer(i);
-
-    // Priority: custom answer > selected options
-    const answer = customAnswer || selectedAnswer || "";
-
-    if (answer) {
-      // Split by newlines if multiple options were selected (in multiple choice mode)
-      // Each option is formatted as "* Label: Description"
-      const answerParts = answer.split("\n").filter((part) => part.trim());
-      allAnswers.push(answerParts);
-    } else {
-      // Empty answer for unanswered questions
-      allAnswers.push([]);
-    }
+    // getAnswerItems keeps ticked options AND a ticked custom answer for
+    // multi-select questions; single-select still prefers the custom answer.
+    allAnswers.push(questionManager.getAnswerItems(i));
   }
 
   logger.info(
@@ -404,6 +407,14 @@ function buildQuestionKeyboard(
 
     keyboard.text(buttonText, callbackData).row();
   });
+
+  const customAnswer = questionManager.getCustomAnswer(questionIndex);
+  if (question.multiple && customAnswer) {
+    const icon = questionManager.isCustomAnswerSelected(questionIndex) ? "✅ " : "";
+    const label = `✏️ ${customAnswer.replace(/\s*\n\s*/g, " ")}`;
+    keyboard.text(formatButtonText(label, icon), `question:toggle_custom:${questionIndex}`).row();
+    logger.debug(`[QuestionHandler] Added custom answer row`);
+  }
 
   if (question.multiple) {
     keyboard.text(t("question.button.submit"), `question:submit:${questionIndex}`).row();

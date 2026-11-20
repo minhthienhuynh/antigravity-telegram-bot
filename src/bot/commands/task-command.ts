@@ -1,16 +1,15 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import { randomUUID } from "node:crypto";
 import { CommandContext, Context } from "grammy";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
 import { getDateLocale, t } from "../../i18n/index.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
 import type { InteractionState } from "../../app/types/interaction.js";
 import { getStoredModel } from "../../app/services/model-selection-service.js";
 import { getStoredAgent } from "../../app/services/agent-selection-service.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
-import { taskCreationManager } from "../../app/managers/scheduled-task-creation-manager.js";
 import { parseTaskSchedule } from "../../app/services/scheduled-task-schedule-parser-service.js";
 import { addScheduledTask, listScheduledTasks } from "../../app/stores/scheduled-task-store.js";
-import { scheduledTaskRuntime } from "../../app/services/scheduled-task-runtime-service.js";
 import { buildCancelKeyboard, buildRetryScheduleKeyboard } from "../menus/scheduled-task-menu.js";
 import { getAgentDisplayName } from "../../app/types/agent.js";
 import {
@@ -22,6 +21,11 @@ import { logger } from "../../utils/logger.js";
 
 const TASK_PROMPT_PREVIEW_LENGTH = 100;
 
+export type TaskCommandDeps = Pick<
+  AppContainer,
+  "interactionManager" | "scheduledTaskRuntime" | "taskCreationManager"
+>;
+
 interface TaskInteractionMetadata {
   flow: "task";
   stage: "awaiting_schedule" | "parsing_schedule" | "awaiting_prompt";
@@ -30,16 +34,17 @@ interface TaskInteractionMetadata {
   previewMessageId?: number;
 }
 
-function clearTaskInteraction(reason: string): void {
-  const state = interactionManager.getSnapshot();
+function clearTaskInteraction(deps: TaskCommandDeps, reason: string): void {
+  const state = deps.interactionManager.getSnapshot();
   if (state?.kind === "task") {
-    interactionManager.clear(reason);
+    deps.interactionManager.clear(reason);
   }
 }
 
-function clearTaskFlow(reason: string): void {
-  taskCreationManager.clear();
-  clearTaskInteraction(reason);
+function clearTaskFlow(deps: TaskCommandDeps, reason: string): void {
+  // Clear the slot first so the log keeps the specific reason.
+  clearTaskInteraction(deps, reason);
+  deps.taskCreationManager.clear();
 }
 
 function isTaskLimitReached(): boolean {
@@ -289,7 +294,10 @@ function buildScheduledTask(
   };
 }
 
-export async function taskCommand(ctx: CommandContext<Context>): Promise<void> {
+export async function taskCommand(
+  ctx: CommandContext<Context>,
+  deps: TaskCommandDeps = containerDeps,
+): Promise<void> {
   const currentProject = getCurrentProject();
   if (!currentProject) {
     await ctx.reply(t("bot.project_not_selected"));
@@ -304,9 +312,13 @@ export async function taskCommand(ctx: CommandContext<Context>): Promise<void> {
   const currentModel = createScheduledTaskModel(getStoredModel());
   const currentAgent = getStoredAgent();
 
-  taskCreationManager.start(currentProject.id, currentProject.worktree, currentModel, currentAgent);
-  interactionManager.start({
-    kind: "task",
+  deps.taskCreationManager.start(
+    currentProject.id,
+    currentProject.worktree,
+    currentModel,
+    currentAgent,
+  );
+  deps.interactionManager.transition({
     expectedInput: "text",
     metadata: buildTaskInteractionMetadata(
       "awaiting_schedule",
@@ -318,48 +330,47 @@ export async function taskCommand(ctx: CommandContext<Context>): Promise<void> {
   const message = await ctx.reply(t("task.prompt.schedule"), {
     reply_markup: buildCancelKeyboard(),
   });
-  taskCreationManager.setScheduleRequestMessageId(message.message_id);
+  deps.taskCreationManager.setScheduleRequestMessageId(message.message_id);
 }
 
-export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
+export async function handleTaskTextInput(ctx: Context, deps: TaskCommandDeps = containerDeps): Promise<boolean> {
   const text = ctx.message?.text;
   if (text === undefined || text.startsWith("/")) {
     return false;
   }
 
-  if (!taskCreationManager.isActive()) {
+  if (!deps.taskCreationManager.isActive()) {
     return false;
   }
 
-  const interactionState = interactionManager.getSnapshot();
+  const interactionState = deps.interactionManager.getSnapshot();
   if (!isTaskInteraction(interactionState)) {
-    taskCreationManager.clear();
+    deps.taskCreationManager.clear();
     await ctx.reply(t("task.inactive"));
     return true;
   }
 
-  const flowState = taskCreationManager.getState();
+  const flowState = deps.taskCreationManager.getState();
   if (!flowState) {
-    clearTaskFlow("task_state_missing");
+    clearTaskFlow(deps, "task_state_missing");
     await ctx.reply(t("task.inactive"));
     return true;
   }
 
-  if (taskCreationManager.isParsingSchedule()) {
+  if (deps.taskCreationManager.isParsingSchedule()) {
     await ctx.reply(t("task.parse.in_progress"));
     return true;
   }
 
-  if (taskCreationManager.isWaitingForSchedule()) {
+  if (deps.taskCreationManager.isWaitingForSchedule()) {
     const scheduleText = text.trim();
     if (!scheduleText) {
       await ctx.reply(t("task.schedule_empty"));
       return true;
     }
 
-    taskCreationManager.markScheduleParsing();
-    interactionManager.transition({
-      kind: "task",
+    deps.taskCreationManager.markScheduleParsing();
+    deps.interactionManager.transition({
       expectedInput: "text",
       metadata: buildTaskInteractionMetadata(
         "parsing_schedule",
@@ -384,13 +395,12 @@ export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
         reply_markup: buildRetryScheduleKeyboard(),
       });
 
-      taskCreationManager.setParsedSchedule(
+      deps.taskCreationManager.setParsedSchedule(
         scheduleText,
         parsedSchedule,
         previewMessage.message_id,
       );
-      interactionManager.transition({
-        kind: "task",
+      deps.interactionManager.transition({
         expectedInput: "mixed",
         metadata: buildTaskInteractionMetadata(
           "awaiting_prompt",
@@ -399,14 +409,13 @@ export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
           previewMessage.message_id,
         ),
       });
-      taskCreationManager.setPromptRequestMessageId(previewMessage.message_id);
+      deps.taskCreationManager.setPromptRequestMessageId(previewMessage.message_id);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : t("common.unknown_error");
       logger.warn(`[TaskCommand] Failed to parse task schedule: ${errorMessage}`);
       await deleteMessageIfPresent(ctx, flowState.scheduleRequestMessageId);
-      taskCreationManager.resetSchedule();
-      interactionManager.transition({
-        kind: "task",
+      deps.taskCreationManager.resetSchedule();
+      deps.interactionManager.transition({
         expectedInput: "text",
         metadata: buildTaskInteractionMetadata(
           "awaiting_schedule",
@@ -418,13 +427,13 @@ export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
       const errorReply = await ctx.reply(t("task.parse_error", { message: errorMessage }), {
         reply_markup: buildCancelKeyboard(),
       });
-      taskCreationManager.setScheduleRequestMessageId(errorReply.message_id);
+      deps.taskCreationManager.setScheduleRequestMessageId(errorReply.message_id);
     }
 
     return true;
   }
 
-  if (!taskCreationManager.isWaitingForPrompt()) {
+  if (!deps.taskCreationManager.isWaitingForPrompt()) {
     return false;
   }
 
@@ -435,7 +444,7 @@ export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
   }
 
   if (!flowState.parsedSchedule || !flowState.scheduleText) {
-    clearTaskFlow("task_missing_schedule_before_save");
+    clearTaskFlow(deps, "task_missing_schedule_before_save");
     await ctx.reply(t("task.inactive"));
     return true;
   }
@@ -444,7 +453,7 @@ export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
     if (isTaskLimitReached()) {
       await deleteMessageIfPresent(ctx, flowState.previewMessageId);
       await deleteMessageIfPresent(ctx, flowState.promptRequestMessageId);
-      clearTaskFlow("task_limit_reached_before_save");
+      clearTaskFlow(deps, "task_limit_reached_before_save");
       await ctx.reply(t("task.limit_reached", { limit: String(config.bot.taskLimit) }));
       return true;
     }
@@ -460,10 +469,10 @@ export async function handleTaskTextInput(ctx: Context): Promise<boolean> {
     );
 
     await addScheduledTask(task);
-    scheduledTaskRuntime.registerTask(task);
+    deps.scheduledTaskRuntime.registerTask(task);
     await deleteMessageIfPresent(ctx, flowState.previewMessageId);
     await deleteMessageIfPresent(ctx, flowState.promptRequestMessageId);
-    clearTaskFlow("task_completed");
+    clearTaskFlow(deps, "task_completed");
     await ctx.reply(formatTaskCreatedMessage(task));
   } catch (error) {
     logger.error("[TaskCommand] Failed to save scheduled task", error);

@@ -1,3 +1,4 @@
+import { permissionMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
 import { permissionManager } from "../../app/managers/permission-manager.js";
 import type { PermissionReply } from "../../app/types/permission.js";
@@ -34,7 +35,7 @@ export async function handlePermissionCallback(ctx: Context): Promise<boolean> {
   logger.debug(`[PermissionHandler] Received callback: ${data}`);
 
   if (!permissionManager.isActive()) {
-    clearPermissionInteraction("permission_inactive_callback");
+    clearPermissionInteraction("permission_inactive_callback", permissionMenuDeps);
     await ctx.answerCallbackQuery({ text: t("permission.inactive_callback"), show_alert: true });
     return true;
   }
@@ -88,7 +89,7 @@ async function handlePermissionReply(
 
   if (!directory || !chatId) {
     permissionManager.clear();
-    clearPermissionInteraction("permission_invalid_runtime_context");
+    clearPermissionInteraction("permission_invalid_runtime_context", permissionMenuDeps);
 
     await ctx.answerCallbackQuery({
       text: t("permission.no_active_request_callback"),
@@ -130,11 +131,11 @@ async function handlePermissionReply(
   permissionManager.removeByMessageId(callbackMessageId);
 
   if (!permissionManager.isActive()) {
-    clearPermissionInteraction("permission_replied");
+    clearPermissionInteraction("permission_replied", permissionMenuDeps);
     return;
   }
 
-  syncPermissionInteractionState({
+  syncPermissionInteractionState(permissionMenuDeps, {
     lastRepliedRequestIDs: requestIDs,
   });
 }

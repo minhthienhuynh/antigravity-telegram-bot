@@ -1,8 +1,10 @@
+import { interactionManager } from "../../app/managers/interaction-manager.js";
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context } from "grammy";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
 import type { SkillCatalogItem } from "../../app/services/skills-catalog-service.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
 import type { InteractionState } from "../../app/types/interaction.js";
 import { logger } from "../../utils/logger.js";
 import { t } from "../../i18n/index.js";
@@ -136,10 +138,16 @@ export function parseSkillsMetadata(state: InteractionState | null): SkillsMetad
   return null;
 }
 
-export function clearSkillsInteraction(reason: string): void {
-  const metadata = parseSkillsMetadata(interactionManager.getSnapshot());
+export type SkillsCallbackDeps = ProcessPromptDeps & Pick<AppContainer, "interactionManager">;
+
+export function clearSkillsInteraction(
+  deps: { interactionManager?: AppContainer["interactionManager"] },
+  reason: string,
+): void {
+  const manager = deps.interactionManager ?? interactionManager;
+  const metadata = parseSkillsMetadata(manager.getSnapshot());
   if (metadata) {
-    interactionManager.clear(reason);
+    manager.clear(reason);
   }
 }
 
@@ -170,14 +178,14 @@ export async function executeSkill(
 
 export async function handleSkillsCallback(
   ctx: Context,
-  deps: ProcessPromptDeps,
+  deps: SkillsCallbackDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data || !data.startsWith(SKILLS_CALLBACK_PREFIX)) {
     return false;
   }
 
-  const metadata = parseSkillsMetadata(interactionManager.getSnapshot());
+  const metadata = parseSkillsMetadata(deps.interactionManager.getSnapshot());
   const callbackMessageId = getCallbackMessageId(ctx);
 
   if (!metadata || callbackMessageId === null || metadata.messageId !== callbackMessageId) {
@@ -187,7 +195,7 @@ export async function handleSkillsCallback(
 
   try {
     if (data === SKILLS_CALLBACK_CANCEL) {
-      clearSkillsInteraction("skills_cancelled");
+      clearSkillsInteraction(deps, "skills_cancelled");
       await cancelMenu(ctx);
       return true;
     }
@@ -198,7 +206,7 @@ export async function handleSkillsCallback(
         return true;
       }
 
-      clearSkillsInteraction("skills_execute_clicked");
+      clearSkillsInteraction(deps, "skills_execute_clicked");
       await ctx.answerCallbackQuery({ text: t("skills.execute_callback") });
       await ctx.deleteMessage().catch(() => {});
 
@@ -235,7 +243,7 @@ export async function handleSkillsCallback(
         reply_markup: keyboard,
       });
 
-      interactionManager.transition({
+      deps.interactionManager.transition({
         expectedInput: "callback",
         metadata: {
           flow: "skills",
@@ -267,7 +275,7 @@ export async function handleSkillsCallback(
       reply_markup: buildSkillsConfirmKeyboard(),
     });
 
-    interactionManager.transition({
+    deps.interactionManager.transition({
       expectedInput: "mixed",
       metadata: {
         flow: "skills",
@@ -281,7 +289,7 @@ export async function handleSkillsCallback(
     return true;
   } catch (error) {
     logger.error("[Skills] Error handling skill callback:", error);
-    clearSkillsInteraction("skills_callback_error");
+    clearSkillsInteraction(deps, "skills_callback_error");
     await ctx.answerCallbackQuery({ text: t("callback.processing_error") }).catch(() => {});
     return true;
   }

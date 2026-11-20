@@ -1,6 +1,7 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { CommandContext, Context } from "grammy";
+import type { AppContainer } from "../../app/bootstrap/app-container.js";
 import { config } from "../../config.js";
-import { interactionManager } from "../../app/managers/interaction-manager.js";
 import { getCurrentSession } from "../../app/services/session-service.js";
 import { loadUserMessages } from "../../app/services/message-history-service.js";
 import { isForegroundBusy } from "../../app/services/run-control-service.js";
@@ -10,9 +11,17 @@ import { logger } from "../../utils/logger.js";
 import { replyBusyBlocked } from "../messages/busy-blocked-renderer.js";
 import { buildMessagesListKeyboard, formatMessagesSelectText } from "../menus/message-history-menu.js";
 
-export async function messagesCommand(ctx: CommandContext<Context>): Promise<void> {
+export type MessagesCommandDeps = Pick<
+  AppContainer,
+  "attachManager" | "foregroundSessionState" | "interactionManager"
+>;
+
+export async function messagesCommand(
+  ctx: CommandContext<Context>,
+  deps: MessagesCommandDeps = containerDeps,
+): Promise<void> {
   try {
-    if (isForegroundBusy()) {
+    if (isForegroundBusy(deps)) {
       await replyBusyBlocked(ctx);
       return;
     }
@@ -46,7 +55,7 @@ export async function messagesCommand(ctx: CommandContext<Context>): Promise<voi
       reply_markup: keyboard,
     });
 
-    interactionManager.start({
+    deps.interactionManager.start({
       kind: "custom",
       expectedInput: "callback",
       metadata: {

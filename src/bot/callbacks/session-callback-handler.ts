@@ -1,9 +1,12 @@
+import { containerDeps } from "../../app/bootstrap/singleton-deps.js";
+import { busyDeps, inlineMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Bot, Context } from "grammy";
 import { getStoredModel } from "../../app/services/model-selection-service.js";
 import { setCurrentSession } from "../../app/services/session-service.js";
 import type { SessionInfo } from "../../app/types/session.js";
 import { getCurrentProject } from "../../app/stores/settings-store.js";
-import { clearAllInteractionState, interactionManager } from "../../app/managers/interaction-manager.js";
+import { interactionManager } from "../../app/managers/interaction-manager.js";
+import { clearAllInteractionState } from "../../app/managers/interaction-reset.js";
 import { keyboardManager } from "../keyboards/keyboard-manager.js";
 import { appendInlineMenuCancelButton, ensureActiveInlineMenu } from "../menus/inline-menu.js";
 import { isForegroundBusy } from "../../app/services/run-control-service.js";
@@ -92,8 +95,7 @@ export async function selectSessionById(
       bot: deps.bot,
       chatId: ctx.chat!.id,
       session: sessionInfo,
-      ensureEventSubscription: deps.ensureEventSubscription,
-    });
+      ensureEventSubscription: deps.ensureEventSubscription });
   } catch (err) {
     if (loadingMessageId) {
       try {
@@ -158,7 +160,7 @@ function shouldBlockBackgroundSessionOpen(): boolean {
 
 export async function handleBackgroundSessionOpen(
   ctx: Context,
-  deps: SessionSelectDeps,
+  deps: SessionSelectDeps = containerDeps,
 ): Promise<boolean> {
   const data = ctx.callbackQuery?.data;
   if (!data) {
@@ -170,7 +172,7 @@ export async function handleBackgroundSessionOpen(
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(busyDeps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
@@ -197,13 +199,13 @@ export async function handleBackgroundSessionOpen(
   return true;
 }
 
-export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps): Promise<boolean> {
+export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps = containerDeps): Promise<boolean> {
   const callbackQuery = ctx.callbackQuery;
   if (!callbackQuery?.data || !callbackQuery.data.startsWith(SESSION_CALLBACK_PREFIX)) {
     return false;
   }
 
-  if (isForegroundBusy()) {
+  if (isForegroundBusy(busyDeps)) {
     await replyBusyBlocked(ctx);
     return true;
   }
@@ -211,7 +213,7 @@ export async function handleSessionSelect(ctx: Context, deps: SessionSelectDeps)
   const page = parseSessionPageCallback(callbackQuery.data);
   const sessionId = parseSessionIdCallback(callbackQuery.data);
 
-  const isActiveMenu = await ensureActiveInlineMenu(ctx, "session");
+  const isActiveMenu = await ensureActiveInlineMenu(ctx, "session", inlineMenuDeps);
   if (!isActiveMenu) {
     return true;
   }

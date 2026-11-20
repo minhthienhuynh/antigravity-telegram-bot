@@ -29,10 +29,11 @@ No public inbound ports are required for normal usage.
 
 ### OpenCode server management
 
+- Works with OpenCode V1 and OpenCode V2 servers; the API version is set in configuration (`OPENCODE_SERVER_VERSION`, default V1) and a server of the other version is reported in the log
 - Check OpenCode server status (running / not running)
-- Start OpenCode server from the app (`opencode serve`)
+- Start OpenCode server from the app: `opencode serve` on V1, the registered background server (`opencode serve --service`) on V2; no start while the configured address answers with the wrong password or as the other version, while the local `opencode` executable is the other version, or on V2 while a registered V2 server runs on another port — the reason goes to the log
 - Stop OpenCode server from the app
-- Optionally monitor and auto-restart a local OpenCode server
+- Optionally monitor and auto-restart a local OpenCode server, with the same start rules
 
 ### Project management
 
@@ -43,7 +44,8 @@ No public inbound ports are required for normal usage.
 ### Session management
 
 - Fetch last N sessions (name + date)
-- Select an existing session and automatically follow its live updates
+- Select an existing session, show the last user input as a quote and the last assistant reply in full, then follow its live updates
+- Browse up to `SESSIONS_LIST_LIMIT` recent root sessions across projects and git worktrees with running, idle, question and permission status; select one to switch project and follow it, including after detach
 - Switching to an existing session adopts the agent, model, and variant it last ran with
 - Create a new session
 - Use OpenCode-generated session title (based on conversation)
@@ -53,17 +55,20 @@ No public inbound ports are required for normal usage.
 - Send text prompts to OpenCode
 - Accept voice/audio messages, transcribe via Whisper-compatible STT API, and forward recognized text as prompts
 - Interrupt current task (ESC equivalent)
-- Optionally queue text, transcribed voice, photos, rich formatted messages with photos, supported documents, and media groups sent while a task is running; hold at most `MAX_QUEUED_PROMPTS` (5) items and 20 MiB of raw Telegram media bytes, checked from reliable `file_size` before downloads
+- Optionally accept text, transcribed voice, photos, rich formatted messages with photos, supported documents, and media groups sent while a task is running, at most `MAX_QUEUED_PROMPTS` (5) waiting at a time: on OpenCode V2 they wait in the session inbox and are steered into the running turn (Steer, the V2 default) or start their own run after it (Queue); on V1 the bot holds them, with at most 20 MiB of raw Telegram media bytes checked from reliable `file_size` before downloads; the V1 On/Off choice and the V2 mode are kept separately, so switching versions changes neither
 - Handle OpenCode questions with inline options and custom text answers
+- In a multi-select question the custom text becomes one more tickable row next to the options, and Done sends it together with the ticked options
 - Send selected/custom answers back to OpenCode (`question.reply`)
 - Handle permission requests interactively (`allow once` / `always` / `reject`)
 
 ### Result delivery
 
 - Send each completed assistant response after completion signal from SSE
+- In draft streaming mode, assistant text written before a question or permission prompt is sent as a message above that prompt when it appears, and is not sent again when the reply completes
 - If that send fails, the reply is not sent again; when Telegram accepts sends again, the chat gets a notice that the last assistant reply was not delivered
 - After a mid-session Telegram outage, the next new message is answered without restarting the app
-- Compact output mode shows thinking and writing on its single progress message from the start of work; that message is removed or marked finished when the run completes
+- Compact output mode shows thinking and writing on one progress message per stretch of work between replies and prompts, from the start of that stretch; the message is removed or marked finished when the reply or prompt lands, or when the run ends if nothing followed
+- In full mode, show every foreground tool operation when it starts, without a timer until 20 seconds; edit its line in place as it runs and finishes, keeping parallel operations in start order. A finished call lasting at least 20 seconds shows its total duration. Subagent (`task`) operations use their cards instead of tool lines; a tool delivered as a document loses its running text line when the document arrives
 - Show elapsed time for tool calls running longer than 20 seconds, updated on a timer so it keeps counting while a tool blocks without producing output; covers subagent cards and compact mode, and the total duration stays on the finished tool line. In compact mode, while several tools of one step are in flight, the progress line shows the still-running one (the most recently started if several), with that tool's timer — not a finished sibling. A finished subagent card keeps the time its whole run took. Durations use the same `· 🕒 1h 2m 3s` format as the assistant run footer
 - A subagent card shows Task, Agent, and Model; when OpenCode sends a variant, the Model line is `provider/id (variant)`
 - Render assistant replies with native Telegram formatting: real tables with the column alignment declared in markdown, bullet lists with their nesting, block quotes that keep their nested content, headings, and syntax-highlighted code. Numbered lists and checklists keep literal markers (`1.`, ✅/🔲), because Telegram clients number a native ordered list from zero and do not draw the native checkbox at all
@@ -93,6 +98,7 @@ No public inbound ports are required for normal usage.
 - Telegram bot token
 - Allowed Telegram user ID
 - Default model provider and model ID
+- OpenCode server API version (`OPENCODE_SERVER_VERSION`: `v1` or `v2`) with a version-dependent default URL; the installed-mode setup wizard asks for it (V2 on a first setup, the saved choice on a re-run) and requires the server password for V2
 - Selected project persisted in `settings.json`
 - Configurable sessions list size (default: 10)
 - Configurable commands list size (default: 10)
@@ -117,6 +123,7 @@ Current command set:
 - `/abort` - stop the current task
 - `/detach` - detach the bot from the current session without stopping it; a later command or prompt HTTP failure for that session is not posted to chat unless the bot has re-attached to it
 - `/sessions` - show and switch recent sessions
+- `/recent` - show recent sessions across projects and worktrees with their status and switch directly to one
 - `/messages` - browse user messages in the current session
 - `/projects` - show and switch projects
 - `/worktree` - show and switch existing git worktrees for the current repository
@@ -131,13 +138,14 @@ Current command set:
 - `/help` - show command help
 - `/ls` - interactive file browser for the current project directory; a text file can be attached to the next prompt from its detail view
 
-Model, agent, variant, and context actions are available from the persistent bottom keyboard.
+Model, agent, variant, and context actions are available from the persistent bottom keyboard. The context button opens window usage and the latest assistant message's token breakdown and cost when a session is idle; its inline controls close the details or open a separate compaction confirmation.
 
 Text messages (non-commands) are treated as prompts for OpenCode only when no blocking interaction is active. Voice/audio messages are transcribed and then sent as prompts when STT is configured. When TTS mode in `/settings` is set to `all`, completed assistant replies include a generated audio file if TTS is configured. When it is set to `auto`, audio replies are sent only after voice/audio prompts.
 
 Interaction routing rules:
 
 - Only one interactive flow can be active at a time (inline menu, permission, question, rename, commands, skills, messages)
+- An agent question and agent permission requests are shown one after another: the one arriving second waits until the one on screen is answered or cancelled; `/abort`, `/detach` and `/opencode_stop` drop both
 - While an interaction is active, unrelated input is blocked with a contextual hint
 - Allowed utility commands during active interactions: `/help`, `/status`, `/abort`, `/detach`, `/opencode_stop`
 - Unknown slash commands return an explicit fallback message
@@ -164,7 +172,10 @@ Agent picker behavior:
 
 - [x] Single-user access control by allowed Telegram user ID
 - [x] OpenCode server control from Telegram (`/status`, `/opencode_start`, `/opencode_stop`)
+- [x] OpenCode V1 and V2 servers, selected by `OPENCODE_SERVER_VERSION`; pending questions and permissions come back after the event stream reconnects
+- [x] OpenCode V2 set up and started out of the box: the setup wizard asks for the version and the V2 password, and `/opencode_start`, `/opencode_stop` and auto-restart manage the V2 background server
 - [x] Project and session management from Telegram (`/projects`, `/worktree`, `/sessions`, `/new`)
+- [x] Cross-project recent sessions with status and direct attachment (`/recent`)
 - [x] Automatic tracking of the current OpenCode CLI session, including continuing it from Telegram, live updates, and external text input notifications
 - [x] Remote task execution, interruption, and local detachment support (`/abort`, `/detach`)
 - [x] Background notifications for detached/non-current sessions in the currently selected project/worktree
@@ -196,6 +207,7 @@ Agent picker behavior:
 - [x] Attaching a project file from `/ls` to the next prompt as a native OpenCode file part
 - [x] `/messages` command: browse session messages with revert and fork functionality
 - [x] Optional message queue for text, voice, photos, rich formatted messages with photos, documents, and media groups sent while the agent is busy, managed from the bottom keyboard
+- [x] OpenCode V2: messages sent mid-run are steered into the running turn or queued in the session inbox (Off / Queue / Steer in `/settings`), withdrawable until picked up
 - [x] Native Telegram rich message formatting for assistant replies (Bot API 10.1)
 - [x] Incoming Telegram rich formatted messages (Bot API 10.1): converted to Markdown, accepted anywhere text is accepted, with photos attached and unsupported message types answered explicitly
 - [x] Startup either reaches Telegram polling or the process exits: transient Telegram failures are retried in-process; a bad token or other fatal startup error exits with code 1

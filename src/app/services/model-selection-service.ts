@@ -85,8 +85,12 @@ export function selectModel(modelInfo: ModelInfo): void {
  * Stored model ids are pushed to agy verbatim; there is no need to reconcile
  * against a server. Keep the call site compatibility (no-op, logged at debug).
  */
-export async function reconcileStoredModelSelection(): Promise<void> {
+export async function reconcileStoredModelSelection(_options?: {
+  forceCatalogRefresh?: boolean;
+}): Promise<boolean> {
   logger.debug("[ModelManager] Stored model selection reconciliation is a no-op for agy");
+  // agy's model catalog is static and always available.
+  return true;
 }
 
 export function __resetModelCatalogCacheForTests(): void {

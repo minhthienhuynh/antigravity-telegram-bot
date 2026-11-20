@@ -11,6 +11,8 @@ const mocked = vi.hoisted(() => ({
 }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentProject: mocked.getCurrentProjectMock,
 }));
@@ -36,6 +38,9 @@ vi.mock("../../../src/bot/messages/busy-blocked-renderer.js", () => ({
 
 vi.mock("../../../src/app/managers/interaction-manager.js", () => ({
   interactionManager: { clear: vi.fn(), getSnapshot: vi.fn(() => null) },
+}));
+
+vi.mock("../../../src/app/managers/interaction-reset.js", () => ({
   clearAllInteractionState: vi.fn(),
 }));
 

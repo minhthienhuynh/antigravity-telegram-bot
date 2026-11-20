@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const settingsSession = vi.hoisted(() => ({ current: null as { id: string } | null }));
 
 vi.mock("../../../src/app/stores/settings-store.js", () => ({
+  getPromptQueueMode: vi.fn(() => "queue"),
+  getPromptQueueEnabled: vi.fn(() => true),
   __resetSettingsForTests: vi.fn(),
   getCurrentSession: vi.fn(() => settingsSession.current),
   setCurrentSession: vi.fn((session: { id: string }) => {

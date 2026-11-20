@@ -1,10 +1,17 @@
+import { busyReconcileDeps, inlineMenuDeps, permissionMenuDeps, questionMenuDeps } from "../../app/bootstrap/singleton-deps.js";
 import type { Context, NextFunction } from "grammy";
 import { config } from "../../config.js";
 import { sendPromptToActiveProcess } from "../../antigravity/events.js";
-import { resolveInteractionGuardDecision } from "./interaction-guard-decision.js";
+import {
+  resolveInteractionGuardDecision,
+  type InteractionGuardDecisionDeps,
+} from "./interaction-guard-decision.js";
 import type { BlockReason, InteractionKind } from "../../app/types/interaction.js";
 import { getPromptQueueEnabled } from "../../app/stores/settings-store.js";
-import { reconcileForegroundBusyState } from "../../app/services/run-control-service.js";
+import {
+  reconcileForegroundBusyState,
+  type RunControlDeps,
+} from "../../app/services/run-control-service.js";
 import {
   canQueueMediaPrompt,
   rejectQueuedMediaBeforePreparation,
@@ -14,7 +21,11 @@ import {
 import { logger } from "../../utils/logger.js";
 import { t } from "../../i18n/index.js";
 import { getIncomingPrompt } from "../handlers/rich-message-handler.js";
-import type { LocalCommandRegistry } from "../../app/services/local-command-registry.js";
+import { LocalCommandRegistry } from "../../app/services/local-command-registry.js";
+
+export interface InteractionGuardDeps extends InteractionGuardDecisionDeps, RunControlDeps {
+  localCommandRegistry?: LocalCommandRegistry;
+}
 
 function getInteractionBlockedMessage(
   reason: BlockReason | undefined,
@@ -121,13 +132,21 @@ function getQueuedPhotoMediaBytes(input: ReturnType<typeof getIncomingPrompt>): 
 export async function interactionGuardMiddleware(
   ctx: Context,
   next: NextFunction,
-  localCommandRegistry?: LocalCommandRegistry,
+  depsIn?: Partial<InteractionGuardDeps>,
 ): Promise<void> {
-  let decision = resolveInteractionGuardDecision(ctx, localCommandRegistry);
+  const deps: InteractionGuardDeps = {
+    ...busyReconcileDeps,
+    ...questionMenuDeps,
+    ...permissionMenuDeps,
+    ...inlineMenuDeps,
+    localCommandRegistry: LocalCommandRegistry.empty(),
+    ...depsIn,
+  };
+  let decision = resolveInteractionGuardDecision(ctx, deps, deps.localCommandRegistry);
 
   if (!decision.allow && decision.busy) {
-    await reconcileForegroundBusyState();
-    decision = resolveInteractionGuardDecision(ctx, localCommandRegistry);
+    await reconcileForegroundBusyState(deps);
+    decision = resolveInteractionGuardDecision(ctx, deps, deps.localCommandRegistry);
   }
 
   if (decision.allow) {
